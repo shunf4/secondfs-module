@@ -1,7 +1,7 @@
 #ifndef __SECONDFS_USER_H__
 #define __SECONDFS_USER_H__
 
-#include <limits.h>
+#include <linux/limits.h>
 #include <linux/types.h>
 
 /* 声明 SecondFS 文件系统自己使用的函数原型, 变量, 宏等 */

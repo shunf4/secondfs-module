@@ -11,6 +11,9 @@
  * 但在 Linux 中, 不可能统一. 要将 V6PP 的 SuperBlock 格式和上层抽象
  * VFS 层的 super_block 做转换协调.
  */
+
+#if false
+
 class SuperBlock
 {
 	/* Functions */
@@ -132,4 +135,5 @@ private:
 	int updlock;				/* Update()函数的锁，该函数用于同步内存各个SuperBlock副本以及，
 								被修改过的内存Inode。任一时刻只允许一个进程调用该函数 */
 };
+#endif
 #endif // __FILESYSTEM_HPP__

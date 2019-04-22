@@ -8,7 +8,8 @@
         "secondfs.h": "c",
         "secondfs_kern.h": "c",
         "secondfs_user.h": "c",
-        "filesystem_c_wrapper.h": "c"
+        "filesystem_c_wrapper.h": "c",
+        "limits.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

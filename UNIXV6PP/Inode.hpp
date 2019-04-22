@@ -10,6 +10,7 @@
  * 以及该设备外存inode区中的编号(i_number)来确定
  * 其对应的外存inode。
  */
+#if false
 class Inode
 {
 public:
@@ -180,5 +181,5 @@ public:
 	int		d_atime;		/* 最后访问时间 */
 	int		d_mtime;		/* 最后修改时间 */
 };
-
+#endif
 #endif // __INODE_HPP__
