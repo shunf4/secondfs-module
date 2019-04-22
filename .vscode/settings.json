@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "khellofs.h": "c",
+        "fs.h": "c",
+        "parser.h": "c",
+        "random.h": "c",
+        "blkdev.h": "c",
+        "secondfs.h": "c",
+        "secondfs_kern.h": "c",
+        "secondfs_user.h": "c",
+        "filesystem_c_wrapper.h": "c"
+    },
+    "editor.tabSize": 8,
+    "editor.insertSpaces": false
+}
