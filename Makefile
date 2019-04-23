@@ -1,6 +1,6 @@
 obj-m := secondfs.o
 
-secondfs-objs := init.o super.o inode.o fileops.o
+secondfs-objs := main.o super.o inode.o fileops.o
 
 all : kernmodule mkfs
 
@@ -17,7 +17,7 @@ clean:
 common.o : common.c secondfs_user.h
 	$(CC) $(CFLAGS) -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
 
-init.o : init.c secondfs_kern.h secondfs_user.h
+main.o : main.c secondfs_kern.h secondfs_user.h
 	$(CC) $(CFLAGS) -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
