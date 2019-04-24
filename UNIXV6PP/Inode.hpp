@@ -1,6 +1,7 @@
 #ifndef __INODE_HPP__
 #define __INODE_HPP__
 
+#include <linux/types.h>
 
 /*
  * 内存索引节点(INode)的定义
@@ -69,6 +70,7 @@ public:
 	 * 的文件数据
 	 */
 	void ReadI();
+#if false
 	/* 
 	 * @comment 根据Inode对象中的物理磁盘块索引表，将数据写入文件
 	 */
@@ -126,7 +128,7 @@ public:
 	 * @comment 将包含外存Inode字符块中信息拷贝到内存Inode中
 	 */
 	void ICopy(Buf* bp, int inumber);
-	
+#endif
 	/* Members */
 public:
 	u32 i_flag;	/* 状态的标志位，定义见enum INodeFlag */
