@@ -3,7 +3,7 @@
 
 void FileSystem::LoadSuperBlock()
 {
-	User& u = Kernel::Instance().GetUser();
+	/*User& u = Kernel::Instance().GetUser();
 	BufferManager& bufMgr = Kernel::Instance().GetBufferManager();
 	Buf* pBuf;
 
@@ -28,5 +28,5 @@ void FileSystem::LoadSuperBlock()
 	g_spb.s_flock = 0;
 	g_spb.s_ilock = 0;
 	g_spb.s_ronly = 0;
-	g_spb.s_time = Time::time;
+	g_spb.s_time = Time::time;*/
 }
