@@ -1,7 +1,7 @@
 /* UNIXV6PP 文件系统(主要是超块操作)头文件裁剪. */
 #ifndef __FILESYSTEM_HPP__
 #define __FILESYSTEM_HPP__
-#include <linux/types.h>
+#include <asm-generic/int-ll64.h>
 #include "Inode.hpp"
 #include "FileOperations_c_wrapper.h"
 
