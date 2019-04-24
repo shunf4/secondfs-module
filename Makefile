@@ -32,6 +32,7 @@ FileSystem_cpp.o : UNIXV6PP/FileSystem.cpp UNIXV6PP/FileSystem.hpp UNIXV6PP/Seco
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
 inode.o : inode_c.o Inode_cpp.o
+	echo "Combining inode";
 	$(LD) $(LDFLAGS) -r -o$@
 
 inode_c.o : inode.c secondfs_kern.h secondfs_user.h UNIXV6PP/Inode_c_wrapper.h
