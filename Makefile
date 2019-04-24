@@ -26,7 +26,7 @@ $(obj)/super_linked.o : $(obj)/super.o $(obj)/UNIXV6PP/FileSystem.o
 
 $(obj)/super.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h
 
-$(obj)/UNIXV6PP/FileSystem.o : $(obj)/UNIXV6PP/FileSystem.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/FileSystem_c_wrapper.h
+$(obj)/UNIXV6PP/FileSystem.o : $(obj)/UNIXV6PP/FileSystem.hh $(obj)/UNIXV6PP/SecondFS.hh $(obj)/UNIXV6PP/FileSystem_c_wrapper.h
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
 $(obj)/inode_linked.o : $(obj)/inode.o $(obj)/UNIXV6PP/Inode.o
@@ -34,7 +34,7 @@ $(obj)/inode_linked.o : $(obj)/inode.o $(obj)/UNIXV6PP/Inode.o
 
 $(obj)/inode.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/Inode_c_wrapper.h
 
-$(obj)/UNIXV6PP/Inode.o : $(obj)/UNIXV6PP/Inode.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/Inode_c_wrapper.h
+$(obj)/UNIXV6PP/Inode.o : $(obj)/UNIXV6PP/Inode.hh $(obj)/UNIXV6PP/SecondFS.hh $(obj)/UNIXV6PP/Inode_c_wrapper.h
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
 $(obj)/fileops_linked.o : $(obj)/fileops.o $(obj)/UNIXV6PP/FileOperations.o
@@ -42,5 +42,5 @@ $(obj)/fileops_linked.o : $(obj)/fileops.o $(obj)/UNIXV6PP/FileOperations.o
 
 $(obj)/fileops.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h
 
-$(obj)/UNIXV6PP/FileOperations.o : $(obj)/UNIXV6PP/FileOperations.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/FileOperations_c_wrapper.h
+$(obj)/UNIXV6PP/FileOperations.o : $(obj)/UNIXV6PP/FileOperations.hh $(obj)/UNIXV6PP/SecondFS.hh $(obj)/UNIXV6PP/FileOperations_c_wrapper.h
 
