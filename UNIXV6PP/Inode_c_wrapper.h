@@ -1,9 +1,15 @@
 #ifndef __INODE_C_WRAPPER_H__
 #define __INODE_C_WRAPPER_H__
 
+#ifndef __cplusplus
 #include <linux/types.h>
+#endif // __cplusplus
 
 #ifdef __cplusplus
+#include <cstdint>
+typedef uint32_t u32;
+typedef int32_t s32;
+typedef int16_t s16;
 extern "C" {
 #endif // __cplusplus
 
