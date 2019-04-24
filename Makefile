@@ -20,7 +20,7 @@ $(obj)/main.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
 $(obj)/super_linked.o : $(obj)/super.o $(obj)/UNIXV6PP/FileSystem_cpp.o
-	$(LD) $(LDFLAGS) -r -o$@
+	$(LD) $(LDFLAGS) -r -o$@ $^
 
 $(obj)/super.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h
 
@@ -29,8 +29,7 @@ $(obj)/UNIXV6PP/FileSystem_cpp.o : $(obj)/UNIXV6PP/FileSystem.cpp $(obj)/UNIXV6P
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
 $(obj)/inode_linked.o : $(obj)/inode.o $(obj)/Inode_cpp.o
-	echo "Combining inode";
-	$(LD) $(LDFLAGS) -r -o$@
+	$(LD) $(LDFLAGS) -r -o$@ $^
 
 $(obj)/inode.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/Inode_c_wrapper.h
 
