@@ -1,6 +1,7 @@
 obj-m := secondfs.o
 
-secondfs-objs := main.o super_linked.o inode_linked.o fileops_linked.o
+# secondfs-objs := main.o super_linked.o inode_linked.o fileops_linked.o
+secondfs-objs := main.o $(obj)/super.o $(obj)/UNIXV6PP/FileSystem_cpp.o $(obj)/inode.o $(obj)/UNIXV6PP/Inode_cpp.o $(obj)/fileops.o $(obj)/UNIXV6PP/FileOperations_cpp.o
 
 all : kernmodule mkfs
 
@@ -19,6 +20,7 @@ $(obj)/common.o : $(obj)/secondfs_user.h
 $(obj)/main.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
+# 修改 : 所有的 _linked.o 暂时废弃
 $(obj)/super_linked.o : $(obj)/super.o $(obj)/UNIXV6PP/FileSystem_cpp.o
 	$(LD) $(LDFLAGS) -r -o$@ $^
 
