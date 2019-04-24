@@ -2,7 +2,7 @@
 #ifndef __FILESYSTEM_HPP__
 #define __FILESYSTEM_HPP__
 #include <cstdint>
-#include "Inode.hpp"
+#include "Inode.hh"
 #include "FileOperations_c_wrapper.h"
 
 /*

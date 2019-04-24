@@ -1,5 +1,5 @@
 /* UNIXV6PP 文件系统(主要是超块操作)代码裁剪. */
-#include "FileSystem.hpp"
+#include "FileSystem.hh"
 
 void FileSystem::LoadSuperBlock()
 {

@@ -1,4 +1,4 @@
-#include "Inode.hpp"
+#include "Inode.hh"
 #include "Inode_c_wrapper.h"
 
 // @Feng Shun: 以下为 C++ 部分

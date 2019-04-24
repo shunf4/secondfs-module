@@ -35,7 +35,6 @@ $(obj)/inode_linked.o : $(obj)/inode.o $(obj)/UNIXV6PP/Inode.o
 $(obj)/inode.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/Inode_c_wrapper.h
 
 $(obj)/UNIXV6PP/Inode.o : $(obj)/UNIXV6PP/Inode.hh $(obj)/UNIXV6PP/SecondFS.hh $(obj)/UNIXV6PP/Inode_c_wrapper.h
-	$(kecho) "Inode C++"
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
 $(obj)/fileops_linked.o : $(obj)/fileops.o $(obj)/UNIXV6PP/FileOperations.o
