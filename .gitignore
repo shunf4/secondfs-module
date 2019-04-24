@@ -5,3 +5,4 @@
 /*.mod.[co]
 /.tmp_versions
 /*.ko
+/.vscode/ipch

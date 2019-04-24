@@ -31,13 +31,13 @@ FileSystem_cpp.o : UNIXV6PP/FileSystem.cpp UNIXV6PP/FileSystem.hpp UNIXV6PP/Seco
 	$(CXX) $(CXXFLAGS) -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
-inode.o : inode_c.o INode_cpp.o
+inode.o : inode_c.o Inode_cpp.o
 	$(LD) $(LDFLAGS) -r -o$@
 
-inode_c.o : inode.c secondfs_kern.h secondfs_user.h UNIXV6PP/INode_c_wrapper.h
+inode_c.o : inode.c secondfs_kern.h secondfs_user.h UNIXV6PP/Inode_c_wrapper.h
 	$(CC) $(CFLAGS) -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
 
-INode_cpp.o : UNIXV6PP/INode.cpp UNIXV6PP/INode.hpp UNIXV6PP/SecondFS.hpp UNIXV6PP/INode_c_wrapper.h
+Inode_cpp.o : UNIXV6PP/Inode.cpp UNIXV6PP/Inode.hpp UNIXV6PP/SecondFS.hpp UNIXV6PP/Inode_c_wrapper.h
 	$(CXX) $(CXXFLAGS) -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o

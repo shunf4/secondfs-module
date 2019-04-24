@@ -9,6 +9,8 @@
 
 #define SECONDFS_BITS_PER_BYTE CHAR_BIT
 
+#define SECONDFS_INODE_SIZE sizeof(struct)
+
 extern const sector_t secondfs_superblock_blockno;
 
 #endif // __SECONDFS_USER_H__

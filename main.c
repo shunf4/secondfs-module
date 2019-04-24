@@ -9,17 +9,26 @@ MODULE_AUTHOR("shunf4");
 MODULE_DESCRIPTION("A simple Linux Filesystem based on UNIXV6++.");
 MODULE_VERSION("0.1");
 
-static char *name = "world";
-module_param(name, charp, S_IRUGO);
-MODULE_PARM_DESC(name, "The name to display in /var/log/kern.log");
+static char *username = "user";
+module_param(username, charp, S_IRUGO);
+MODULE_PARM_DESC(username, "The user's name to display a hello world message in /var/log/kern.log");
+
+// 内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的 Inode
+static struct kmem_cache *secondfs_inode_cachep;
 
 static int __init secondfs_init(void) {
-	printk(KERN_INFO "FS: Hello %s from the FS' FS module!\n", name);
+	// 打印“Hello world”信息
+	printk(KERN_INFO "SecondFS: Hello %s from the FS' SecondFS module!\n", username);
+
+	// 创建一个内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的 Inode
+	
+
+
 	return 0;
 }
 
 static void __exit secondfs_exit(void) {
-	printk(KERN_INFO "FS: Goodbye %s!\n", name);
+	printk(KERN_INFO "SecondFS: Goodbye %s!\n", username);
 }
 
 module_init(secondfs_init);
