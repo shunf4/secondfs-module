@@ -1,8 +1,7 @@
 obj-m := secondfs.o
 
 # secondfs-objs := main.o super_linked.o inode_linked.o fileops_linked.o
-secondfs-objs := main.o super.o inode.o fileops.o
-secondfs-cxxobjs := UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o
+secondfs-objs := main.o super.o inode.o fileops.o UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o
 
 all : kernmodule mkfs
 
