@@ -1,7 +1,8 @@
 obj-m := secondfs.o
 
 # secondfs-objs := main.o super_linked.o inode_linked.o fileops_linked.o
-secondfs-objs := main.o super.o UNIXV6PP/FileSystem_cpp.o inode.o UNIXV6PP/Inode_cpp.o fileops.o UNIXV6PP/FileOperations_cpp.o
+secondfs-objs := main.o super.o inode.o fileops.o
+secondfs-cxxobjs := UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o
 
 all : kernmodule mkfs
 
@@ -21,30 +22,26 @@ $(obj)/main.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
 # 修改 : 所有的 _linked.o 暂时废弃
-$(obj)/super_linked.o : $(obj)/super.o $(obj)/UNIXV6PP/FileSystem_cpp.o
+$(obj)/super_linked.o : $(obj)/super.o $(obj)/UNIXV6PP/FileSystem.o
 	$(LD) $(LDFLAGS) -r -o$@ $^
 
 $(obj)/super.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h
 
-$(obj)/UNIXV6PP/FileSystem_cpp.o : $(obj)/UNIXV6PP/FileSystem.cpp $(obj)/UNIXV6PP/FileSystem.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/FileSystem_c_wrapper.h
-	g++ -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
+$(obj)/UNIXV6PP/FileSystem.o : $(obj)/UNIXV6PP/FileSystem.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/FileSystem_c_wrapper.h
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
-$(obj)/inode_linked.o : $(obj)/inode.o $(obj)/UNIXV6PP/Inode_cpp.o
+$(obj)/inode_linked.o : $(obj)/inode.o $(obj)/UNIXV6PP/Inode.o
 	$(LD) $(LDFLAGS) -r -o$@ $^
 
 $(obj)/inode.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/Inode_c_wrapper.h
 
-$(obj)/UNIXV6PP/Inode_cpp.o : $(obj)/UNIXV6PP/Inode.cpp $(obj)/UNIXV6PP/Inode.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/Inode_c_wrapper.h
-	g++ -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
+$(obj)/UNIXV6PP/Inode.o : $(obj)/UNIXV6PP/Inode.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/Inode_c_wrapper.h
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
-$(obj)/fileops_linked.o : $(obj)/fileops.o $(obj)/UNIXV6PP/FileOperations_cpp.o
+$(obj)/fileops_linked.o : $(obj)/fileops.o $(obj)/UNIXV6PP/FileOperations.o
 	$(LD) $(LDFLAGS) -r -o$@ $^
 
 $(obj)/fileops.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h
 
-$(obj)/UNIXV6PP/FileOperations_cpp.o : $(obj)/UNIXV6PP/FileOperations.cpp $(obj)/UNIXV6PP/FileOperations.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/FileOperations_c_wrapper.h
-	g++ -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
-
+$(obj)/UNIXV6PP/FileOperations.o : $(obj)/UNIXV6PP/FileOperations.hpp $(obj)/UNIXV6PP/SecondFS.hpp $(obj)/UNIXV6PP/FileOperations_c_wrapper.h
 
