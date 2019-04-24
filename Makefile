@@ -37,7 +37,7 @@ $(obj)/UNIXV6PP/Inode_cpp.o : $(obj)/UNIXV6PP/Inode.cpp $(obj)/UNIXV6PP/Inode.hp
 	g++ -c -DDEBUG -o$@ $(filter-out %.h %.hpp, $^)
 
 # 此处使用 -r, 将两个 .o 文件合成为一个 .o
-$(obj)/fileops_linked.o : $(obj)/fileops.o $(obj)/FileOperations_cpp.o
+$(obj)/fileops_linked.o : $(obj)/fileops.o $(obj)/UNIXV6PP/FileOperations_cpp.o
 	$(LD) $(LDFLAGS) -r -o$@ $^
 
 $(obj)/fileops.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h
