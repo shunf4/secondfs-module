@@ -71,16 +71,18 @@ public:
 	/* Destructors */
 	~FileSystem();
 
+	/* 
+	* @comment 系统初始化时读入SuperBlock
+	*/
+	void LoadSuperBlock();
+
 #if false
 	/* 
 	 * @comment 初始化成员变量
 	 */
 	void Initialize();
 
-	/* 
-	* @comment 系统初始化时读入SuperBlock
-	*/
-	void LoadSuperBlock();
+	
 
 	/* 
 	 * @comment 根据文件存储设备的设备号dev获取
