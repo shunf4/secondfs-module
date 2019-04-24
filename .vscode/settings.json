@@ -9,7 +9,9 @@
         "secondfs_kern.h": "c",
         "secondfs_user.h": "c",
         "filesystem_c_wrapper.h": "c",
-        "limits.h": "c"
+        "limits.h": "c",
+        "inode_c_wrapper.h": "c",
+        "utils.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

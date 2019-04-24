@@ -41,9 +41,10 @@ Inode::~Inode()
 	//nothing to do here
 }
 
-#if false
+
 void Inode::ReadI()
 {
+#if false
 	int lbn;	/* 文件逻辑块号 */
 	int bn;		/* lbn对应的物理盘块号 */
 	int offset;	/* 当前字符块内起始传送位置 */
@@ -133,8 +134,9 @@ void Inode::ReadI()
 
 		bufMgr.Brelse(pBuf);	/* 使用完缓存，释放该资源 */
 	}
+#endif
 }
-
+#if false
 void Inode::WriteI()
 {
 	int lbn;	/* 文件逻辑块号 */
@@ -748,6 +750,8 @@ DiskInode::~DiskInode()
 
 // @Feng Shun: 以下为 C wrapping 部分
 extern "C" {
+	const u32 SECONDFS_INODE_SIZE = sizeof(Inode);
+
 	const u32
 		SECONDFS_ILOCK = Inode::INodeFlag::ILOCK,		/* 索引节点上锁 */
 		SECONDFS_IUPD = Inode::INodeFlag::IUPD,		/* 内存inode被修改过，需要更新相应外存inode */
@@ -798,8 +802,9 @@ extern "C" {
 	}
 
 
+	const u32 SECONDFS_DISKINODE_SIZE = sizeof(DiskInode);
 
-	Inode *newDiskInode() {
+	DiskInode *newDiskInode() {
 		return newDiskInode();
 	}
 	void deleteDiskInode(DiskInode *inodep) {

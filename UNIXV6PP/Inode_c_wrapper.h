@@ -14,6 +14,7 @@ extern "C" {
 #endif // __cplusplus
 
 typedef struct Inode Inode;
+extern const u32 SECONDFS_INODE_SIZE;
 
 extern const u32
 	SECONDFS_ILOCK,		/* 索引节点上锁 */
@@ -60,16 +61,19 @@ extern s32 *secondfs_inode_rablockp;	/* 顺序读时，使用预读技术读入�
 					对当前块和预读块的逻辑块号进行转换，bmap返回当前块的物理盘块号，并且将预读块
 					的物理盘块号保存在rablock中。 */
 
-#define secondfs_inode_rablock (*secondfs_inode_rablockp);
+#define secondfs_inode_rablock (*secondfs_inode_rablockp)
 
-Inode *newInode();
+Inode *newInode(void);
 void deleteInode(Inode *);
-
 void Inode_ReadI(Inode *);
 
 
+
+
 typedef struct DiskInode DiskInode;
-Inode *newDiskInode();
+extern const u32 SECONDFS_DISKINODE_SIZE;
+
+DiskInode *newDiskInode(void);
 void deleteDiskInode(DiskInode *);
 
 #ifdef __cplusplus

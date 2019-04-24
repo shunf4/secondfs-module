@@ -18,10 +18,10 @@ static struct kmem_cache *secondfs_inode_cachep;
 
 static int __init secondfs_init(void) {
 	// 打印“Hello world”信息
-	printk(KERN_INFO "SecondFS: Hello %s from the FS' SecondFS module!\n", username);
+	printk(KERN_INFO "SecondFS: Hello %s from the FS' SecondFS module! The size of Inode is %d\n", username, SECONDFS_DISKINODE_SIZE);
 
 	// 创建一个内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的 Inode
-	
+	// secondfs_inode_cachep = kmem_cache_create("secondfs_icache", )
 
 
 	return 0;
