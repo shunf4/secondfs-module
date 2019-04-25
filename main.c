@@ -28,7 +28,7 @@ static int __init secondfs_init(void) {
 
 	printk(KERN_INFO "SecondFS: Hello %s from the FS' SecondFS module! The size of Inode is %d(in const variable) == %lu(in sizeof())\n", username, SECONDFS_DISKINODE_SIZE, sizeof(secondfs_test_diskinode));
 
-	printk(KERN_INFO "SecondFS: %d\n", secondfs_test_diskinode->d_uid);
+	printk(KERN_INFO "SecondFS: %hd\n", secondfs_test_diskinode->d_uid);
 
 	// 创建一个内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的 Inode
 	// secondfs_inode_cachep = kmem_cache_create("secondfs_icache", )
