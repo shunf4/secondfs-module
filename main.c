@@ -26,7 +26,7 @@ static int __init secondfs_init(void) {
 		BUG();
 	}
 
-	printk(KERN_INFO "SecondFS: Hello %s from the FS' SecondFS module! The size of Inode is %d(in const variable) == %lu(in sizeof())\n", username, SECONDFS_DISKINODE_SIZE, sizeof(secondfs_test_diskinode));
+	printk(KERN_INFO "SecondFS: Hello %s from the FS' SecondFS module! The size of Inode is %d(in const variable) == %lu(in sizeof())\n", username, SECONDFS_DISKINODE_SIZE, sizeof(*secondfs_test_diskinode));
 
 	printk(KERN_INFO "SecondFS: %hd\n", secondfs_test_diskinode->d_uid);
 
