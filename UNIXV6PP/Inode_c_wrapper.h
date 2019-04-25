@@ -1,19 +1,39 @@
 #ifndef __INODE_C_WRAPPER_H__
 #define __INODE_C_WRAPPER_H__
 
-#ifndef __cplusplus
-#include <linux/types.h>
-#endif // __cplusplus
+#include "../common_c_cpp_types.h"
 
 #ifdef __cplusplus
-#include <cstdint>
-typedef uint32_t u32;
-typedef int32_t s32;
-typedef int16_t s16;
 extern "C" {
 #endif // __cplusplus
 
-typedef struct Inode Inode;
+// Inode 类的 C 包装
+
+#ifndef __cplusplus
+typedef struct Inode
+{
+	u32 i_flag;	/* 状态的标志位，定义见enum INodeFlag */
+	u32 i_mode;	/* 文件工作方式信息 */
+	
+	s32		i_count;		/* 引用计数 */
+	s32		i_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
+	
+	u16		i_dev;			/* 外存inode所在存储设备的设备号 */
+	s32		i_number;		/* 外存inode区中的编号 */
+	
+	u16		i_uid;			/* 文件所有者的用户标识数 */
+	u16		i_gid;			/* 文件所有者的组标识数 */
+	
+	s32		i_size;			/* 文件大小，字节为单位 */
+	s32		i_addr[10];		/* 用于文件逻辑块好和物理块好转换的基本索引表 */
+	
+	s32		i_lastr;		/* 存放最近一次读取文件的逻辑块号，用于判断是否需要预读 */
+} Inode;
+#else // __cplusplus
+class Inode;
+#endif // __cplusplus
+
+
 extern const u32 SECONDFS_INODE_SIZE;
 
 extern const u32
@@ -68,9 +88,27 @@ void deleteInode(Inode *);
 void Inode_ReadI(Inode *);
 
 
+// DiskInode 类的 C 包装
 
+#ifndef __cplusplus
+typedef struct DiskInode
+{
+	u32		d_mode;			/* 状态的标志位，定义见enum INodeFlag */
+	s32		d_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
+	
+	u16		d_uid;			/* 文件所有者的用户标识数 */
+	u16		d_gid;			/* 文件所有者的组标识数 */
+	
+	s32		d_size;			/* 文件大小，字节为单位 */
+	s32		d_addr[10];		/* 用于文件逻辑块号和物理块好转换的基本索引表 */
 
-typedef struct DiskInode DiskInode;
+	s32		d_atime;		/* 最后访问时间 */
+	s32		d_mtime;		/* 最后修改时间 */
+} DiskInode;
+#else // __cplusplus
+class DiskInode;
+#endif // __cplusplus
+
 extern const u32 SECONDFS_DISKINODE_SIZE;
 
 DiskInode *newDiskInode(void);

@@ -11,7 +11,9 @@
         "filesystem_c_wrapper.h": "c",
         "limits.h": "c",
         "inode_c_wrapper.h": "c",
-        "utils.h": "c"
+        "utils.h": "c",
+        "common_c_wrapper.h": "c",
+        "assert.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false
