@@ -805,7 +805,7 @@ extern "C" {
 	const u32 SECONDFS_DISKINODE_SIZE = sizeof(DiskInode);
 
 	DiskInode *newDiskInode() {
-		return newDiskInode();
+		return new DiskInode();
 	}
 	void deleteDiskInode(DiskInode *inodep) {
 		delete inodep;
