@@ -35,6 +35,7 @@ void *secondfs_c_helper_malloc(size_t size)
 	// C++ 数据结构我们最好还是用类内重载的 new/delete 用 kmem_cache 实现.
 	// 因此这里直接 BUG();
 	void *p;
+	printk(KERN_ERR "SecondFS: general new operator called!!");
 	BUG();
 
 #ifdef DO_MEMDBG
@@ -53,6 +54,7 @@ void secondfs_c_helper_free(void *pointer)
 	// 这个是通用的 C++ new helper, 用 kmalloc 实现. 但对于每一个
 	// C++ 数据结构我们最好还是用类内重载的 new/delete 用 kmem_cache 实现.
 	// 因此这里直接 BUG();
+	printk(KERN_ERR "SecondFS: general delete operator called!!");
 	BUG();
 
 	printk(KERN_DEBUG "SecondFS: Start freeing, kfree pointer=%p", pointer);
