@@ -1,8 +1,8 @@
 obj-m := secondfs.o
 
 # 项目主要分为 C++ 部分 (cxxobjs) 和 C 部分 (objs). 它们都编译为 .o 文件, 最后整体链接在一起
-secondfs-cxxobjs := UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o UNIXV6PP/CCUtils.o
-secondfs-objs := main.o super.o inode.o fileops.o utils.o
+secondfs-cxxobjs := UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o UNIXV6PP/CCNewDelete.o
+secondfs-objs := main.o super.o inode.o fileops.o c_helper_for_cc.o
 
 # 加上 Q 前缀, 执行命令时可以不回显这条命令
 Q = @
@@ -42,10 +42,10 @@ clean:
 ######### 下面是 C 或 C++ 实现的辅助功能/共同函数/入口点相关文件的编译 #########
 
 # C++ 的 .o 文件不在内核目录下 make, 所以不能加 $(obj); C 的 .o 文件在内核目录下 make, 所以要加 $(obj) 表示文件在源目录
-UNIXV6PP/CCUtils.o : UNIXV6PP/CCUtils.cc utils.h
+UNIXV6PP/CCNewDelete.o : UNIXV6PP/CCNewDelete.cc c_helper_for_cc.h
 	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
 
-$(obj)/utils.o : $(obj)/utils.h
+$(obj)/c_helper_for_cc.o : $(obj)/c_helper_for_cc.h
 
 $(obj)/common.o : $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h
 

@@ -11,7 +11,7 @@ void *operator new(unsigned long x) {
 void operator delete(void *pointer) {
 	secondfs_c_helper_free(pointer);
 }
-#endif
+#endif // false
 
 void operator delete(void *pointer, const long unsigned int type) {
 	secondfs_c_helper_free(pointer);
