@@ -79,7 +79,7 @@ void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size) {\
 }\
 \
 void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer) {\
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_allocing, pointer=%p", pointer);\
+	printk(KERN_DEBUG "SecondFS: Start kmem_cache_freeing, pointer=%p", pointer);\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
@@ -99,7 +99,7 @@ void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size) {\
 \
 void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer) {\
 	kmem_cache_free_num++;\
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_allocing, pointer=%p", pointer);\
+	printk(KERN_DEBUG "SecondFS: Start kmem_cache_freeing, pointer=%p", pointer);\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
