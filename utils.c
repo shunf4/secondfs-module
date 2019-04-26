@@ -72,7 +72,7 @@ void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size) {\
 	void *p;\
 	BUG_ON(size != kmem_cachep->object_size);\
 	p = kmem_cache_alloc(kmem_cachep, GFP_KERNEL);\
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_allocing, size=%lu pointer=%p", kmem_cachep->object_size, p);\
+	printk(KERN_DEBUG "SecondFS: Start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
 	if (p == NULL)\
 		printk(KERN_ERR "SecondFS: Unable to allocate memory");\
 	return p;\
@@ -91,7 +91,7 @@ void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size) {\
 	BUG_ON(size != kmem_cachep->object_size);\
 	kmem_cache_malloc_num++;\
 	p = kmem_cache_alloc(kmem_cachep, GFP_KERNEL);\
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_allocing, size=%lu pointer=%p", kmem_cachep->object_size, p);\
+	printk(KERN_DEBUG "SecondFS: Start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
 	if (p == NULL)\
 		printk(KERN_ERR "SecondFS: Unable to allocate memory");\
 	return p;\
