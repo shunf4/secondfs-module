@@ -15,7 +15,7 @@
 #include <linux/slub_def.h>
 
 #include "secondfs_user.h"
-#include "utils.h"
+#include "c_helper_for_cc.h"
 
 #define DO_MEMDBG
 

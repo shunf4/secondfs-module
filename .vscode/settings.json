@@ -13,7 +13,8 @@
         "inode_c_wrapper.h": "c",
         "utils.h": "c",
         "common_c_wrapper.h": "c",
-        "assert.h": "c"
+        "assert.h": "c",
+        "c_helper_for_cc.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

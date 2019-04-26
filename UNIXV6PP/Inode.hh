@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstddef>
 #include "../common_c_cpp_types.h"
-#include "../utils.h"
+#include "../c_helper_for_cc.h"
 
 /*
  * 内存索引节点(INode)的定义

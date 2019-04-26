@@ -1,5 +1,5 @@
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __C_HELPER_FOR_CC_H__
+#define __C_HELPER_FOR_CC_H__
 
 #include <stddef.h>
 
@@ -23,4 +23,4 @@ SECONDFS_GEN_C_HELPER_HEADER_KMEM_CACHE_ALLOC_N_FREE(DiskInode)
 }
 #endif // __cplusplus
 
-#endif // __UTILS_H__
+#endif // __C_HELPER_FOR_CC_H__
