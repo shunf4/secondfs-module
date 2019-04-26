@@ -13,12 +13,20 @@ static char *username = "user";
 module_param(username, charp, S_IRUGO);
 MODULE_PARM_DESC(username, "The user's name to display a hello world message in /var/log/kern.log");
 
-// 内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的 Inode
-static struct kmem_cache *secondfs_inode_cachep;
+// 内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的 DiskInode
+struct kmem_cache *secondfs_diskinode_cachep;
 
 static DiskInode *secondfs_test_diskinode;
 
 static int __init secondfs_init(void) {
+	// 为所有数据结构 (具有恒定大小的内存空间表示) 创建一套 kmem_cache, 用来快速动态分配
+	
+	secondfs_diskinode_cachep = kmem_cache_create("secondfs_diskinode_cache",
+		sizeof(DiskInode),
+		sizeof(DiskInode), 
+		(SLAB_RECLAIM_ACCOUNT| SLAB_MEM_SPREAD),
+		NULL);
+
 	// 打印“Hello world”信息
 	secondfs_test_diskinode = newDiskInode();
 
@@ -30,8 +38,7 @@ static int __init secondfs_init(void) {
 
 	printk(KERN_INFO "SecondFS: %hd\n", secondfs_test_diskinode->d_uid);
 
-	// 创建一个内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的 Inode
-	// secondfs_inode_cachep = kmem_cache_create("secondfs_icache", )
+	
 
 
 	return 0;
@@ -39,6 +46,7 @@ static int __init secondfs_init(void) {
 
 static void __exit secondfs_exit(void) {
 	deleteDiskInode(secondfs_test_diskinode);
+	kmem_cache_destroy(secondfs_diskinode_cachep);
 	printk(KERN_INFO "SecondFS: Goodbye %s!\n", username);
 }
 

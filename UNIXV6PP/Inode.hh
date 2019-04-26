@@ -2,7 +2,9 @@
 #define __INODE_HPP__
 
 #include <cstdint>
+#include <cstddef>
 #include "../common_c_cpp_types.h"
+#include "../utils.h"
 
 /*
  * 内存索引节点(INode)的定义
@@ -170,6 +172,14 @@ public:
 	DiskInode();
 	/* Destructors */
 	~DiskInode();
+
+	void *operator new(size_t size) {
+		return secondfs_c_helper_kmem_cache_alloc_DiskInode(size);
+	}
+
+	void operator delete(void *pointer) {
+		secondfs_c_helper_kmem_cache_free_DiskInode(pointer);
+	}
 
 	/* Members */
 public:

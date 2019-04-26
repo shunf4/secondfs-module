@@ -15,4 +15,7 @@
 
 extern const sector_t secondfs_superblock_blockno;
 
+// 内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的 DiskInode
+extern struct kmem_cache *secondfs_diskinode_cachep;
+
 #endif // __SECONDFS_USER_H__
