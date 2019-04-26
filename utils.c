@@ -31,7 +31,11 @@ static unsigned int kmem_cache_free_num;
 
 void *secondfs_c_helper_malloc(size_t size)
 {
+	// 这个是通用的 C++ new helper, 用 kmalloc 实现. 但对于每一个
+	// C++ 数据结构我们最好还是用类内重载的 new/delete 用 kmem_cache实现.
+	// 因此这里直接 BUG();
 	void *p;
+	BUG();
 
 #ifdef DO_MEMDBG
 	malloc_num++;
@@ -46,6 +50,11 @@ void *secondfs_c_helper_malloc(size_t size)
 
 void secondfs_c_helper_free(void *pointer)
 {
+	// 这个是通用的 C++ new helper, 用 kmalloc 实现. 但对于每一个
+	// C++ 数据结构我们最好还是用类内重载的 new/delete 用 kmem_cache实现.
+	// 因此这里直接 BUG();
+	BUG();
+	
 	printk(KERN_DEBUG "SecondFS: Start freeing, kfree pointer=%p", pointer);
 
 #ifdef DO_MEMDBG
