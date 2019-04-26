@@ -17,6 +17,7 @@ MODULE_PARM_DESC(username, "The user's name to display a hello world message in 
 struct kmem_cache *secondfs_diskinode_cachep;
 
 static DiskInode *secondfs_test_diskinode;
+static Inode *secondfs_test_inode;
 
 static int __init secondfs_init(void) {
 	// 为所有数据结构 (具有恒定大小的内存空间表示) 创建一套 kmem_cache, 用来快速动态分配
@@ -29,6 +30,7 @@ static int __init secondfs_init(void) {
 
 	// 打印“Hello world”信息
 	secondfs_test_diskinode = newDiskInode();
+	secondfs_test_inode = newInode();
 
 	if (SECONDFS_DISKINODE_SIZE != sizeof(DiskInode)) {
 		BUG();
@@ -36,16 +38,12 @@ static int __init secondfs_init(void) {
 
 	printk(KERN_INFO "SecondFS: Hello %s from the FS' SecondFS module! The size of Inode is %d(in const variable) == %lu(in sizeof())\n", username, SECONDFS_DISKINODE_SIZE, sizeof(*secondfs_test_diskinode));
 
-	printk(KERN_INFO "SecondFS: %hd\n", secondfs_test_diskinode->d_uid);
-
-	
-
-
 	return 0;
 }
 
 static void __exit secondfs_exit(void) {
 	deleteDiskInode(secondfs_test_diskinode);
+	deleteInode(secondfs_test_inode);
 	kmem_cache_destroy(secondfs_diskinode_cachep);
 	printk(KERN_INFO "SecondFS: Goodbye %s!\n", username);
 }
