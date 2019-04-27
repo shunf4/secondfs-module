@@ -128,7 +128,7 @@ l=l[:-1]
 l=remove_begin_with(l,'-nostdinc')
 # C++ code does not reference any header files of the kernel,
 # operating system, or compiler...
-l=replace_with(l,'-I')
+l=replace_begin_with(l,'-I')
 # remove macros of the kernel (which we don't use in the cpp layer)
 #l=remove_begin_with(l,'-D')
 # remove the -Wp,MD
