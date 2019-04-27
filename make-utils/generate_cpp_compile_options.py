@@ -79,7 +79,7 @@ def find_ends_with(l, ending):
 ########
 # code #
 ########
-if len(sys.argv)!=3:
+if len(sys.argv)!=4:
     print('usage: [python] %s <$(uname -r)> <kernel_module_build_dir like "/lib/modules/$(uname -r)/build"> <output_file>' % sys.argv[0])
     sys.exit(1)
 unamer=sys.argv[1]
