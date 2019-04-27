@@ -9,7 +9,8 @@
                 "/usr/src/linux-headers-4.15.0-47-generic/arch/x86/include/generated"
             ],
             "defines": [
-                "CONFIG_BLOCK"
+                "CONFIG_BLOCK",
+                "__KERNEL__"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",

@@ -19,4 +19,6 @@
 /* 内核函数也依赖于 SecondFS 自定义的结构 */
 #include "secondfs_user.h"
 
+extern const struct super_operations secondfs_sb_ops;
+
 #endif // __SECONDFS_KERN_H__

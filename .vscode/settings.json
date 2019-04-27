@@ -14,7 +14,11 @@
         "utils.h": "c",
         "common_c_wrapper.h": "c",
         "assert.h": "c",
-        "c_helper_for_cc.h": "c"
+        "c_helper_for_cc.h": "c",
+        "buffermanager_c_wrapper.h": "c",
+        "common_c_cpp_types.h": "c",
+        "mm.h": "c",
+        "common.hh": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

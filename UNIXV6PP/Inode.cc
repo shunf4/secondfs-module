@@ -1,9 +1,10 @@
+/* UNIXV6PP 文件系统(主要是Inode操作)代码裁剪. */
 #include "Inode.hh"
-#include "Inode_c_wrapper.h"
+#include "Common.hh"
 
 // @Feng Shun: 以下为 C++ 部分
 
-/*==============================class Inode===================================*/
+/*======================class Inode======================*/
 /*	预读块的块号，对普通文件这是预读块所在的物理块号。对硬盘而言，这是当前物理块（扇区）的下一个物理块（扇区）*/
 int Inode::rablock = 0;
 
@@ -719,7 +720,7 @@ void Inode::ICopy(Buf *bp, int inumber)
 }
 #endif
 
-/*============================class DiskInode=================================*/
+/*======================class DiskInode======================*/
 
 DiskInode::DiskInode()
 {
@@ -750,8 +751,6 @@ DiskInode::~DiskInode()
 
 // @Feng Shun: 以下为 C wrapping 部分
 extern "C" {
-	const u32 SECONDFS_INODE_SIZE = sizeof(Inode);
-
 	const u32
 		SECONDFS_ILOCK = Inode::INodeFlag::ILOCK,		/* 索引节点上锁 */
 		SECONDFS_IUPD = Inode::INodeFlag::IUPD,		/* 内存inode被修改过，需要更新相应外存inode */
@@ -790,24 +789,11 @@ extern "C" {
 
 	s32 *secondfs_inode_rablockp = &Inode::rablock;
 
-	Inode *newInode() {
-		return new Inode();
-	}
-	void deleteInode(Inode *inodep) {
-		delete inodep;
-	}
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(Inode)
 
 	void Inode_ReadI(Inode *inodep) {
 		inodep->ReadI();
 	}
 
-
-	const u32 SECONDFS_DISKINODE_SIZE = sizeof(DiskInode);
-
-	DiskInode *newDiskInode() {
-		return new DiskInode();
-	}
-	void deleteDiskInode(DiskInode *inodep) {
-		delete inodep;
-	}
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(DiskInode)
 }

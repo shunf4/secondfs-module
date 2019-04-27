@@ -1,5 +1,4 @@
 #include "secondfs_kern.h"
-#include "UNIXV6PP/FileSystem_c_wrapper.h"
 
 /* 无需外部声明的函数: secondfs_fill_super
  * 但其指针会传给内核供其初始化超块.
@@ -17,19 +16,37 @@
  */
 static int secondfs_fill_super(struct super_block *sb, void *data, int silent) {
 	struct inode *i_root;
-	struct SuperBlock *secsb;
+	SuperBlock *secsb;
+	Devtab *devtab;
+	Buf *bp;
 
-	struct buffer_head *sbbh;
-	
-	// 读入 Superblock 块的缓存. bread 加上前缀 sb_bread 是 Linux 提供的一个捷径, 可通过 superblock 结构获取设备信息.
-	sbbh = sb_bread(sb, secondfs_superblock_blockno);
-	BUG_ON(sbbh == NULL);
-	
-	// sbbh->b_data 就是该块缓存的内容.
-	secsb = (struct SuperBlock *)sbbh->b_data;
+	secsb = newSuperBlock();
+	devtab = newDevtab();
 
+	secsb->s_dev = devtab;
 	
+	// 读入 Superblock 块的缓存.
+	FileSystem_LoadSuperBlock(secondfs_filesystemp, secsb);
+
+	sb->s_fs_info = secsb;
+	sb->s_maxbytes = SECONDFS_BLOCK_SIZE;
+	sb->s_op = &secondfs_sb_ops;
 
 
 	// 读入
 }
+
+/* secondfs_mount
+ * 其指针会传给内核供其挂载文件系统.
+ * 
+ * secondfs_mount : 调用系统默认的 mount_bdev 函数
+ *                  来挂载.
+ * 
+ * 会传递 fill_super 函数指针供系统初始化 VFS 超块.
+ */
+struct dentry *secondfs_mount(struct file_system_type *fs_type,
+				int flags, const char *devname,
+				void *data) {
+	return mount_bdev(fs_type, flags, dev_name, data, secondfs_fill_super);
+}
+

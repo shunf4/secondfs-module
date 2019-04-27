@@ -1,15 +1,24 @@
 /* UNIXV6PP 文件系统(主要是超块操作)头文件裁剪. */
-#ifndef __FILESYSTEM_HPP__
-#define __FILESYSTEM_HPP__
+#ifndef __FILESYSTEM_HH__
+#define __FILESYSTEM_HH__
+
+#include <linux/fs.h>
 #include <cstdint>
-#include "Inode.hh"
-#include "FileOperations_c_wrapper.h"
+#include <cstddef>
+#include "../common_c_cpp_types.h"
+#include "../c_helper_for_cc.h"
+#include "BufferManager.hh"
+#include "FileSystem_c_wrapper.h"
 
 /*
  * 文件系统存储资源管理块(Super Block)的定义。
  * @Feng Shun: 注意, SuperBlock 在 V6PP 的内存中和磁盘中是统一的.
  * 但在 Linux 中, 不可能统一. 要将 V6PP 的 SuperBlock 格式和上层抽象
  * VFS 层的 super_block 做转换协调.
+ * 
+ * 在这里, 我们让 SuperBlock 兼任原 UNIXV6PP 中 Mount 结构的职能.
+ * 这个时候, SuperBlock 已经超过了 1024 字节, 但从磁盘取时, 只需填满
+ * 前 1024 字节, 然后再填充后面两个指针即可.
  */
 
 class SuperBlock
@@ -27,10 +36,10 @@ public:
 	s32	s_fsize;		/* 盘块总数 */
 	
 	s32	s_nfree;		/* 直接管理的空闲盘块数量 */
-	s32	s_free[100];	/* 直接管理的空闲盘块索引表 */
+	s32	s_free[100];		/* 直接管理的空闲盘块索引表 */
 	
 	s32	s_ninode;		/* 直接管理的空闲外存Inode数量 */
-	s32	s_inode[100];	/* 直接管理的空闲外存Inode索引表 */
+	s32	s_inode[100];		/* 直接管理的空闲外存Inode索引表 */
 	
 	s32	s_flock;		/* 封锁空闲盘块索引表标志 */
 	s32	s_ilock;		/* 封锁空闲Inode表标志 */
@@ -38,7 +47,10 @@ public:
 	s32	s_fmod;			/* 内存中super block副本被修改标志，意味着需要更新外存对应的Super Block */
 	s32	s_ronly;		/* 本文件系统只能读出 */
 	s32	s_time;			/* 最近一次更新时间 */
-	s32	padding[47];	/* 填充使SuperBlock块大小等于1024字节，占据2个扇区 */
+	s32	padding[47];		/* 填充使SuperBlock块大小等于1024字节，占据2个扇区 */
+
+	Inode*	s_inodep;		// SuperBlock 所在文件系统的根节点
+	Devtab*	s_dev;			// SuperBlock 所在文件系统的设备
 };
 
 /*
@@ -72,17 +84,17 @@ public:
 	~FileSystem();
 
 	/* 
-	* @comment 系统初始化时读入SuperBlock
+	* @comment 从磁盘读入SuperBlock
 	*/
-	void LoadSuperBlock();
+	void LoadSuperBlock(SuperBlock *secsb);
 
-#if false
+
 	/* 
 	 * @comment 初始化成员变量
 	 */
 	void Initialize();
 
-	
+#if false
 
 	/* 
 	 * @comment 根据文件存储设备的设备号dev获取
@@ -129,14 +141,12 @@ public:
 #endif
 
 	/* Members */
-#if false
-	Mount m_Mount[NMOUNT];		/* 文件系统装配块表，Mount[0]用于根文件系统 */
+	// Mount m_Mount[NMOUNT];		/* 文件系统装配块表，Mount[0]用于根文件系统 */
 
 	BufferManager* m_BufferManager;		/* FileSystem类需要缓存管理模块(BufferManager)提供的接口 */
 	int updlock;				/* Update()函数的锁，该函数用于同步内存各个SuperBlock副本以及，
-								被修改过的内存Inode。任一时刻只允许一个进程调用该函数 */
-#endif
+						被修改过的内存Inode。任一时刻只允许一个进程调用该函数 */
 };
 
 
-#endif // __FILESYSTEM_HPP__
+#endif // __FILESYSTEM_HH__

@@ -1,10 +1,12 @@
-#ifndef __INODE_HPP__
-#define __INODE_HPP__
+/* UNIXV6PP 文件系统(主要是 Inode 操作)头文件裁剪. */
+#ifndef __INODE_HH__
+#define __INODE_HH__
 
 #include <cstdint>
 #include <cstddef>
 #include "../common_c_cpp_types.h"
 #include "../c_helper_for_cc.h"
+#include "Inode_c_wrapper.h"
 
 /*
  * 内存索引节点(INode)的定义
@@ -195,4 +197,4 @@ public:
 	s32		d_atime;		/* 最后访问时间 */
 	s32		d_mtime;		/* 最后修改时间 */
 };
-#endif // __INODE_HPP__
+#endif // __INODE_HH__

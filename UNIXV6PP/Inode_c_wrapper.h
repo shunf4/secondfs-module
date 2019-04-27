@@ -2,6 +2,7 @@
 #define __INODE_C_WRAPPER_H__
 
 #include "../common_c_cpp_types.h"
+#include "Common.hh"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,9 +33,6 @@ typedef struct Inode
 #else // __cplusplus
 class Inode;
 #endif // __cplusplus
-
-
-extern const u32 SECONDFS_INODE_SIZE;
 
 extern const u32
 	SECONDFS_ILOCK,		/* 索引节点上锁 */
@@ -83,8 +81,7 @@ extern s32 *secondfs_inode_rablockp;	/* 顺序读时，使用预读技术读入�
 
 #define secondfs_inode_rablock (*secondfs_inode_rablockp)
 
-Inode *newInode(void);
-void deleteInode(Inode *);
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Inode)
 void Inode_ReadI(Inode *);
 
 
@@ -109,10 +106,7 @@ typedef struct DiskInode
 class DiskInode;
 #endif // __cplusplus
 
-extern const u32 SECONDFS_DISKINODE_SIZE;
-
-DiskInode *newDiskInode(void);
-void deleteDiskInode(DiskInode *);
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(DiskInode)
 
 #ifdef __cplusplus
 }

@@ -1,10 +1,12 @@
 obj-m := secondfs.o
 
 # 项目主要分为 C++ 部分 (cxxobjs) 和 C 部分 (objs). 它们都编译为 .o 文件, 最后整体链接在一起
-secondfs-cxxobjs := UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o UNIXV6PP/CCNewDelete.o
-secondfs-objs := main.o super.o inode.o fileops.o c_helper_for_cc.o
+secondfs-cxxobjs := UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o UNIXV6PP/BufferManager.o UNIXV6PP/CCNewDelete.o
+secondfs-objs := main.o super.o inode.o fileops.o buffer.o c_helper_for_cc.o
 
-# 加上 Q 前缀, 执行命令时可以不回显这条命令
+wrapper-headers = $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h $(obj)/UNIXV6PP/BufferManager_c_wrapper.h
+
+# 加上 @ 前缀, 执行命令时可以不回显这条命令
 Q = @
 
 # 显示所有警告信息
@@ -47,28 +49,34 @@ UNIXV6PP/CCNewDelete.o : UNIXV6PP/CCNewDelete.cc c_helper_for_cc.h
 
 $(obj)/c_helper_for_cc.o : $(obj)/c_helper_for_cc.h
 
-$(obj)/common.o : $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h
+$(obj)/common.o : $(obj)/secondfs_user.h $(wrapper-headers)
 
-$(obj)/main.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h
+$(obj)/main.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers)
 
 ######### 下面是超块相关模块 super.o(C)/FileSystem.o(C) 的编译 #########
 
-$(obj)/super.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h common_c_cpp_types.h
+$(obj)/super.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers) common_c_cpp_types.h
 
 UNIXV6PP/FileSystem.o : UNIXV6PP/FileSystem.cc UNIXV6PP/FileSystem.hh UNIXV6PP/FileSystem_c_wrapper.h common_c_cpp_types.h
 	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
 
 ######### 下面是 Inode 相关模块 inode.o(C)/Inode.o(C) 的编译 #########
 
-$(obj)/inode.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h common_c_cpp_types.h
+$(obj)/inode.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers) common_c_cpp_types.h
 
 UNIXV6PP/Inode.o : UNIXV6PP/Inode.cc UNIXV6PP/Inode.hh UNIXV6PP/Inode_c_wrapper.h common_c_cpp_types.h
 	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
 
 ######### 下面是文件操作相关模块 fileops.o(C)/FileOperations.o(C) 的编译 #########
 
-$(obj)/fileops.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h common_c_cpp_types.h
+$(obj)/fileops.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers) common_c_cpp_types.h
 
 UNIXV6PP/FileOperations.o : UNIXV6PP/FileOperations.cc UNIXV6PP/FileOperations.hh UNIXV6PP/FileOperations_c_wrapper.h common_c_cpp_types.h
 	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
 
+######### 下面是高速缓存相关模块 fileops.o(C)/FileOperations.o(C) 的编译 #########
+
+$(obj)/buffer.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers) common_c_cpp_types.h
+
+UNIXV6PP/BufferManager.o : UNIXV6PP/BufferManager.cc UNIXV6PP/BufferManager.hh UNIXV6PP/BufferManager_c_wrapper.h common_c_cpp_types.h
+	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
