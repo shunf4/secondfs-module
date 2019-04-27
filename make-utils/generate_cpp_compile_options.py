@@ -99,14 +99,14 @@ l=l[:-1]
 l=remove_begin_with(l,'-nostdinc')
 # C++ code does not reference any header files of the kernel,
 # operating system, or compiler...
-l=remove_begin_with(l,'-I')
+#l=remove_begin_with(l,'-I')
 # remove macros of the kernel (which we don't use in the cpp layer)
-l=remove_begin_with(l,'-D')
+#l=remove_begin_with(l,'-D')
 # remove the -Wp,MD
 l=remove_begin_with(l,'-Wp,-MD')
 # remove -include and -isystem (which we don't use in the cpp layer)
-l=remove_two_in_a_row(l, '-isystem')
-l=remove_two_in_a_row(l, '-include')
+#l=remove_two_in_a_row(l, '-isystem')
+#l=remove_two_in_a_row(l, '-include')
 l=remove_two_in_a_row(l, '-o')
 # if the kernel was compiled with debug and profiling then we don't
 # need it
