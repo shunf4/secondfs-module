@@ -24,7 +24,7 @@ doClean=True
 #############
 # functions #
 #############
-def replace_with(l, s):
+def replace_begin_with(l, s):
     found=False
     res=[]
     for x in l:
@@ -47,6 +47,21 @@ def remove_begin_with(l, s):
             res.append(x)
     if not found:
         raise ValueError('could not find stuff begining with', s)
+    return res
+
+def replace_two_in_a_row(l, s):
+    res=[]
+    found=False
+    for x in l:
+        if x==s:
+            found=True
+        else:
+            if found:
+                found=False
+                res.append(s)
+                res.append("/usr/src/linux-headers-" + unamer + "/" + x)
+            else:
+                res.append(x)
     return res
 
 def remove_two_in_a_row(l, s):
@@ -120,7 +135,7 @@ l=replace_with(l,'-I')
 l=remove_begin_with(l,'-Wp,-MD')
 # remove -include and -isystem (which we don't use in the cpp layer)
 #l=remove_two_in_a_row(l, '-isystem')
-#l=remove_two_in_a_row(l, '-include')
+l=replace_two_in_a_row(l, '-include')
 l=remove_two_in_a_row(l, '-o')
 # if the kernel was compiled with debug and profiling then we don't
 # need it
