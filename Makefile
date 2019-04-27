@@ -17,7 +17,7 @@ all : set_and_print_cxxflags kernmodule mkfs
 
 # 模仿内核模块构建器 kbuild 构建 .c 文件的过程, 生成构建 C++ 源文件的参数, 存入 cxxflags.tmp
 cxxflags.tmp :
-	python ./make-utils/generate_cpp_compile_options.py "" cxxflags.tmp
+	python ./make-utils/generate_cpp_compile_options.py $(shell uname -r) "" cxxflags.tmp
 
 # 模仿内核模块构建器 kbuild 构建 .c 文件的过程, 生成构建 C++ 源文件的参数, 从 cxxflags.tmp 读取
 # 然后设置 CXXFLAGS 变量

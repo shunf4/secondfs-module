@@ -24,6 +24,18 @@ doClean=True
 #############
 # functions #
 #############
+def replace_with(l, s):
+    found=False
+    res=[]
+    for x in l:
+        if x.startswith(s):
+            res.append(s + "/usr/src/linux-headers-" + unamer + "/" + x[len(s):])
+        else:
+            res.append(x)
+    if not found:
+        raise ValueError('could not find stuff begining with', s)
+    return res
+
 def remove_begin_with(l, s):
     found=False
     res=[]
@@ -68,10 +80,11 @@ def find_ends_with(l, ending):
 # code #
 ########
 if len(sys.argv)!=3:
-    print('usage: [python] %s <kernel_module_build_dir like "/lib/modules/$(uname -r)/build"> <output_file>')
+    print('usage: [python] %s <$(uname -r)> <kernel_module_build_dir like "/lib/modules/$(uname -r)/build"> <output_file>' % sys.argv[0])
     sys.exit(1)
-kdir=sys.argv[1]
-outfile=sys.argv[2]
+unamer=sys.argv[1]
+kdir=sys.argv[2]
+outfile=sys.argv[3]
 
 args=[
     '/usr/bin/make',
@@ -99,7 +112,7 @@ l=l[:-1]
 l=remove_begin_with(l,'-nostdinc')
 # C++ code does not reference any header files of the kernel,
 # operating system, or compiler...
-#l=remove_begin_with(l,'-I')
+l=replace_with(l,'-I')
 # remove macros of the kernel (which we don't use in the cpp layer)
 #l=remove_begin_with(l,'-D')
 # remove the -Wp,MD
