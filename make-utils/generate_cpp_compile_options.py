@@ -30,6 +30,7 @@ def replace_with(l, s):
     for x in l:
         if x.startswith(s):
             res.append(s + "/usr/src/linux-headers-" + unamer + "/" + x[len(s):])
+            found=True
         else:
             res.append(x)
     if not found:
