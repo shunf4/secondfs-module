@@ -2,7 +2,6 @@
 #ifndef __FILESYSTEM_HH__
 #define __FILESYSTEM_HH__
 
-#include <linux/fs.h>
 #include <cstdint>
 #include <cstddef>
 #include "../common_c_cpp_types.h"

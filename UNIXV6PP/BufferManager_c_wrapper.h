@@ -4,6 +4,7 @@
 #include "../common_c_cpp_types.h"
 #include <linux/blkdev.h>
 #include <linux/mutex.h>
+#include <linux/semaphore.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,8 +53,6 @@ typedef struct
 	s32		b_error;	/* I/O出错时信息 */
 	s32		b_resid;	/* I/O出错时尚未传送的剩余字节数 */
 
-	void *extra_data[2];
-
 	struct mutex	b_modify_lock;
 	struct mutex	b_wait_free_lock;
 #define b_modify_lock_p extra_data[0]
@@ -95,8 +94,6 @@ typedef struct
 	u8 Buffer[SECONDFS_NBUF][SECONDFS_BUFFER_SIZE];	/* 缓冲区数组 */
 	
 	//DeviceManager* m_DeviceManager;		/* 指向设备管理模块全局对象 */
-
-	void *extra_data[2];
 
 	spinlock_t	b_queue_lock;		// 保护整个缓存块队列的自旋锁
 	semaphore	b_bFreeList_lock;	// 表征是否有自由缓存的信号量

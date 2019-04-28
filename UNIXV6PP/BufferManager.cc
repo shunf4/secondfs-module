@@ -1,7 +1,5 @@
 /* UNIXV6PP 文件系统(主要是Buffer管理)代码裁剪. */
 #include "../secondfs_user.h"
-#include <linux/blkdev.h>
-#include <linux/spinlock.h>
 #include "BufferManager.hh"
 #include "Common.hh"
 
