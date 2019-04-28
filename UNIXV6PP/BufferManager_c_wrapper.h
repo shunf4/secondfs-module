@@ -2,9 +2,12 @@
 #define __BUFFERMANAGER_C_WRAPPER_H__
 
 #include "../common_c_cpp_types.h"
+
+#ifndef __cplusplus
 #include <linux/blkdev.h>
 #include <linux/mutex.h>
 #include <linux/semaphore.h>
+#endif // __cplusplus
 
 #ifdef __cplusplus
 extern "C" {
