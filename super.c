@@ -1,6 +1,6 @@
 #include "secondfs_kern.h"
 
-#if false
+#if 0
 /* 无需外部声明的函数: secondfs_fill_super
  * 但其指针会传给内核供其初始化超块.
  * 
