@@ -47,7 +47,7 @@ const struct super_operations secondfs_sb_ops = {
 };
 
 static int __init secondfs_init(void) {
-	int ret;
+	int ret = 0;
 
 	// 为所有数据结构 (具有恒定大小的内存空间表示) 创建一套 kmem_cache, 用来快速动态分配
 	secondfs_diskinode_cachep = kmem_cache_create("secondfs_diskinode_cache",
@@ -85,7 +85,7 @@ static int __init secondfs_init(void) {
 		return -ENOMEM;
 	}
 
-	ret = 0;
+	// 注册文件系统
 	//ret = register_filesystem(&secondfs_fs_type);
 
 	if (likely(ret == 0)) {
@@ -103,6 +103,10 @@ static void __exit secondfs_exit(void) {
 
 	// 反注册文件系统
 	//ret = unregister_filesystem(&secondfs_fs_type);
+
+	// 析构一次性的对象
+	deleteBufferManager(secondfs_buffermanagerp);
+	deleteFileSystem(secondfs_filesystemp);
 
 	// 将所有数据结构的 kmem_cache 析构
 	kmem_cache_destroy(secondfs_diskinode_cachep);
