@@ -13,6 +13,7 @@ void *secondfs_c_helper_malloc(size_t size);
 void secondfs_c_helper_free(void *pointer);
 void secondfs_c_helper_mdebug(void);
 
+int secondfs_c_helper_printk(const char *s);
 unsigned long secondfs_c_helper_get_seconds(void);
 void secondfs_c_helper_spin_lock_init(void *lockp);
 void secondfs_c_helper_spin_lock(void *lockp);

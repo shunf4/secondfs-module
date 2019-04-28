@@ -134,6 +134,11 @@ void secondfs_c_helper_kmem_cache_mdebug(void)
 SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(DiskInode, secondfs_diskinode_cachep)
 
 // 以下为 C 为 C++ 提供的 Linux 内核服务
+
+int secondfs_c_helper_printk(const char *s) {
+	return printk(s);
+}
+
 unsigned long secondfs_c_helper_get_seconds() {
 	return get_seconds();
 }

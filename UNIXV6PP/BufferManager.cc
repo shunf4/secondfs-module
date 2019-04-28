@@ -60,6 +60,7 @@ void BufferManager::Initialize()
 		bp->b_flags = Buf::B_BUSY;
 		Brelse(bp);
 		/* 初始化每 Buf 的两个 MUTEX */
+		secondfs_c_helper_printk("init mutex");
 		secondfs_c_helper_mutex_init(&bp->b_modify_lock);
 		secondfs_c_helper_mutex_init(&bp->b_wait_free_lock);
 	}
@@ -189,6 +190,7 @@ void BufferManager::Brelse(Buf* bp)
 
 	// 唤醒等待该缓存块的进程
 	if (secondfs_c_helper_mutex_is_locked(&bp->b_wait_free_lock)) {
+		secondfs_c_helper_printk("locked???")
 		secondfs_c_helper_mutex_unlock(&bp->b_wait_free_lock);
 	}
 
