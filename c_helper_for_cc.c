@@ -38,7 +38,7 @@ void *secondfs_c_helper_malloc(size_t size)
 	void *p;
 
 #ifdef SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
-	printk(KERN_ERR "SecondFS: general new operator called!!");
+	printk(KERN_ERR "secondfs: general new operator called!!");
 	BUG();
 #endif // SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
 
@@ -47,9 +47,9 @@ void *secondfs_c_helper_malloc(size_t size)
 #endif // DO_MEMDBG
 
 	p = kmalloc(size, GFP_KERNEL);
-	printk(KERN_DEBUG "SecondFS: Start mallocing, kmalloc size=%lu pointer=%p", size, p);
+	printk(KERN_DEBUG "secondfs: Start mallocing, kmalloc size=%lu pointer=%p", size, p);
 	if (p == NULL)
-		printk(KERN_ERR "SecondFS: Unable to allocate memory");
+		printk(KERN_ERR "secondfs: Unable to allocate memory");
 	return p;
 }
 
@@ -60,11 +60,11 @@ void secondfs_c_helper_free(void *pointer)
 	// 因此这里直接 BUG();
 	// Update: 有的时候基于 kmalloc 就够了, 不 BUG() 了
 #ifdef SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
-	printk(KERN_ERR "SecondFS: general delete operator called!!");
+	printk(KERN_ERR "secondfs: general delete operator called!!");
 	BUG();
 #endif // SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
 
-	printk(KERN_DEBUG "SecondFS: Start freeing, kfree pointer=%p", pointer);
+	printk(KERN_DEBUG "secondfs: Start freeing, kfree pointer=%p", pointer);
 
 #ifdef DO_MEMDBG
 	free_num++;
@@ -75,8 +75,8 @@ void secondfs_c_helper_free(void *pointer)
 void secondfs_c_helper_mdebug(void)
 {
 #ifdef DO_MEMDBG
-	printk(KERN_DEBUG "SecondFS: malloc_num is %u", malloc_num);
-	printk(KERN_DEBUG "SecondFS: free_num is %u", free_num);
+	printk(KERN_DEBUG "secondfs: malloc_num is %u", malloc_num);
+	printk(KERN_DEBUG "secondfs: free_num is %u", free_num);
 #endif // DO_MEMDBG
 }
 
@@ -90,14 +90,14 @@ void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size) {\
 	void *p;\
 	BUG_ON(size != kmem_cachep->object_size);\
 	p = kmem_cache_alloc(kmem_cachep, GFP_KERNEL);\
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
+	printk(KERN_DEBUG "secondfs: Start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
 	if (p == NULL)\
-		printk(KERN_ERR "SecondFS: Unable to allocate memory");\
+		printk(KERN_ERR "secondfs: Unable to allocate memory");\
 	return p;\
 }\
 \
 void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer) {\
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_freeing, pointer=%p", pointer);\
+	printk(KERN_DEBUG "secondfs: Start kmem_cache_freeing, pointer=%p", pointer);\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
@@ -109,15 +109,15 @@ void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size) {\
 	BUG_ON(size != kmem_cachep->object_size);\
 	kmem_cache_malloc_num++;\
 	p = kmem_cache_alloc(kmem_cachep, GFP_KERNEL);\
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
+	printk(KERN_DEBUG "secondfs: Start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
 	if (p == NULL)\
-		printk(KERN_ERR "SecondFS: Unable to allocate memory");\
+		printk(KERN_ERR "secondfs: Unable to allocate memory");\
 	return p;\
 }\
 \
 void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer) {\
 	kmem_cache_free_num++;\
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_freeing, pointer=%p", pointer);\
+	printk(KERN_DEBUG "secondfs: Start kmem_cache_freeing, pointer=%p", pointer);\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
@@ -126,8 +126,8 @@ void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer) {\
 void secondfs_c_helper_kmem_cache_mdebug(void)
 {
 #ifdef DO_MEMDBG
-	printk(KERN_DEBUG "SecondFS: kmem_cache_malloc_num is %u", kmem_cache_malloc_num);
-	printk(KERN_DEBUG "SecondFS: kmem_cache_free_num is %u", kmem_cache_free_num);
+	printk(KERN_DEBUG "secondfs: kmem_cache_malloc_num is %u", kmem_cache_malloc_num);
+	printk(KERN_DEBUG "secondfs: kmem_cache_free_num is %u", kmem_cache_free_num);
 #endif // DO_MEMDBG
 }
 
