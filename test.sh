@@ -1,5 +1,5 @@
 #!/bin/bash
 sudo insmod secondfs.ko
-sudo echo ====== > /dev/kmsg
+echo ====== | sudo dd of=/dev/kmsg > /dev/null 2>&1
 sudo rmmod secondfs.ko
 dmesg | tail
