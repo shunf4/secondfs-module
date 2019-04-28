@@ -367,7 +367,7 @@ void BufferManager::Bwrite(Buf *bp)
 	{
 		/* 同步写，需要等待I/O操作结束 */
 		// 不可能执行
-		this->IOWait(bp);
+		// this->IOWait(bp);
 		this->Brelse(bp);
 	}
 	else if( (flags & Buf::B_DELWRI) == 0)

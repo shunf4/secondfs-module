@@ -33,9 +33,9 @@ extern struct kmem_cache *secondfs_diskinode_cachep;
 extern "C" {
 #endif // __cplusplus
 
-int secondfs_submit_bio_sync_read(void * /* struct block_device * */ bdev, u32 sector,
+extern int secondfs_submit_bio_sync_read(void * /* struct block_device * */ bdev, u32 sector,
 				void *buf);
-int secondfs_submit_bio_sync_write(void * /* struct block_device * */ bdev, u32 sector,
+extern int secondfs_submit_bio_sync_write(void * /* struct block_device * */ bdev, u32 sector,
 				void *buf);
 
 

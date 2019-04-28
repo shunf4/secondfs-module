@@ -2,7 +2,7 @@ obj-m := secondfs.o
 
 # 项目主要分为 C++ 部分 (cxxobjs) 和 C 部分 (objs). 它们都编译为 .o 文件, 最后整体链接在一起
 secondfs-cxxobjs := UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o UNIXV6PP/BufferManager.o UNIXV6PP/CCNewDelete.o
-secondfs-objs := main.o super.o inode.o fileops.o buffer.o c_helper_for_cc.o
+secondfs-objs := main.o super.o inode.o fileops.o buffer.o c_helper_for_cc.o bio.o
 
 wrapper-headers = $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h $(obj)/UNIXV6PP/BufferManager_c_wrapper.h
 
@@ -50,7 +50,7 @@ UNIXV6PP/CCNewDelete.o : UNIXV6PP/CCNewDelete.cc c_helper_for_cc.h
 
 $(obj)/c_helper_for_cc.o : $(obj)/c_helper_for_cc.h
 
-$(obj)/common.o : $(obj)/secondfs_user.h $(wrapper-headers)
+$(obj)/bio.o : $(obj)/secondfs_user.h $(wrapper-headers)
 
 $(obj)/main.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers)
 

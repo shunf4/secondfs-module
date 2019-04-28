@@ -779,11 +779,11 @@ extern "C" {
 	;
 
 	const s32
-		SECONDFS_BLOCK = Inode::BLOCK_SIZE,	/* 文件逻辑块大小: 512字节 */
-		SECONDFS_ADDRESS = Inode::ADDRESS_PER_INDEX_BLOCK,	/* 每个间接索引表(或索引块)包含的物理盘块号 */
-		SECONDFS_SMALL = Inode::SMALL_FILE_BLOCK,	/* 小型文件：直接索引表最多可寻址的逻辑块号 */
-		SECONDFS_LARGE = Inode::LARGE_FILE_BLOCK,	/* 大型文件：经一次间接索引表最多可寻址的逻辑块号 */
-		SECONDFS_HUGE = Inode::HUGE_FILE_BLOCK,	/* 巨型文件：经二次间接索引最大可寻址文件逻辑块号 */
+		SECONDFS_BLOCK_size = Inode::BLOCK_SIZE,	/* 文件逻辑块大小: 512字节 */
+		SECONDFS_ADDRESS_PER_INDEX_BLOCK = Inode::ADDRESS_PER_INDEX_BLOCK,	/* 每个间接索引表(或索引块)包含的物理盘块号 */
+		SECONDFS_SMALL_FILE_BLOCK = Inode::SMALL_FILE_BLOCK,	/* 小型文件：直接索引表最多可寻址的逻辑块号 */
+		SECONDFS_LARGE_FILE_BLOCK = Inode::LARGE_FILE_BLOCK,	/* 大型文件：经一次间接索引表最多可寻址的逻辑块号 */
+		SECONDFS_HUGE_FILE_BLOCK = Inode::HUGE_FILE_BLOCK,	/* 巨型文件：经二次间接索引最大可寻址文件逻辑块号 */
 		SECONDFS_PIPSIZ = Inode::PIPSIZ
 	;
 
