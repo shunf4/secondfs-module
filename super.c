@@ -1,5 +1,6 @@
 #include "secondfs_kern.h"
 
+#if false
 /* 无需外部声明的函数: secondfs_fill_super
  * 但其指针会传给内核供其初始化超块.
  * 
@@ -50,3 +51,4 @@ struct dentry *secondfs_mount(struct file_system_type *fs_type,
 	return mount_bdev(fs_type, flags, dev_name, data, secondfs_fill_super);
 }
 
+#endif
