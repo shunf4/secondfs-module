@@ -58,8 +58,6 @@ typedef struct
 
 	struct mutex	b_modify_lock;
 	struct mutex	b_wait_free_lock;
-#define b_modify_lock_p extra_data[0]
-#define b_wait_free_lock_p extra_data[1]
 } Buf;
 
 // static size_t x = sizeof(Buf);
@@ -100,9 +98,6 @@ typedef struct
 
 	spinlock_t	b_queue_lock;		// 保护整个缓存块队列的自旋锁
 	semaphore	b_bFreeList_lock;	// 表征是否有自由缓存的信号量
-
-#define b_queue_lock_p extra_data[0]
-#define b_bFreeList_lock_p extra_data[1]
 } BufferManager;
 #else // __cplusplus
 class BufferManager;
