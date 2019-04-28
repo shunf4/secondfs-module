@@ -18,6 +18,8 @@ void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size);\
 void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer);
 
 SECONDFS_GEN_C_HELPER_HEADER_KMEM_CACHE_ALLOC_N_FREE(DiskInode)
+SECONDFS_GEN_C_HELPER_HEADER_KMEM_CACHE_ALLOC_N_FREE(BufferManager)
+SECONDFS_GEN_C_HELPER_HEADER_KMEM_CACHE_ALLOC_N_FREE(Buf)
 
 #ifdef __cplusplus
 }

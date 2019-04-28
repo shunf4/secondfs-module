@@ -52,8 +52,12 @@ typedef struct
 	s32		b_error;	/* I/O出错时信息 */
 	s32		b_resid;	/* I/O出错时尚未传送的剩余字节数 */
 
-	struct mutex	modify_lock;
-	struct mutex	wait_free_lock;
+	void *extra_data[2];
+
+	struct mutex	b_modify_lock;
+	struct mutex	b_wait_free_lock;
+#define b_modify_lock_p extra_data[0]
+#define b_wait_free_lock_p extra_data[1]
 } Buf;
 
 // static size_t x = sizeof(Buf);
@@ -92,8 +96,13 @@ typedef struct
 	
 	//DeviceManager* m_DeviceManager;		/* 指向设备管理模块全局对象 */
 
-	spinlock_t	lock;		// 保护整个缓存块队列的自旋锁
-	semaphore	bFreeLock;	// 表征是否有自由缓存的信号量
+	void *extra_data[2];
+
+	spinlock_t	b_queue_lock;		// 保护整个缓存块队列的自旋锁
+	semaphore	b_bFreeList_lock;	// 表征是否有自由缓存的信号量
+
+#define b_queue_lock_p extra_data[0]
+#define b_bFreeList_lock_p extra_data[1]
 } BufferManager;
 #else // __cplusplus
 class BufferManager;

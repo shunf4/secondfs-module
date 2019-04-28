@@ -3,9 +3,6 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <linux/spinlock.h>
-#include <linux/mutex.h>
-#include <linux/semaphore.h>
 #include "../common_c_cpp_types.h"
 #include "../c_helper_for_cc.h"
 #include "BufferManager_c_wrapper.h"
@@ -25,7 +22,7 @@ public:
 	Buf*	d_actf;
 	Buf*	d_actl;
 
-	struct block_device*	d_bdev;
+	void * /* struct block_device* */	d_bdev;
 };
 
 /*
@@ -78,8 +75,23 @@ public:
 	s32		b_error;		/* I/O出错时信息 */
 	s32		b_resid;		/* I/O出错时尚未传送的剩余字节数 */
 
-	struct mutex	modify_lock;
-	struct mutex	wait_free_lock;
+	void *extra_data[2];
+
+	// 以下是 C++ 无法展现的内容
+#if false
+	struct mutex	b_modify_lock;
+	struct mutex	b_wait_free_lock;
+#endif
+#define b_modify_lock_p extra_data[0]
+#define b_wait_free_lock_p extra_data[1]
+
+	void *operator new(size_t size) {
+		return secondfs_c_helper_malloc_Buf(size);
+	}
+
+	void operator delete(void *pointer) {
+		secondfs_c_helper_kmem_cache_free_Buf(pointer);
+	}
 };
 
 class BufferManager
@@ -132,8 +144,23 @@ public:
 	
 	//DeviceManager* m_DeviceManager;		/* 指向设备管理模块全局对象 */
 	
-	spinlock_t	lock;		// 保护整个缓存块队列的自旋锁
-	semaphore	bFreeLock;	// 表征是否有自由缓存的信号量
+	void *extra_data[2];
+
+	// 以下是 C++ 无法展现的内容
+#if false
+	spinlock_t	b_queue_lock;		// 保护整个缓存块队列的自旋锁
+	semaphore	b_bFreeList_lock;	// 表征是否有自由缓存的信号量
+#endif
+#define b_queue_lock_p extra_data[0]
+#define b_bFreeList_lock_p extra_data[1]
+
+	void *operator new(size_t size) {
+		return secondfs_c_helper_kmem_cache_alloc_BufferManager(size);
+	}
+
+	void operator delete(void *pointer) {
+		secondfs_c_helper_kmem_cache_free_BufferManager(pointer);
+	}
 };
 
 #endif // __BUFFERMANAGER_HH__
