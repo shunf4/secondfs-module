@@ -13,7 +13,6 @@ W?=1
 .PHONY: modules
 modules:
 	$(MAKE) -C $(KDIR) M=$(CURDIR) V=$(V) W=$(W) modules
-	echo AB$(shell objcopy -jspinlock_t_size -Obinary hello.ko /dev/stdout|od -A n -v -t u4 | awk '{$$1=$$1}1')
 .PHONY: clean
 clean:
 	$(MAKE) -C $(KDIR) M=$(CURDIR) V=$(V) clean
