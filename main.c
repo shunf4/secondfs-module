@@ -102,7 +102,7 @@ static void __exit secondfs_exit(void) {
 	int ret;
 
 	// 反注册文件系统
-	ret = unregister_filesystem(&secondfs_fs_type);
+	//ret = unregister_filesystem(&secondfs_fs_type);
 
 	// 将所有数据结构的 kmem_cache 析构
 	kmem_cache_destroy(secondfs_diskinode_cachep);
