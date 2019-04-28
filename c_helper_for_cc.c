@@ -133,29 +133,6 @@ void secondfs_c_helper_kmem_cache_mdebug(void)
 
 SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(DiskInode, secondfs_diskinode_cachep)
 
-void *secondfs_c_helper_malloc_Buf(size_t size)
-{
-	void *p;
-
-#ifdef DO_MEMDBG
-	malloc_num++;
-#endif // DO_MEMDBG
-
-		// 注意是 sizeof(Buf) 而不是 size. 为 C 能表示而 C++ 不能表示的数据结构额外分配了空间.
-	p = kmalloc(sizeof(Buf), GFP_KERNEL);
-	printk(KERN_DEBUG "SecondFS: Start mallocing, kmalloc size=%lu pointer=%p", size, p);
-	if (p == NULL)
-		printk(KERN_ERR "SecondFS: Unable to allocate memory");
-	return p;
-}
-void secondfs_c_helper_kmem_cache_free_DiskInode(void *pointer)
-{
-	printk(KERN_DEBUG "SecondFS: Start kmem_cache_freeing, pointer=%p", pointer);
-	kmem_cache_free(secondfs_diskinode_cachep, pointer);
-}
-
-
-
 // 以下为 C 为 C++ 提供的 Linux 内核服务
 unsigned long secondfs_c_helper_get_seconds() {
 	return get_seconds();
