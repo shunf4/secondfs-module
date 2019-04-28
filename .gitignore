@@ -9,3 +9,4 @@
 **/*.log
 **/*.tmp
 /.vscode/ipch
+**/*.o.ur-safe
