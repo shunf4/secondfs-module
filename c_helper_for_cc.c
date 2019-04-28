@@ -177,3 +177,7 @@ void secondfs_c_helper_mutex_lock(void *mutexp) {
 void secondfs_c_helper_mutex_unlock(void *mutexp) {
 	mutex_unlock((struct mutex *)mutexp);
 }
+
+int secondfs_c_helper_mutex_is_locked(void *mutexp) {
+	return mutex_is_locked((struct mutex *)mutexp);
+}

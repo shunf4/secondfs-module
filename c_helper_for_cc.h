@@ -24,6 +24,7 @@ int secondfs_c_helper_down_trylock(void *semap);
 void secondfs_c_helper_mutex_init(void *mutexp);
 void secondfs_c_helper_mutex_lock(void *mutexp);
 void secondfs_c_helper_mutex_unlock(void *mutexp);
+int secondfs_c_helper_mutex_is_locked(void *mutexp);
 
 #ifdef __cplusplus
 }

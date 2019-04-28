@@ -188,7 +188,9 @@ void BufferManager::Brelse(Buf* bp)
 	secondfs_c_helper_spin_unlock(&secondfs_buffermanagerp->b_queue_lock);
 
 	// 唤醒等待该缓存块的进程
-	secondfs_c_helper_mutex_unlock(&bp->b_wait_free_lock);
+	if (secondfs_c_helper_mutex_is_locked(&bp->b_wait_free_lock)) {
+		secondfs_c_helper_mutex_unlock(&bp->b_wait_free_lock);
+	}
 
 	// 唤醒等待空闲缓存块的进程
 	// 尝试 P, 再 V : 结果就是, 若信号量非正, 递增信号量; 否则不递增.
