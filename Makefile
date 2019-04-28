@@ -22,7 +22,8 @@ cxxflags.tmp :
 # 模仿内核模块构建器 kbuild 构建 .c 文件的过程, 生成构建 C++ 源文件的参数, 从 cxxflags.tmp 读取
 # 然后设置 CXXFLAGS 变量
 set_and_print_cxxflags : cxxflags.tmp
-	$(eval CXXFLAGS := $(shell cat cxxflags.tmp) -I/usr/src/linux-headers-$(shell uname -r)/include)
+	$(eval CXXMACROS := -D SECONDFS_SEMAPHORE_SIZE=$(shell objcopy -jsemaphore_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{print $1}') -D SECONDFS_SPINLOCK_T_SIZE=$(shell objcopy -jspinlock_t_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{print $1}') -D SECONDFS_MUTEX_SIZE=$(shell objcopy -jmutex_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{print $1}'))
+	$(eval CXXFLAGS := $(shell cat cxxflags.tmp) -I/usr/src/linux-headers-$(shell uname -r)/include $(CXXMACROS))
 	$(Q)echo CXXFLAGS = $(CXXFLAGS)
 
 # 内核模块的构建入口

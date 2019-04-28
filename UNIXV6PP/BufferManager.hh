@@ -75,13 +75,9 @@ public:
 	s32		b_error;		/* I/O出错时信息 */
 	s32		b_resid;		/* I/O出错时尚未传送的剩余字节数 */
 
-	void *extra_data[2];
+	struct {u8 data[SECONDFS_MUTEX_SIZE]}	b_modify_lock;
+	struct {u8 data[SECONDFS_MUTEX_SIZE]}	b_wait_free_lock;
 
-	// 以下是 C++ 无法展现的内容
-#if false
-	struct mutex	b_modify_lock;
-	struct mutex	b_wait_free_lock;
-#endif
 #define b_modify_lock_p extra_data[0]
 #define b_wait_free_lock_p extra_data[1]
 
@@ -143,14 +139,10 @@ public:
 	u8 Buffer[SECONDFS_NBUF][SECONDFS_BUFFER_SIZE];	/* 缓冲区数组 */
 	
 	//DeviceManager* m_DeviceManager;		/* 指向设备管理模块全局对象 */
-	
-	void *extra_data[2];
 
-	// 以下是 C++ 无法展现的内容
-#if false
-	spinlock_t	b_queue_lock;		// 保护整个缓存块队列的自旋锁
-	semaphore	b_bFreeList_lock;	// 表征是否有自由缓存的信号量
-#endif
+	struct {u8 data[SECONDFS_SPINLOCK_T_SIZE]}	b_queue_lock;		// 保护整个缓存块队列的自旋锁
+	struct {u8 data[SECONDFS_SEMAPHORE_SIZE]}	b_bFreeList_lock;	// 表征是否有自由缓存的信号量
+
 #define b_queue_lock_p extra_data[0]
 #define b_bFreeList_lock_p extra_data[1]
 

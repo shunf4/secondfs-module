@@ -19,11 +19,18 @@
 #include <linux/module.h> /* for MODULE_*, module_* */
 #include <linux/printk.h> /* for printk and pr_* APIs */
 #include <linux/init.h> /* for __init, __exit */
+#include <linux/mutex.h>
+#include <linux/spinlock.h>
+#include <linux/semaphore.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mark Veltzer");
 MODULE_DESCRIPTION("minimal Hello, World! driver doing just init and cleanup");
 MODULE_VERSION("1.0.0");
+
+const u32 std_module_mutex_size __attribute__((section("mutex_size"))) = sizeof(struct mutex);
+const u32 std_module_spinlock_t_size __attribute__((section("spinlock_t_size"))) = sizeof(spinlock_t);
+const u32 std_module_semaphore_size __attribute__((section("semaphore_size"))) = sizeof(struct semaphore);
 
 static int __init hello_init(void)
 {
