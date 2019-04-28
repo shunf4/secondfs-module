@@ -15,7 +15,7 @@
  * 	op : bio 内要执行的操作.
  * 	op_flags : 操作所需附加的标志位.
  */
-int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
+static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 			void *buf, int op, int op_flags)
 {
 	struct bio *bio;
@@ -51,4 +51,14 @@ int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 out:
 	bio_put(bio);
 	return ret < 0 ? ret : 0;
+}
+
+int secondfs_submit_bio_sync_read(void * /* struct block_device * */ bdev, u32 sector,
+			void *buf) {
+	return secondfs_submit_bio(bdev, sector, buf, REQ_OP_READ, 0);
+}
+
+int secondfs_submit_bio_sync_write(void * /* struct block_device * */ bdev, u32 sector,
+			void *buf) {
+	return secondfs_submit_bio(bdev, sector, buf, REQ_OP_WRITE, REQ_SYNC);
 }

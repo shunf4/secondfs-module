@@ -153,3 +153,50 @@ void secondfs_c_helper_kmem_cache_free_DiskInode(void *pointer)
 	printk(KERN_DEBUG "SecondFS: Start kmem_cache_freeing, pointer=%p", pointer);
 	kmem_cache_free(secondfs_diskinode_cachep, pointer);
 }
+
+
+
+// 以下为 C 为 C++ 提供的 Linux 内核服务
+unsigned long secondfs_c_helper_get_seconds() {
+	return get_seconds();
+}
+
+void secondfs_c_helper_spin_lock_init(void *lockp) {
+	spin_lock_init((spinlock_t *)lockp);
+}
+
+void secondfs_c_helper_spin_lock(void *lockp) {
+	spin_lock((spinlock_t *)lockp);
+}
+
+void secondfs_c_helper_spin_unlock(void *lockp) {
+	spin_unlock((spinlock_t *)lockp);
+}
+
+void secondfs_c_helper_sema_init(void *semap, int val) {
+	sema_init((struct semaphore *)semap, val);
+}
+
+void secondfs_c_helper_up(void *semap) {
+	up((struct semaphore *)semap);
+}
+
+void secondfs_c_helper_down(void *semap) {
+	down((struct semaphore *)semap);
+}
+
+int secondfs_c_helper_down_trylock(void *semap) {
+	return down_trylock((struct semaphore *)semap);
+}
+
+void secondfs_c_helper_mutex_init(void *mutexp) {
+	mutex_init((struct mutex *)mutexp);
+}
+
+void secondfs_c_helper_mutex_lock(void *mutexp) {
+	mutex_lock((struct mutex *)mutexp);
+}
+
+void secondfs_c_helper_mutex_unlock(void *mutexp) {
+	mutex_unlock((struct mutex *)mutexp);
+}

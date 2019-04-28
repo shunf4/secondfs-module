@@ -13,13 +13,17 @@ void *secondfs_c_helper_malloc(size_t size);
 void secondfs_c_helper_free(void *pointer);
 void secondfs_c_helper_mdebug(void);
 
-#define SECONDFS_GEN_C_HELPER_HEADER_KMEM_CACHE_ALLOC_N_FREE(class_name) \
-void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size);\
-void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer);
-
-SECONDFS_GEN_C_HELPER_HEADER_KMEM_CACHE_ALLOC_N_FREE(DiskInode)
-SECONDFS_GEN_C_HELPER_HEADER_KMEM_CACHE_ALLOC_N_FREE(BufferManager)
-SECONDFS_GEN_C_HELPER_HEADER_KMEM_CACHE_ALLOC_N_FREE(Buf)
+unsigned long secondfs_c_helper_get_seconds(void);
+void secondfs_c_helper_spin_lock_init(void *lockp);
+void secondfs_c_helper_spin_lock(void *lockp);
+void secondfs_c_helper_spin_unlock(void *lockp);
+void secondfs_c_helper_sema_init(void *semap, int val);
+void secondfs_c_helper_up(void *semap);
+void secondfs_c_helper_down(void *semap);
+int secondfs_c_helper_down_trylock(void *semap);
+void secondfs_c_helper_mutex_init(void *mutexp);
+void secondfs_c_helper_mutex_lock(void *mutexp);
+void secondfs_c_helper_mutex_unlock(void *mutexp);
 
 #ifdef __cplusplus
 }

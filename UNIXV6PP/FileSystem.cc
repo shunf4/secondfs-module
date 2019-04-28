@@ -1,7 +1,8 @@
 /* UNIXV6PP 文件系统(主要是超块操作)代码裁剪. */
+#include <cstring>
 #include "FileSystem.hh"
-#include "../secondfs_user.h"
 #include "Common.hh"
+#include "../secondfs_user.h"
 
 // @Feng Shun: 以下为 C++ 部分
 
@@ -54,7 +55,7 @@ void FileSystem::LoadSuperBlock(SuperBlock *secsb)
 	secsb->s_flock = 0;
 	secsb->s_ilock = 0;
 	secsb->s_ronly = 0;
-	secsb->s_time = get_seconds();
+	secsb->s_time = secondfs_c_helper_get_seconds();
 }
 
 #if false
@@ -480,14 +481,14 @@ extern "C" {
 
 	const s32
 		SECONDFS_NMOUNT = FileSystem::NMOUNT,			/* 系统中用于挂载子文件系统的装配块数量 */
-		SECONDFS_SUPER = FileSystem::SUPER_BLOCK_SECTOR_NUMBER,	/* 定义SuperBlock位于磁盘上的扇区号，占据200，201两个扇区。 */
+		SECONDFS_SUPER_BLOCK_SECTOR_NUMBER = FileSystem::SUPER_BLOCK_SECTOR_NUMBER,	/* 定义SuperBlock位于磁盘上的扇区号，占据200，201两个扇区。 */
 		SECONDFS_ROOTINO = FileSystem::ROOTINO,			/* 文件系统根目录外存Inode编号 */
-		SECONDFS_INODE = FileSystem::INODE_NUMBER_PER_SECTOR,	/* 外存INode对象长度为64字节，每个磁盘块可以存放512/64 = 8个外存Inode */
-		SECONDFS_INODE = FileSystem::INODE_ZONE_START_SECTOR,	/* 外存Inode区位于磁盘上的起始扇区号 */
-		SECONDFS_INODE = FileSystem::INODE_ZONE_SIZE,		/* 磁盘上外存Inode区占据的扇区数 */
-		SECONDFS_DATA = FileSystem::DATA_ZONE_START_SECTOR,	/* 数据区的起始扇区号 */
-		SECONDFS_DATA = FileSystem::DATA_ZONE_END_SECTOR,	/* 数据区的结束扇区号 */
-		SECONDFS_DATA = FileSystem::DATA_ZONE_SIZE		/* 数据区占据的扇区数量 */
+		SECONDFS_INODE_NUMBER_PER_SECTOR = FileSystem::INODE_NUMBER_PER_SECTOR,	/* 外存INode对象长度为64字节，每个磁盘块可以存放512/64 = 8个外存Inode */
+		SECONDFS_INODE_ZONE_START_SECTOR = FileSystem::INODE_ZONE_START_SECTOR,	/* 外存Inode区位于磁盘上的起始扇区号 */
+		SECONDFS_INODE_ZONE_SIZE = FileSystem::INODE_ZONE_SIZE,		/* 磁盘上外存Inode区占据的扇区数 */
+		SECONDFS_DATA_ZONE_START_SECTOR = FileSystem::DATA_ZONE_START_SECTOR,	/* 数据区的起始扇区号 */
+		SECONDFS_DATA_ZONE_END_SECTOR = FileSystem::DATA_ZONE_END_SECTOR,	/* 数据区的结束扇区号 */
+		SECONDFS_DATA_ZONE_SIZE = FileSystem::DATA_ZONE_SIZE		/* 数据区占据的扇区数量 */
 	;
 
 	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(FileSystem);

@@ -1,7 +1,7 @@
 /* UNIXV6PP 文件系统(主要是Buffer管理)代码裁剪. */
 #include "../secondfs_user.h"
-#include "BufferManager.hh"
 #include "Common.hh"
+#include "BufferManager.hh"
 
 // @Feng Shun: 以下为 C++ 部分
 
@@ -26,8 +26,8 @@ Devtab::~Devtab()
 /*======================class BufferManager======================*/
 BufferManager::BufferManager()
 {
-	spin_lock_init(&this->lock);
-	sema_init(&this->bFreeLock, 1);
+	secondfs_c_helper_spin_lock_init(&this->b_queue_lock);
+	secondfs_c_helper_sema_init(&this->b_bFreeList_lock, 1);
 	//nothing to do here
 }
 
@@ -41,8 +41,6 @@ void BufferManager::Initialize()
 {
 	int i;
 	Buf* bp;
-
-	spin_lock_init(&this->lock);
 
 	this->bFreeList.b_forw = this->bFreeList.b_back = &(this->bFreeList);
 	this->bFreeList.av_forw = this->bFreeList.av_back = &(this->bFreeList);
@@ -62,8 +60,8 @@ void BufferManager::Initialize()
 		bp->b_flags = Buf::B_BUSY;
 		Brelse(bp);
 		/* 初始化每 Buf 的两个 MUTEX */
-		mutex_init(&bp->modify_lock);
-		mutex_init(&bp->wait_free_lock);
+		secondfs_c_helper_mutex_init(&bp->b_modify_lock);
+		secondfs_c_helper_mutex_init(&bp->b_wait_free_lock);
 	}
 	//this->m_DeviceManager = &Kernel::Instance().GetDeviceManager();
 	return;
@@ -89,45 +87,45 @@ loop:
 		*/
 
 		// 将这里的 CLI/SLI 改造成每 Buf 的 MUTEX
-		mutex_lock(&bp->modify_lock);	// 这个是快锁
+		secondfs_c_helper_mutex_lock(&bp->b_modify_lock);	// 这个是快锁
 		if(bp->b_flags & Buf::B_BUSY)
 		{
 			bp->b_flags |= Buf::B_WANTED;
-			mutex_unlock(&bp->modify_lock);
+			secondfs_c_helper_mutex_unlock(&bp->b_modify_lock);
 			// 我们在这里锁 wait_free_lock, 是为了等待其他正在
 			// 使用该 Buf 的进程使用完毕.
 			// wait_free_lock 和 Buf::B_BUSY 的置位应差不多同步.
 
-			mutex_lock(&bp->wait_free_lock);	// 这个是慢锁
+			secondfs_c_helper_mutex_lock(&bp->b_wait_free_lock);	// 这个是慢锁
 			// goto loop;
 			// 拿到锁之后, 有可能这个 Buf 所属的设备和盘块都已发生变化.
 			// 此时要加一次检测
 			if (bp->b_blkno != blkno || bp->b_dev != dev || (bp->b_flags & Buf::B_BUSY)) {
-				mutex_unlock(&bp->wait_free_lock);
+				secondfs_c_helper_mutex_unlock(&bp->b_wait_free_lock);
 				goto loop;
 			}
 		}
 		/* 从自由队列中抽取出来 */
 		this->NotAvail(bp);
-		mutex_unlock(&bp->modify_lock);
+		secondfs_c_helper_mutex_unlock(&bp->b_modify_lock);
 		
 		return bp;
 	}
 
 	// 用 bFreeList 的 lock 替代 CLI/STI
-	mutex_lock(&this->bFreeList.modify_lock);
+	secondfs_c_helper_mutex_lock(&this->bFreeList.b_modify_lock);
 	/* 如果自由队列为空 */
 	if(this->bFreeList.av_forw == &this->bFreeList)
 	{
 		this->bFreeList.b_flags |= Buf::B_WANTED;
-		down(&this->bFreeLock);
+		secondfs_c_helper_down(&this->b_bFreeList_lock);
 
 		// 拿到锁之后, bFreeList 的 av_forw, 以及各设备的 Buf 队列仍可能发生变化.
 		// 要解锁并回到 loop 重新搜索设备缓存
-		up(&this->bFreeLock);
+		secondfs_c_helper_up(&this->b_bFreeList_lock);
 		goto loop;
 	}
-	mutex_unlock(&this->bFreeList.modify_lock);
+	secondfs_c_helper_mutex_unlock(&this->bFreeList.b_modify_lock);
 
 	/* 取自由队列第一个空闲块 */
 	bp = this->bFreeList.av_forw;
@@ -145,7 +143,7 @@ loop:
 	}
 
 	// @Feng Shun : 我认为这里也是临界区, 需要保护
-	spin_lock(&this->lock);
+	secondfs_c_helper_spin_lock(&this->b_queue_lock);
 
 	/* 注意: 这里清除了所有其他位，只设了B_BUSY */
 	bp->b_flags = Buf::B_BUSY;
@@ -162,7 +160,7 @@ loop:
 	bp->b_dev = dev;
 	bp->b_blkno = blkno;
 
-	spin_unlock(&this->lock);
+	secondfs_c_helper_spin_unlock(&this->b_queue_lock);
 
 	return bp;
 }
@@ -175,7 +173,7 @@ void BufferManager::Brelse(Buf* bp)
 	 */
 
 	// 替代 CLI/SLI 的方式 : BufferManager 内的自旋锁, 当然这不是等价的.
-	spin_lock(&secondfs_buffermanagerp->lock);
+	secondfs_c_helper_spin_lock(&secondfs_buffermanagerp->b_queue_lock);
 
 	/* 注意以下操作并没有清除B_DELWRI、B_WRITE、B_READ、B_DONE标志
 	 * B_DELWRI表示虽然将该控制块释放到自由队列里面，但是有可能还没有些到磁盘上。
@@ -187,15 +185,15 @@ void BufferManager::Brelse(Buf* bp)
 	bp->av_forw = &(this->bFreeList);
 	this->bFreeList.av_back = bp;
 	
-	spin_unlock(&secondfs_buffermanagerp->lock);
+	secondfs_c_helper_spin_unlock(&secondfs_buffermanagerp->b_queue_lock);
 
 	// 唤醒等待该缓存块的进程
-	mutex_unlock(&bp->wait_free_lock);
+	secondfs_c_helper_mutex_unlock(&bp->b_wait_free_lock);
 
 	// 唤醒等待空闲缓存块的进程
 	// 尝试 P, 再 V : 结果就是, 若信号量非正, 递增信号量; 否则不递增.
-	down_trylock(&this->bFreeLock);
-	up(&this->bFreeLock);
+	secondfs_c_helper_down_trylock(&this->b_bFreeList_lock);
+	secondfs_c_helper_up(&this->b_bFreeList_lock);
 
 	return;
 }
@@ -264,7 +262,7 @@ Buf* BufferManager::Bread(Devtab *dev, int blkno)
 	/* 
 	 * 同步执行该 I/O 请求
 	 */
-	bp->b_error = secondfs_submit_bio(dev->d_bdev, bp->b_blkno, bp->b_addr, REQ_OP_READ, 0);
+	bp->b_error = secondfs_submit_bio_sync_read(dev->d_bdev, bp->b_blkno, bp->b_addr);
 	this->IODone(bp);
 	return bp;
 }
@@ -362,7 +360,7 @@ void BufferManager::Bwrite(Buf *bp)
 	bp->b_wcount = SECONDFS_BUFFER_SIZE;		/* 512字节 */
 
 	// 同步写
-	bp->b_error = secondfs_submit_bio(bp->b_dev->d_bdev, bp->b_blkno, bp->b_addr, REQ_OP_WRITE, REQ_SYNC);
+	bp->b_error = secondfs_submit_bio_sync_write(bp->b_dev->d_bdev, bp->b_blkno, bp->b_addr);
 	this->IODone(bp);
 
 	if( (flags & Buf::B_ASYNC) == 0 )
@@ -501,13 +499,13 @@ void BufferManager::GetError(Buf* bp)
 extern "C" void BufferManager_NotAvail(BufferManager *bm, Buf *bp) { bm->NotAvail(bp); }
 void BufferManager::NotAvail(Buf *bp)
 {
-	spin_lock(&this->lock);
+	secondfs_c_helper_spin_lock(&this->b_queue_lock);
 	/* 从自由队列中取出 */
 	bp->av_back->av_forw = bp->av_forw;
 	bp->av_forw->av_back = bp->av_back;
 	/* 设置B_BUSY标志 */
 	bp->b_flags |= Buf::B_BUSY;
-	spin_unlock(&this->lock);
+	secondfs_c_helper_spin_unlock(&this->b_queue_lock);
 	return;
 }
 

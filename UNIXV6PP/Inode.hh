@@ -175,14 +175,6 @@ public:
 	/* Destructors */
 	~DiskInode();
 
-	void *operator new(size_t size) {
-		return secondfs_c_helper_kmem_cache_alloc_DiskInode(size);
-	}
-
-	void operator delete(void *pointer) {
-		secondfs_c_helper_kmem_cache_free_DiskInode(pointer);
-	}
-
 	/* Members */
 public:
 	u32		d_mode;			/* 状态的标志位，定义见enum INodeFlag */

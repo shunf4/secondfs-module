@@ -30,6 +30,7 @@ FileSystem *secondfs_filesystemp;
 
 
 // 要注册的文件系统结构
+/*
 struct file_system_type secondfs_fs_type = {
 	.owner = THIS_MODULE,
 	.name = "secondfs",
@@ -37,6 +38,7 @@ struct file_system_type secondfs_fs_type = {
 	.kill_sb = secondfs_kill_superblock,
 	.fs_flags = FS_REQUIRES_DEV
 };
+*/
 
 // 要注册的超块操作函数表
 const struct super_operations secondfs_sb_ops = {
@@ -60,13 +62,13 @@ static int __init secondfs_init(void) {
 		(SLAB_RECLAIM_ACCOUNT| SLAB_MEM_SPREAD | SLAB_HWCACHE_ALIGN),
 		NULL);
 
-	printk(KERN_INFO "secondfs: Buf size : %lu %lu\n", SECONDFS_SIZEOF_Buf, sizeof(Buf));
-	printk(KERN_INFO "secondfs: BufferManager size : %lu %lu\n", SECONDFS_SIZEOF_BufferManager, sizeof(BufferManager));
-	printk(KERN_INFO "secondfs: Devtab size : %lu %lu\n", SECONDFS_SIZEOF_Devtab, sizeof(Devtab));
-	printk(KERN_INFO "secondfs: DiskInode size : %lu %lu\n", SECONDFS_SIZEOF_DiskInode, sizeof(DiskInode));
-	printk(KERN_INFO "secondfs: FileSystem size : %lu %lu\n", SECONDFS_SIZEOF_FileSystem, sizeof(FileSystem));
-	printk(KERN_INFO "secondfs: Inode size : %lu %lu\n", SECONDFS_SIZEOF_Inode, sizeof(Inode));
-	printk(KERN_INFO "secondfs: SuperBlock size : %lu %lu\n", SECONDFS_SIZEOF_SuperBlock, sizeof(SuperBlock));
+	printk(KERN_INFO "secondfs: Buf size : %u %lu\n", SECONDFS_SIZEOF_Buf, sizeof(Buf));
+	printk(KERN_INFO "secondfs: BufferManager size : %u %lu\n", SECONDFS_SIZEOF_BufferManager, sizeof(BufferManager));
+	printk(KERN_INFO "secondfs: Devtab size : %u %lu\n", SECONDFS_SIZEOF_Devtab, sizeof(Devtab));
+	printk(KERN_INFO "secondfs: DiskInode size : %u %lu\n", SECONDFS_SIZEOF_DiskInode, sizeof(DiskInode));
+	printk(KERN_INFO "secondfs: FileSystem size : %u %lu\n", SECONDFS_SIZEOF_FileSystem, sizeof(FileSystem));
+	printk(KERN_INFO "secondfs: Inode size : %u %lu\n", SECONDFS_SIZEOF_Inode, sizeof(Inode));
+	printk(KERN_INFO "secondfs: SuperBlock size : %u %lu\n", SECONDFS_SIZEOF_SuperBlock, sizeof(SuperBlock));
 
 	// 初始化一次性的对象
 	secondfs_buffermanagerp = newBufferManager();

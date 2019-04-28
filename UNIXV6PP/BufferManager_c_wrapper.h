@@ -1,6 +1,7 @@
 #ifndef __BUFFERMANAGER_C_WRAPPER_H__
 #define __BUFFERMANAGER_C_WRAPPER_H__
 
+#include "Common.hh"
 #include "../common_c_cpp_types.h"
 
 #ifndef __cplusplus
@@ -13,28 +14,12 @@
 extern "C" {
 #endif // __cplusplus
 
-// Devtab 类的 C 包装
-#ifndef __cplusplus
-typedef struct{
-	s32	d_active;
-	s32	d_errcnt;
-	Buf*	b_forw;
-	Buf*	b_back;
-	Buf*	d_actf;
-	Buf*	d_actl;
-
-	struct block_device*	d_bdev;
-} Devtab;
-#else // __cplusplus
-class Devtab;
-#endif // __cplusplus
-
-SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Devtab)
+struct _Devtab;
 
 // Buf 类的 C 包装
 
 #ifndef __cplusplus
-typedef struct
+typedef struct _Buf
 {
 	u32	b_flags;	/* 缓存控制块标志位 */
 	
@@ -44,12 +29,12 @@ typedef struct
 	/* 缓存控制块队列勾连指针 */
 	/* @Feng Shun: 其中, 只有 av_forw 和 av_back 有用.
 	*  并且, av_forw 和 av_back 在原 UnixV6++ 中还会作 I/O 请求队列串联用, 此处不用  */
-	Buf*	b_forw;
-	Buf*	b_back;
-	Buf*	av_forw;
-	Buf*	av_back;
+	struct _Buf*	b_forw;
+	struct _Buf*	b_back;
+	struct _Buf*	av_forw;
+	struct _Buf*	av_back;
 	
-	Devtab		*b_dev;		/* 所属的设备 */
+	struct _Devtab	*b_dev;		/* 所属的设备 */
 	s32		b_wcount;	/* 需传送的字节数 */
 	u8* 		b_addr;		/* 指向该缓存控制块所管理的缓冲区的首地址 */
 	s32		b_blkno;	/* 磁盘逻辑块号 */
@@ -79,6 +64,25 @@ extern const u32
 
 SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Buf)
 
+// Devtab 类的 C 包装
+#ifndef __cplusplus
+typedef struct _Devtab{
+	s32	d_active;
+	s32	d_errcnt;
+	Buf*	b_forw;
+	Buf*	b_back;
+	Buf*	d_actf;
+	Buf*	d_actl;
+
+	struct block_device*	d_bdev;
+} Devtab;
+#else // __cplusplus
+class Devtab;
+#endif // __cplusplus
+
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Devtab)
+
+
 // BufferManager 类的 C 包装
 
 // 总共可以分配多少个缓冲块
@@ -97,7 +101,7 @@ typedef struct
 	//DeviceManager* m_DeviceManager;		/* 指向设备管理模块全局对象 */
 
 	spinlock_t	b_queue_lock;		// 保护整个缓存块队列的自旋锁
-	semaphore	b_bFreeList_lock;	// 表征是否有自由缓存的信号量
+	struct semaphore	b_bFreeList_lock;	// 表征是否有自由缓存的信号量
 } BufferManager;
 #else // __cplusplus
 class BufferManager;

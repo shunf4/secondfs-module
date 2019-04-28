@@ -1,8 +1,9 @@
 #ifndef __FILESYSTEM_C_WRAPPER_H__
 #define __FILESYSTEM_C_WRAPPER_H__
 
-#include "../common_c_cpp_types.h"
 #include "Common.hh"
+#include "../common_c_cpp_types.h"
+
 
 #ifdef __cplusplus
 extern "C" {

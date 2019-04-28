@@ -4,8 +4,10 @@
 
 #include <cstdint>
 #include <cstddef>
+#include "Common.hh"
 #include "../common_c_cpp_types.h"
 #include "../c_helper_for_cc.h"
+#include "Inode.hh"
 #include "BufferManager.hh"
 #include "FileSystem_c_wrapper.h"
 
