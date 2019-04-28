@@ -28,10 +28,20 @@ extern struct kmem_cache *secondfs_diskinode_cachep;
 #include "UNIXV6PP/FileSystem_c_wrapper.h"
 
 // 内部的私有函数
+
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 int secondfs_submit_bio_sync_read(void * /* struct block_device * */ bdev, u32 sector,
 				void *buf);
 int secondfs_submit_bio_sync_write(void * /* struct block_device * */ bdev, u32 sector,
 				void *buf);
+
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 // 一次性 C++ 对象
 extern BufferManager *secondfs_buffermanagerp;
