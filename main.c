@@ -99,7 +99,7 @@ static int __init secondfs_init(void) {
 }
 
 static void __exit secondfs_exit(void) {
-	int ret;
+	int ret = 0;
 
 	// 反注册文件系统
 	//ret = unregister_filesystem(&secondfs_fs_type);
