@@ -36,6 +36,8 @@ void FileSystem::Initialize()
 }
 
 extern "C" void FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb) { fs->LoadSuperBlock(secsb); }
+// 注: 只是把裸数据从外存获取到 SuperBlock 结构, 并未做任何
+// Endian 的转换! Unix V6++ 卷的所有多字节数据都以小端序存放
 void FileSystem::LoadSuperBlock(SuperBlock *secsb)
 {
 	BufferManager& bufMgr = *secondfs_buffermanagerp;
@@ -55,6 +57,8 @@ void FileSystem::LoadSuperBlock(SuperBlock *secsb)
 	secsb->s_flock = 0;
 	secsb->s_ilock = 0;
 	secsb->s_ronly = 0;
+
+	// TODO: 应在该卷不是只读的时候才更新 s_time
 	secsb->s_time = secondfs_c_helper_get_seconds();
 }
 
