@@ -139,8 +139,8 @@ int secondfs_c_helper_printk(const char *s) {
 	return printk(s);
 }
 
-unsigned long secondfs_c_helper_get_seconds() {
-	return get_seconds();
+unsigned long secondfs_c_helper_ktime_get_real_seconds() {
+	return ktime_get_real_seconds();
 }
 
 void secondfs_c_helper_spin_lock_init(void *lockp) {

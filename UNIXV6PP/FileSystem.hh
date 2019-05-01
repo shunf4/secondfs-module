@@ -42,8 +42,8 @@ public:
 	s32	s_ninode;		/* 直接管理的空闲外存Inode数量 */
 	s32	s_inode[100];		/* 直接管理的空闲外存Inode索引表 */
 	
-	s32	s_flock;		/* 封锁空闲盘块索引表标志 */
-	s32	s_ilock;		/* 封锁空闲Inode表标志 */
+	s32	s_flock_obsolete;		/* 封锁空闲盘块索引表标志 */
+	s32	s_ilock_obsolete;		/* 封锁空闲Inode表标志 */
 	
 	s32	s_fmod;			/* 内存中super block副本被修改标志，意味着需要更新外存对应的Super Block */
 	s32	s_ronly;		/* 本文件系统只能读出 */
@@ -54,6 +54,8 @@ public:
 	Devtab*	s_dev;			// SuperBlock 所在文件系统的设备
 
 	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_update_lock;
+	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_flock;
+	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_ilock;
 };
 
 /*
@@ -120,21 +122,22 @@ public:
 	 * 外存INode，一般用于创建新的文件。
 	 */
 	Inode* IAlloc(short dev);
+#endif
 	/* 
-	 * @comment  释放存储设备dev上编号为number
+	 * @comment  释放超级块secsb所在文件系统中编号为number
 	 * 的外存INode，一般用于删除文件。
 	 */
-	void IFree(short dev, int number);
+	void IFree(SuperBlock *secsb, int number);
 
 	/* 
 	 * @comment 在存储设备dev上分配空闲磁盘块
 	 */
 	Buf* Alloc(short dev);
 	/* 
-	 * @comment 释放存储设备dev上编号为blkno的磁盘块
+	 * @comment 释放secsb所在文件系统编号为blkno的磁盘块
 	 */
-	void Free(short dev, int blkno);
-
+	void Free(SuperBlock *secsb, int blkno);
+#if false
 	/* 
 	 * @comment 查找文件系统装配表，搜索指定Inode对应的Mount装配块
 	 */

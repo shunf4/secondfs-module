@@ -146,6 +146,7 @@ public:
 
 	/* 
 	 * @comment 将包含外存Inode字符块中信息拷贝到内存Inode中
+	 * 并将临时的 DiskInode 指针回传
 	 */
 	void ICopy(Buf* bp, int inumber);
 
@@ -167,6 +168,9 @@ public:
 	s32		i_addr[10];		/* 用于文件逻辑块好和物理块好转换的基本索引表 */
 	
 	s32		i_lastr;		/* 存放最近一次读取文件的逻辑块号，用于判断是否需要预读 */
+
+	s32		i_atime;		/* 最后访问时间 */
+	s32		i_mtime;		/* 最后修改时间 */
 
 	struct {u8 data[SECONDFS_INODE_SIZE];}	vfs_inode;	/* 包含的 VFS Inode 数据结构. */
 };

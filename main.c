@@ -51,19 +51,12 @@ const struct super_operations secondfs_sb_ops = {
 	.alloc_inode	= secondfs_alloc_inode,
 	.destroy_inode	= secondfs_destroy_inode,
 	.write_inode	= secondfs_write_inode,
-	.evict_inode	= ext2_evict_inode,
-	.put_super	= ext2_put_super,
-	.sync_fs	= ext2_sync_fs,
-	.freeze_fs	= ext2_freeze,
-	.unfreeze_fs	= ext2_unfreeze,
-	.statfs		= ext2_statfs,
-	.remount_fs	= ext2_remount,
-	.show_options	= ext2_show_options,
-#ifdef CONFIG_QUOTA
-	.quota_read	= ext2_quota_read,
-	.quota_write	= ext2_quota_write,
-	.get_dquots	= ext2_get_dquots,
-#endif
+	.evict_inode	= secondfs_evict_inode,
+	.put_super	= secondfs_put_super,
+	.sync_fs	= secondfs_sync_fs,
+	//.statfs	= secondfs_statfs,
+	//.remount_fs	= secondfs_remount,
+	//.show_options	= secondfs_show_options,
 };
 
 static int __init secondfs_init(void) {

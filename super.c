@@ -61,6 +61,19 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 
 	/* 将缓冲区中的外存Inode信息拷贝到新分配的内存Inode中 */
 	Inode_ICopy(si, pBuf, ino);
+	// 添加步骤: 将 Inode 的数据拷贝到 VFS Inode 中
+	inode->i_mode = si->i_mode;
+	i_uid_write(inode, si->i_uid);
+	i_gid_write(inode, si->i_gid);
+	set_nlink(inode, si->i_nlink);
+	inode->i_size = si->i_size;
+	inode->i_atime.tv_sec = si->i_atime;
+	inode->i_mtime.tv_sec = si->i_mtime;
+
+	// TODO: 根据文件的不同属性(是 Regular File/Directory/Link),
+	// 给 inode 赋值不同的 file_operations, inode_operations
+	// 以及 address_space_operations
+
 	/* 释放缓存 */
 	BufferManager_Brelse(bm, pBuf);
 	return inode;
@@ -68,22 +81,6 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 }
 
 /* secondfs_alloc_inode : 在系统 alloc_inode 函数中调用.
- *			用以为 SecondFS 分配一个 VFS Inode.
- * 其指针会传给内核供其调用.
- *      sb : 系统传过来的 (VFS) 超块指针
- * 
- * 从 kmem_cache 里分配一个 Inode, 然后
- * 把指向它的成员 vfs_inode 的指针返回.
- * 这样就能保证每一个 SecondFS VFS Inode
- * 都伴随一个 SecondFS Inode.
- *
- */
-void secondfs_destroy_inode(struct inode *inode)
-{
-	kmem_cache_free(secondfs_icachep, SECONDFS_INODE(inode));
-}
-
-/* secondfs_destroy_inode : 在系统中调用.
  *			用以为 SecondFS 分配一个 VFS Inode.
  * 其指针会传给内核供其调用.
  *      sb : 系统传过来的 (VFS) 超块指针
@@ -104,6 +101,24 @@ struct inode *secondfs_alloc_inode(struct super_block *sb)
 
 	return &si->vfs_inode;
 }
+
+
+/* secondfs_destroy_inode : 在系统中调用.
+ *			用以为 SecondFS 分配一个 VFS Inode.
+ * 其指针会传给内核供其调用.
+ *      sb : 系统传过来的 (VFS) 超块指针
+ * 
+ * 从 kmem_cache 里分配一个 Inode, 然后
+ * 把指向它的成员 vfs_inode 的指针返回.
+ * 这样就能保证每一个 SecondFS VFS Inode
+ * 都伴随一个 SecondFS Inode.
+ *
+ */
+void secondfs_destroy_inode(struct inode *inode)
+{
+	kmem_cache_free(secondfs_icachep, SECONDFS_INODE(inode));
+}
+
 
 /* secondfs_sync_fs : 将超块同步回磁盘
  * 其指针会传给内核供其调用.
@@ -197,7 +212,7 @@ int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_op = &secondfs_sb_ops;
 
 	// 需要文件系统特定的 dentry 操作函数吗?
-	sb->s_d_op = &dentry; //?
+	//sb->s_d_op = &dentry; //?
 
 	if (be32_to_cpu(secsb->s_ronly)) {
 		pr_warn("this SecondFS volume is read-only.");
@@ -262,7 +277,7 @@ void secondfs_put_super(struct super_block *sb)
  * secondfs_mount : 调用系统默认的 mount_bdev 函数
  *                  来挂载.
  * 
- * 会传递 fill_super 函数指针供系统初始化 VFS 超块.
+ * 会传递 secondfs_fill_super 函数指针供系统初始化 VFS 超块.
  */
 struct dentry *secondfs_mount(struct file_system_type *fs_type,
 				int flags, const char *devname,

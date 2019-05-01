@@ -47,17 +47,11 @@ static inline Inode *SECONDFS_INODE(struct inode *inode)
 	return container_of(inode, Inode, vfs_inode);
 }
 
-// 根据 VFS 超块, 获得 Unix V6++ 的超块
-// 和 SECONDFS_INODE 的逻辑不同: VFS 超块的 s_fs_info 指向
-// Unix V6++ 超块, 而 Inode 包含了 struct inode
-static inline SuperBlock *SECONDFS_SB(struct super_block *sb)
-{
-	return sb->s_fs_info;
-}
-
 extern struct inode *secondfs_iget(struct super_block *sb, unsigned long ino);
 extern struct inode *secondfs_alloc_inode(struct super_block *sb);
+extern int secondfs_write_inode(struct inode *inode, struct writeback_control *wbc);
 extern void secondfs_destroy_inode(struct inode *inode);
+extern void secondfs_evict_inode(struct inode *inode);
 extern int secondfs_sync_fs(struct super_block *sb, int wait);
 extern int secondfs_fill_super(struct super_block *sb, void *data, int silent);
 extern void secondfs_put_super(struct super_block *sb);
@@ -66,6 +60,7 @@ extern struct dentry *secondfs_mount(struct file_system_type *fs_type,
 				void *data);
 
 extern struct super_operations secondfs_sb_ops;
+extern struct file_operations secondfs_file_operations;
 
 #endif // __cplusplus
 
@@ -73,6 +68,9 @@ extern struct super_operations secondfs_sb_ops;
 
 #ifdef __cplusplus
 #include "UNIXV6PP/Inode.hh"
+
+/*** 内部的私有函数 ***/
+
 static inline Inode *SECONDFS_INODE(struct inode *inode)
 {
 	return ({
@@ -89,8 +87,15 @@ extern "C" {
 #endif // __cplusplus
 
 
-// 内部的私有函数
+/*** 内部的私有函数 ***/
 
+// 根据 VFS 超块, 获得 Unix V6++ 的超块
+// 和 SECONDFS_INODE 的逻辑不同: VFS 超块的 s_fs_info 指向
+// Unix V6++ 超块, 而 Inode 包含了 struct inode
+static inline SuperBlock *SECONDFS_SB(struct super_block *sb)
+{
+	return sb->s_fs_info;
+}
 
 
 extern int secondfs_submit_bio_sync_read(void * /* struct block_device * */ bdev, u32 sector,
@@ -99,7 +104,7 @@ extern int secondfs_submit_bio_sync_write(void * /* struct block_device * */ bde
 				void *buf);
 
 
-// 一次性 C++ 对象
+/*** 一次性 C++ 对象 ***/
 extern BufferManager *secondfs_buffermanagerp;
 extern FileSystem *secondfs_filesystemp;
 

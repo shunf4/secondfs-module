@@ -36,6 +36,9 @@ typedef struct Inode
 	
 	s32		i_lastr;		/* 存放最近一次读取文件的逻辑块号，用于判断是否需要预读 */
 
+	s32		i_atime;		/* 最后访问时间 */
+	s32		i_mtime;		/* 最后修改时间 */
+
 	struct inode	vfs_inode;	/* 包含的 VFS Inode 数据结构. */
 } Inode;
 #else // __cplusplus
@@ -92,6 +95,7 @@ extern s32 *secondfs_inode_rablockp;	/* 顺序读时，使用预读技术读入�
 SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Inode)
 void Inode_ReadI(Inode *);
 void Inode_IUpdate(Inode *i, int time);
+void Inode_ICopy(Inode *i, Buf *bp, int inumber);
 
 
 // DiskInode 类的 C 包装

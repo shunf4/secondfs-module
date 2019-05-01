@@ -545,13 +545,13 @@ void Inode::IUpdate(int time)
 	}
 }
 
-#if false
+extern "C" void Inode_ITrunc(Inode *i) { i->ITrunc(); }
 void Inode::ITrunc()
 {
 	/* 经由磁盘高速缓存读取存放一次间接、两次间接索引表的磁盘块 */
-	BufferManager& bm = Kernel::Instance().GetBufferManager();
+	BufferManager* bm = secondfs_buffermanagerp;
 	/* 获取g_FileSystem对象的引用，执行释放磁盘块的操作 */
-	FileSystem& filesys = Kernel::Instance().GetFileSystem();
+	FileSystem* filesys = secondfs_filesystemp;
 
 	/* 如果是字符设备或者块设备则退出 */
 	if( this->i_mode & (Inode::IFCHR & Inode::IFBLK) )
@@ -580,9 +580,9 @@ void Inode::ITrunc()
 			if( i >= 6 && i <= 9 )
 			{
 				/* 将间接索引表读入缓存 */
-				Buf* pFirstBuf = bm.Bread(this->i_dev, this->i_addr[i]);
+				Buf* pFirstBuf = bm->Bread(this->i_ssb->s_dev, this->i_addr[i]);
 				/* 获取缓冲区首址 */
-				int* pFirst = (int *)pFirstBuf->b_addr;
+				u32* pFirst = (u32 *)pFirstBuf->b_addr;
 
 				/* 每张间接索引表记录 512/sizeof(int) = 128个磁盘块号，遍历这全部128个磁盘块 */
 				for(int j = 128 - 1; j >= 0; j--)
@@ -595,27 +595,27 @@ void Inode::ITrunc()
 						 */
 						if( i >= 8 && i <= 9)
 						{
-							Buf* pSecondBuf = bm.Bread(this->i_dev, pFirst[j]);
-							int* pSecond = (int *)pSecondBuf->b_addr;
+							Buf* pSecondBuf = bm->Bread(this->i_ssb->s_dev, pFirst[j]);
+							u32* pSecond = (u32 *)pSecondBuf->b_addr;
 
 							for(int k = 128 - 1; k >= 0; k--)
 							{
 								if(pSecond[k] != 0)
 								{
 									/* 释放指定的磁盘块 */
-									filesys.Free(this->i_dev, pSecond[k]);
+									filesys->Free(this->i_ssb, pSecond[k]);
 								}
 							}
 							/* 缓存使用完毕，释放以便被其它进程使用 */
-							bm.Brelse(pSecondBuf);
+							bm->Brelse(pSecondBuf);
 						}
-						filesys.Free(this->i_dev, pFirst[j]);
+						filesys->Free(this->i_ssb, pFirst[j]);
 					}
 				}
-				bm.Brelse(pFirstBuf);
+				bm->Brelse(pFirstBuf);
 			}
 			/* 释放索引表本身占用的磁盘块 */
-			filesys.Free(this->i_dev, this->i_addr[i]);
+			filesys->Free(this->i_ssb, this->i_addr[i]);
 			/* 0表示该项不包含索引 */
 			this->i_addr[i] = 0;
 		}
@@ -630,6 +630,7 @@ void Inode::ITrunc()
 	this->i_nlink = 1;
 }
 
+#if false
 void Inode::NFrele()
 {
 	/* 解锁pipe或Inode,并且唤醒相应进程 */
@@ -653,7 +654,9 @@ void Inode::NFlock()
 	}
 	this->i_flag |= Inode::ILOCK;
 }
+#endif
 
+#if false
 void Inode::Prele()
 {
 	/* 解锁pipe或Inode,并且唤醒相应进程 */
@@ -665,7 +668,8 @@ void Inode::Prele()
 		Kernel::Instance().GetProcessManager().WakeUpAll((unsigned long)this);
 	}
 }
-
+#endif
+#if false
 void Inode::Plock()
 {
 	User& u = Kernel::Instance().GetUser();
@@ -722,8 +726,11 @@ void Inode::ICopy(Buf *bp, int inumber)
 	this->i_mode = le32_to_cpu(pNode->d_mode);
 	this->i_nlink = le32_to_cpu(pNode->d_nlink);
 	this->i_uid = le16_to_cpu(pNode->d_uid);
-	this->i_gid = le316_to_cpu(pNode->d_gid);
+	this->i_gid = le16_to_cpu(pNode->d_gid);
 	this->i_size = le32_to_cpu(pNode->d_size);
+	this->i_mtime = (signed) le32_to_cpu(pNode->d_mtime);
+	this->i_atime = (signed) le32_to_cpu(pNode->d_atime);
+	
 	for(int i = 0; i < 10; i++)
 	{
 		this->i_addr[i] = le32_to_cpu(pNode->d_addr[i]);

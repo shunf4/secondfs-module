@@ -12,6 +12,8 @@
 SuperBlock::SuperBlock()
 {
 	secondfs_c_helper_mutex_init(&this->s_update_lock);
+	secondfs_c_helper_mutex_init(&this->s_flock);
+	secondfs_c_helper_mutex_init(&this->s_ilock);
 	//nothing to do here
 }
 
@@ -57,12 +59,12 @@ void FileSystem::LoadSuperBlock(SuperBlock *secsb)
 		bufMgr.Brelse(pBuf);
 	}
 
-	secsb->s_flock = 0;
-	secsb->s_ilock = 0;
+	//secsb->s_flock = 0;
+	//secsb->s_ilock = 0;
 	secsb->s_ronly = 0;
 
 	// TODO: 应在该卷不是只读的时候才更新 s_time
-	secsb->s_time = cpu_to_le32(secondfs_c_helper_get_seconds());
+	secsb->s_time = cpu_to_le32(secondfs_c_helper_ktime_get_real_seconds());
 }
 
 #if false
@@ -108,7 +110,7 @@ void FileSystem::Update(SuperBlock *secsb)
 
 	/* 同步SuperBlock到磁盘 */
 	/* 如果该SuperBlock内存副本没有被修改，直接管理inode和空闲盘块被上锁或该文件系统是只读文件系统 */
-	if(sb->s_fmod == 0 || sb->s_ilock != 0 || sb->s_flock != 0 || sb->s_ronly != 0)
+	if(sb->s_fmod == 0 || secondfs_c_helper_mutex_is_locked(&sb->s_ilock) || secondfs_c_helper_mutex_is_locked(&sb->s_flock) || sb->s_ronly != 0)
 	{
 		return;
 	}
@@ -116,7 +118,7 @@ void FileSystem::Update(SuperBlock *secsb)
 	/* 清SuperBlock修改标志 */
 	sb->s_fmod = 0;
 	/* 写入SuperBlock最后存访时间 */
-	sb->s_time = cpu_to_le32(secondfs_c_helper_get_seconds());
+	sb->s_time = cpu_to_le32(secondfs_c_helper_ktime_get_real_seconds());
 
 	/* 
 		* 为将要写回到磁盘上去的SuperBlock申请一块缓存，由于缓存块大小为512字节，
@@ -274,18 +276,18 @@ Inode* FileSystem::IAlloc(short dev)
 	}
 	return NULL;	/* GCC likes it! */
 }
+#endif
 
-void FileSystem::IFree(short dev, int number)
+extern "C" void FileSystem_IFree(FileSystem *fs, SuperBlock *secsb, int number) { fs->IFree(secsb, number); }
+void FileSystem::IFree(SuperBlock *secsb, int number)
 {
-	SuperBlock* sb;
-
-	sb = this->GetFS(dev);	/* 获取相应设备的SuperBlock内存副本 */
+	SuperBlock* sb = secsb;
 	
 	/* 
 	 * 如果超级块直接管理的空闲Inode表上锁，
 	 * 则释放的外存Inode散落在磁盘Inode区中。
 	 */
-	if(sb->s_ilock)
+	if (secondfs_c_helper_mutex_is_locked(&sb->s_ilock))
 	{
 		return;
 	}
@@ -305,6 +307,7 @@ void FileSystem::IFree(short dev, int number)
 	sb->s_fmod = 1;
 }
 
+#if false
 Buf* FileSystem::Alloc(short dev)
 {
 	int blkno;	/* 分配到的空闲磁盘块编号 */
@@ -385,14 +388,13 @@ Buf* FileSystem::Alloc(short dev)
 
 	return pBuf;
 }
+#endif
 
-void FileSystem::Free(short dev, int blkno)
+extern "C" void FileSystem_Free(FileSystem *fs, SuperBlock *secsb, int blkno) { fs->Free(secsb, blkno); }
+void FileSystem::Free(SuperBlock *secsb, int blkno)
 {
-	SuperBlock* sb;
+	SuperBlock* sb = secsb;
 	Buf* pBuf;
-	User& u = Kernel::Instance().GetUser();
-
-	sb = this->GetFS(dev);
 
 	/* 
 	 * 尽早设置SuperBlock被修改标志，以防止在释放
@@ -402,16 +404,13 @@ void FileSystem::Free(short dev, int blkno)
 	sb->s_fmod = 1;
 
 	/* 如果空闲磁盘块索引表被上锁，则睡眠等待解锁 */
-	while(sb->s_flock)
-	{
-		u.u_procp->Sleep((unsigned long)&sb->s_flock, ProcessManager::PINOD);
-	}
+	secondfs_c_helper_mutex_lock(&sb->s_flock);
 
 	/* 检查释放磁盘块的合法性 */
-	if(this->BadBlock(sb, dev, blkno))
+	/*if(this->BadBlock(sb, dev, blkno))
 	{
 		return;
-	}
+	}*/
 
 	/* 
 	 * 如果先前系统中已经没有空闲盘块，
@@ -426,33 +425,30 @@ void FileSystem::Free(short dev, int blkno)
 	/* SuperBlock中直接管理空闲磁盘块号的栈已满 */
 	if(sb->s_nfree >= 100)
 	{
-		sb->s_flock++;
-
 		/* 
 		 * 使用当前Free()函数正要释放的磁盘块，存放前一组100个空闲
 		 * 磁盘块的索引表
 		 */
-		pBuf = this->m_BufferManager->GetBlk(dev, blkno);	/* 为当前正要释放的磁盘块分配缓存 */
+		pBuf = secondfs_buffermanagerp->GetBlk(secsb->s_dev, blkno);	/* 为当前正要释放的磁盘块分配缓存 */
 
 		/* 从该磁盘块的0字节开始记录，共占据4(s_nfree)+400(s_free[100])个字节 */
-		int* p = (int *)pBuf->b_addr;
+		u32* p = (u32 *)pBuf->b_addr;
 		
 		/* 首先写入空闲盘块数，除了第一组为99块，后续每组都是100块 */
 		*p++ = sb->s_nfree;
 		/* 将SuperBlock的空闲盘块索引表s_free[100]写入缓存中后续位置 */
-		Utility::DWordCopy(sb->s_free, p, 100);
+		memcpy(p, sb->s_free, 100 * sizeof(sb->s_free[0]));
 
 		sb->s_nfree = 0;
 		/* 将存放空闲盘块索引表的“当前释放盘块”写入磁盘，即实现了空闲盘块记录空闲盘块号的目标 */
-		this->m_BufferManager->Bwrite(pBuf);
-
-		sb->s_flock = 0;
-		Kernel::Instance().GetProcessManager().WakeUpAll((unsigned long)&sb->s_flock);
+		secondfs_buffermanagerp->Bwrite(pBuf);
 	}
+	secondfs_c_helper_mutex_unlock(&sb->s_flock);
 	sb->s_free[sb->s_nfree++] = blkno;	/* SuperBlock中记录下当前释放盘块号 */
 	sb->s_fmod = 1;
 }
 
+#if false
 Mount* FileSystem::GetMount(Inode *pInode)
 {
 	/* 遍历系统的装配块表 */
