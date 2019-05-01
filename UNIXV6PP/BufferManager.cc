@@ -1,5 +1,5 @@
 /* UNIXV6PP 文件系统(主要是Buffer管理)代码裁剪. */
-#include "../secondfs_user.h"
+#include "../secondfs.h"
 #include "Common.hh"
 #include "BufferManager.hh"
 
@@ -107,7 +107,7 @@ loop:
 			}
 		}
 		/* 从自由队列中抽取出来 */
-		this->NotAvail(bp);
+		this->NotAvail(bp, 1);
 		secondfs_c_helper_mutex_unlock(&bp->b_modify_lock);
 		
 		return bp;
@@ -130,7 +130,7 @@ loop:
 
 	/* 取自由队列第一个空闲块 */
 	bp = this->bFreeList.av_forw;
-	this->NotAvail(bp);
+	this->NotAvail(bp, 1);
 
 	/* 如果该字符块是延迟写，将其异步写到磁盘上 */
 	// 改: 同步写到磁盘上
@@ -415,8 +415,10 @@ void BufferManager::ClrBuf(Buf *bp)
 	}
 	return;
 }
+#endif
 
-void BufferManager::Bflush(short dev)
+extern "C" void BufferManager_Bflush(BufferManager *bm, Devtab *dev) { bm->Bflush(dev); }
+void BufferManager::Bflush(Devtab *dev)
 {
 	Buf* bp;
 	/* 注意：这里之所以要在搜索到一个块之后重新开始搜索，
@@ -427,22 +429,29 @@ void BufferManager::Bflush(short dev)
 	 * 操作bfreelist队列的时候出现错误。
 	 */
 loop:
-	X86Assembly::CLI();
+	// 替代 CLI/SLI 的方式 : BufferManager 内的自旋锁, 当然这不是等价的.
+	secondfs_c_helper_spin_lock(&secondfs_buffermanagerp->b_queue_lock);
 	for(bp = this->bFreeList.av_forw; bp != &(this->bFreeList); bp = bp->av_forw)
 	{
 		/* 找出自由队列中所有延迟写的块 */
-		if( (bp->b_flags & Buf::B_DELWRI) && (dev == DeviceManager::NODEV || dev == bp->b_dev) )
+		if( (bp->b_flags & Buf::B_DELWRI) && (dev == 0 || dev == bp->b_dev) )
 		{
+			/* @Feng Shun: 在原 Unix V6++ 中, 对于所有脏块,
+			 * 采取的操作仅为"异步写"
+			 * 此处改为 "同步写"
+			 */
 			bp->b_flags |= Buf::B_ASYNC;
-			this->NotAvail(bp);
+			// 在 NotAvail 中会把自旋锁解锁
+			this->NotAvail(bp, 0);
 			this->Bwrite(bp);
 			goto loop;
 		}
 	}
-	X86Assembly::STI();
+	secondfs_c_helper_spin_unlock(&secondfs_buffermanagerp->b_queue_lock);
 	return;
 }
 
+#if false
 bool BufferManager::Swap(int blkno, unsigned long addr, int count, enum Buf::BufFlag flag)
 {
 	User& u = Kernel::Instance().GetUser();
@@ -499,10 +508,11 @@ void BufferManager::GetError(Buf* bp)
 }
 #endif
 
-extern "C" void BufferManager_NotAvail(BufferManager *bm, Buf *bp) { bm->NotAvail(bp); }
-void BufferManager::NotAvail(Buf *bp)
+extern "C" void BufferManager_NotAvail(BufferManager *bm, Buf *bp, u32 lockFirst) { bm->NotAvail(bp, lockFirst); }
+void BufferManager::NotAvail(Buf *bp, u32 lockFirst)
 {
-	secondfs_c_helper_spin_lock(&this->b_queue_lock);
+	if (lockFirst) 
+		secondfs_c_helper_spin_lock(&this->b_queue_lock);
 	/* 从自由队列中取出 */
 	bp->av_back->av_forw = bp->av_forw;
 	bp->av_forw->av_back = bp->av_back;

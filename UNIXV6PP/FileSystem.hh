@@ -52,6 +52,8 @@ public:
 
 	Inode*	s_inodep;		// SuperBlock 所在文件系统的根节点
 	Devtab*	s_dev;			// SuperBlock 所在文件系统的设备
+
+	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_update_lock;
 };
 
 /*
@@ -85,7 +87,9 @@ public:
 	~FileSystem();
 
 	/* 
-	* @comment 从磁盘读入SuperBlock
+	* @comment 从磁盘读入SuperBlock.
+	* 不读入 s_inodep 成员和 s_dev成员.
+	* 不进行端序的转换.
 	*/
 	void LoadSuperBlock(SuperBlock *secsb);
 
@@ -102,12 +106,15 @@ public:
 	 * 该文件系统的SuperBlock
 	 */
 	SuperBlock* GetFS(short dev);
+#endif
+
 	/* 
 	 * @comment 将SuperBlock对象的内存副本更新到
 	 * 存储设备的SuperBlock中去
 	 */
-	void Update();
+	void Update(SuperBlock *secsb);
 
+#if false
 	/* 
 	 * @comment  在存储设备dev上分配一个空闲
 	 * 外存INode，一般用于创建新的文件。
@@ -145,7 +152,7 @@ public:
 	// Mount m_Mount[NMOUNT];		/* 文件系统装配块表，Mount[0]用于根文件系统 */
 
 	BufferManager* m_BufferManager;		/* FileSystem类需要缓存管理模块(BufferManager)提供的接口 */
-	int updlock;				/* Update()函数的锁，该函数用于同步内存各个SuperBlock副本以及，
+	struct {u8 data[SECONDFS_MUTEX_SIZE];} updlock;	/* Update()函数的锁，该函数用于同步内存各个SuperBlock副本以及，
 						被修改过的内存Inode。任一时刻只允许一个进程调用该函数 */
 };
 

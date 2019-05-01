@@ -1,4 +1,4 @@
-#include "secondfs_kern.h"
+#include "secondfs.h"
 
 #include <linux/init.h>
 #include <linux/module.h>
@@ -9,8 +9,12 @@
  *   * 尽量重用 UnixV6++ 的 C++ 代码
  *   * 其他从简, 包括错误处理
  *   * Unix V6++ 的默认端序(小端序)有可能与本机不一样, 所以
- *     处理方法为: SuperBlock 结构和 DiskInode 结构不转换, 
- *     为小端序; 在向它们读取和写入数据时, 做转换.
+ *     处理方法为: SuperBlock 和 DiskInode 结构不转换, 
+ *     为小端序; 在向它读取和写入数据时, 做转换. 
+ *     其他为本机序.
+ *     这也就导致一个不优雅的地方:
+ *       SuperBlock 写回时可以直接写回;
+ *       内存中 Inode 结构则需转换为小端序的 DiskInode 再写回
  */
 
 MODULE_LICENSE("GPL");
@@ -33,15 +37,14 @@ FileSystem *secondfs_filesystemp;
 
 
 // 要注册的文件系统结构
-/*
 struct file_system_type secondfs_fs_type = {
 	.owner = THIS_MODULE,
 	.name = "secondfs",
 	.mount = secondfs_mount,
-	.kill_sb = secondfs_kill_superblock,
+	.kill_sb = kill_block_super,
 	.fs_flags = FS_REQUIRES_DEV
 };
-*/
+
 
 // 要注册的超块操作函数表
 const struct super_operations secondfs_sb_ops = {

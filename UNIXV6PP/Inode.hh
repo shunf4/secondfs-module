@@ -7,6 +7,7 @@
 #include "../common_c_cpp_types.h"
 #include "../c_helper_for_cc.h"
 #include "Inode_c_wrapper.h"
+#include "BufferManager.hh"
 
 /*
  * 内存索引节点(INode)的定义
@@ -17,6 +18,17 @@
  * 其对应的外存inode。
  */
 
+/*
+ * @Feng Shun:
+ *   这里的 Inode 作为文件系统特定的 Inode 内存内表示.
+ *   与大多数其他文件系统一样, 此 Inode 结构包含一个 VFS Inode
+ *   结构, 在 alloc_inode 函数中申请的是 Inode, 而返回 VFS
+ *   Inode 的指针, 这样就能保证每一个 UnixV6++ 文件系统的 VFS
+ *   Inode 都能伴随一个此 Inode 结构出现.
+ * 
+ * 注: i_flag 的 ILOCK, i_count 等锁机制和引用计数机制
+ * 在本工程中不用, 交由系统管理
+*/
 class Inode
 {
 public:
@@ -62,7 +74,7 @@ public:
 							经过bmap转换得到的物理盘块号。将rablock作为静态变量的原因：调用一次bmap的开销
 							对当前块和预读块的逻辑块号进行转换，bmap返回当前块的物理盘块号，并且将预读块
 							的物理盘块号保存在rablock中。 */
-	
+
 	/* Functions */
 public:
 	/* Constructors */
@@ -129,11 +141,12 @@ public:
 	 * @comment 清空Inode对象中的数据
 	 */
 	void Clean();
+#endif
 	/* 
 	 * @comment 将包含外存Inode字符块中信息拷贝到内存Inode中
 	 */
 	void ICopy(Buf* bp, int inumber);
-#endif
+
 	/* Members */
 public:
 	u32 i_flag;	/* 状态的标志位，定义见enum INodeFlag */
@@ -142,7 +155,7 @@ public:
 	s32		i_count;		/* 引用计数 */
 	s32		i_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
 	
-	u16		i_dev;			/* 外存inode所在存储设备的设备号 */
+	Devtab*		i_dev;			/* 外存inode所在存储设备的设备号 */
 	s32		i_number;		/* 外存inode区中的编号 */
 	
 	u16		i_uid;			/* 文件所有者的用户标识数 */
@@ -152,6 +165,8 @@ public:
 	s32		i_addr[10];		/* 用于文件逻辑块好和物理块好转换的基本索引表 */
 	
 	s32		i_lastr;		/* 存放最近一次读取文件的逻辑块号，用于判断是否需要预读 */
+
+	struct {u8 data[SECONDFS_INODE_SIZE];}	vfs_inode;	/* 包含的 VFS Inode 数据结构. */
 };
 
 

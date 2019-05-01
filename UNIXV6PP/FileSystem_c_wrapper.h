@@ -33,6 +33,7 @@ typedef struct
 
 	Inode*	s_inodep;		// SuperBlock 所在文件系统的根节点
 	Devtab*	s_dev;			// SuperBlock 所在文件系统的设备
+	struct mutex s_update_lock;
 } SuperBlock;
 
 //static size_t x = sizeof(Superblock);
@@ -49,7 +50,7 @@ SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(SuperBlock)
 typedef struct FileSystem
 {
 	BufferManager* m_BufferManager;		/* FileSystem类需要缓存管理模块(BufferManager)提供的接口 */
-	int updlock;				/* Update()函数的锁，该函数用于同步内存各个SuperBlock副本以及，
+	struct mutex updlock;				/* Update()函数的锁，该函数用于同步内存各个SuperBlock副本以及，
 						被修改过的内存Inode。任一时刻只允许一个进程调用该函数 */
 } FileSystem;
 #else // __cplusplus
@@ -72,6 +73,7 @@ SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(FileSystem)
 
 void FileSystem_Initialize(FileSystem *fs);
 void FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb);
+void FileSystem_Update(FileSystem *fs, SuperBlock *secsb);
 
 
 #ifdef __cplusplus

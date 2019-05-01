@@ -1,6 +1,8 @@
 /* UNIXV6PP 文件系统(主要是Inode操作)代码裁剪. */
 #include "Inode.hh"
 #include "Common.hh"
+#include <FileSystem_c_wrapper.h>
+#include <linux/byteorder/generic.h>
 
 // @Feng Shun: 以下为 C++ 部分
 
@@ -42,7 +44,7 @@ Inode::~Inode()
 	//nothing to do here
 }
 
-
+extern "C" void Inode_ReadI(Inode *i) { i->ReadI(); }
 void Inode::ReadI()
 {
 #if false
@@ -696,29 +698,33 @@ void Inode::Clean()
 		this->i_addr[i] = 0;
 	}
 }
+#endif
 
+extern "C" void Inode_ICopy(Inode *i, Buf *bp, int inumber) { i->ICopy(bp, inumber); }
 void Inode::ICopy(Buf *bp, int inumber)
 {
-	DiskInode dInode;
-	DiskInode* pNode = &dInode;
+	//DiskInode dInode;
+	DiskInode* pNode;
 
 	/* 将p指向缓存区中编号为inumber外存Inode的偏移位置 */
-	unsigned char* p = bp->b_addr + (inumber % FileSystem::INODE_NUMBER_PER_SECTOR) * sizeof(DiskInode);
+	unsigned char* p = bp->b_addr + (inumber % SECONDFS_INODE_NUMBER_PER_SECTOR) * sizeof(DiskInode);
 	/* 将缓存中外存Inode数据拷贝到临时变量dInode中，按4字节拷贝 */
-	Utility::DWordCopy( (int *)p, (int *)pNode, sizeof(DiskInode)/sizeof(int) );
+	//Utility::DWordCopy( (int *)p, (int *)pNode, sizeof(DiskInode)/sizeof(int) );
+	// 这里不拷贝了, 直接改指针的类型 :)
+	pNode = (DiskInode *)(p);
 
 	/* 将外存Inode变量dInode中信息复制到内存Inode中 */
-	this->i_mode = dInode.d_mode;
-	this->i_nlink = dInode.d_nlink;
-	this->i_uid = dInode.d_uid;
-	this->i_gid = dInode.d_gid;
-	this->i_size = dInode.d_size;
+	// @Feng Shun: 这里必须留意端序的问题!
+	this->i_mode = le32_to_cpu(pNode->d_mode);
+	this->i_nlink = le32_to_cpu(pNode->d_nlink);
+	this->i_uid = le32_to_cpu(pNode->d_uid);
+	this->i_gid = le32_to_cpu(pNode->d_gid);
+	this->i_size = le32_to_cpu(pNode->d_size);
 	for(int i = 0; i < 10; i++)
 	{
-		this->i_addr[i] = dInode.d_addr[i];
+		this->i_addr[i] = le32_to_cpu(pNode->d_addr[i]);
 	}
 }
-#endif
 
 /*======================class DiskInode======================*/
 
@@ -790,10 +796,6 @@ extern "C" {
 	s32 *secondfs_inode_rablockp = &Inode::rablock;
 
 	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(Inode)
-
-	void Inode_ReadI(Inode *inodep) {
-		inodep->ReadI();
-	}
 
 	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(DiskInode)
 }

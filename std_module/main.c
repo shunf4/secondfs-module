@@ -22,6 +22,7 @@
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
 #include <linux/semaphore.h>
+#include <linux/fs.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mark Veltzer");
@@ -31,6 +32,7 @@ MODULE_VERSION("1.0.0");
 const u32 std_module_mutex_size __attribute__((section("mutex_size"))) = sizeof(struct mutex);
 const u32 std_module_spinlock_t_size __attribute__((section("spinlock_t_size"))) = sizeof(spinlock_t);
 const u32 std_module_semaphore_size __attribute__((section("semaphore_size"))) = sizeof(struct semaphore);
+const u32 std_module_inode_size __attribute__((section("inode_size"))) = sizeof(struct inode);
 
 static int __init hello_init(void)
 {

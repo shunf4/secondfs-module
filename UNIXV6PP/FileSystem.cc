@@ -2,13 +2,16 @@
 #include <cstring>
 #include "FileSystem.hh"
 #include "Common.hh"
-#include "../secondfs_user.h"
+#include "../secondfs.h"
+#include <linux/byteorder/generic.h>
+#include "BufferManager.hh"
 
 // @Feng Shun: 以下为 C++ 部分
 
 /*======================class Superblock======================*/
 SuperBlock::SuperBlock()
 {
+	secondfs_c_helper_mutex_init(&this->s_update_lock);
 	//nothing to do here
 }
 
@@ -32,7 +35,7 @@ extern "C" void FileSystem_Initialize(FileSystem *fs) { fs->Initialize(); }
 void FileSystem::Initialize()
 {
 	this->m_BufferManager = secondfs_buffermanagerp;
-	this->updlock = 0;
+	//this->updlock = 0;
 }
 
 extern "C" void FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb) { fs->LoadSuperBlock(secsb); }
@@ -59,7 +62,7 @@ void FileSystem::LoadSuperBlock(SuperBlock *secsb)
 	secsb->s_ronly = 0;
 
 	// TODO: 应在该卷不是只读的时候才更新 s_time
-	secsb->s_time = secondfs_c_helper_get_seconds();
+	secsb->s_time = cpu_to_le32(secondfs_c_helper_get_seconds());
 }
 
 #if false
@@ -86,71 +89,66 @@ SuperBlock* FileSystem::GetFS(short dev)
 	Utility::Panic("No File System!");
 	return NULL;
 }
+#endif
 
-void FileSystem::Update()
+extern "C" void FileSystem_Update(FileSystem *fs, SuperBlock *secsb) { fs->Update(secsb); }
+void FileSystem::Update(SuperBlock *secsb)
 {
 	int i;
-	SuperBlock* sb;
+	SuperBlock* sb = secsb;
 	Buf* pBuf;
 
+	/* 设置Update()函数的互斥锁，防止其它进程重入 */
 	/* 另一进程正在进行同步，则直接返回 */
-	if(this->updlock)
+	// @Feng Shun: 注: 这里从 Univ V6++ 的每文件系统锁改为了每 SuperBlock 的锁
+	if (!secondfs_c_helper_mutex_trylock(&secsb->s_update_lock))
 	{
 		return;
 	}
 
-	/* 设置Update()函数的互斥锁，防止其它进程重入 */
-	this->updlock++;
-
 	/* 同步SuperBlock到磁盘 */
-	for(i = 0; i < FileSystem::NMOUNT; i++)
+	/* 如果该SuperBlock内存副本没有被修改，直接管理inode和空闲盘块被上锁或该文件系统是只读文件系统 */
+	if(sb->s_fmod == 0 || sb->s_ilock != 0 || sb->s_flock != 0 || sb->s_ronly != 0)
 	{
-		if(this->m_Mount[i].m_spb != NULL)	/* 该Mount装配块对应某个文件系统 */
-		{
-			sb = this->m_Mount[i].m_spb;
+		return;
+	}
 
-			/* 如果该SuperBlock内存副本没有被修改，直接管理inode和空闲盘块被上锁或该文件系统是只读文件系统 */
-			if(sb->s_fmod == 0 || sb->s_ilock != 0 || sb->s_flock != 0 || sb->s_ronly != 0)
-			{
-				continue;
-			}
+	/* 清SuperBlock修改标志 */
+	sb->s_fmod = 0;
+	/* 写入SuperBlock最后存访时间 */
+	sb->s_time = cpu_to_le32(secondfs_c_helper_get_seconds());
 
-			/* 清SuperBlock修改标志 */
-			sb->s_fmod = 0;
-			/* 写入SuperBlock最后存访时间 */
-			sb->s_time = Time::time;
+	/* 
+		* 为将要写回到磁盘上去的SuperBlock申请一块缓存，由于缓存块大小为512字节，
+		* SuperBlock大小为1024字节，占据2个连续的扇区，所以需要2次写入操作。
+		*/
+	for(int j = 0; j < 2; j++)
+	{
+		/* 第一次p指向SuperBlock的第0字节，第二次p指向第512字节 */
+		u8* p = (u8 *)sb + j * SECONDFS_BLOCK_SIZE;
 
-			/* 
-			 * 为将要写回到磁盘上去的SuperBlock申请一块缓存，由于缓存块大小为512字节，
-			 * SuperBlock大小为1024字节，占据2个连续的扇区，所以需要2次写入操作。
-			 */
-			for(int j = 0; j < 2; j++)
-			{
-				/* 第一次p指向SuperBlock的第0字节，第二次p指向第512字节 */
-				int* p = (int *)sb + j * 128;
+		/* 将要写入到设备dev上的SUPER_BLOCK_SECTOR_NUMBER + j扇区中去 */
+		pBuf = secondfs_buffermanagerp->GetBlk(sb->s_dev, SECONDFS_SUPER_BLOCK_SECTOR_NUMBER + j);
 
-				/* 将要写入到设备dev上的SUPER_BLOCK_SECTOR_NUMBER + j扇区中去 */
-				pBuf = this->m_BufferManager->GetBlk(this->m_Mount[i].m_dev, FileSystem::SUPER_BLOCK_SECTOR_NUMBER + j);
+		/* 将SuperBlock中第0 - 511字节写入缓存区 */
+		memcpy(p, pBuf->b_addr, SECONDFS_BLOCK_SIZE);
 
-				/* 将SuperBlock中第0 - 511字节写入缓存区 */
-				Utility::DWordCopy(p, (int *)pBuf->b_addr, 128);
-
-				/* 将缓冲区中的数据写到磁盘上 */
-				this->m_BufferManager->Bwrite(pBuf);
-			}
-		}
+		/* 将缓冲区中的数据写到磁盘上 */
+		secondfs_buffermanagerp->Bwrite(pBuf);
 	}
 	
 	/* 同步修改过的内存Inode到对应外存Inode */
-	g_InodeTable.UpdateInodeTable();
+	// @Feng Shun: 我们不做这步了
+	//g_InodeTable.UpdateInodeTable();
 
 	/* 清除Update()函数锁 */
-	this->updlock = 0;
+	secondfs_c_helper_mutex_unlock(&secsb->s_update_lock);
 
 	/* 将延迟写的缓存块写到磁盘上 */
-	this->m_BufferManager->Bflush(DeviceManager::NODEV);
+	secondfs_buffermanagerp->Bflush(secsb->s_dev);
 }
 
+#if false
 Inode* FileSystem::IAlloc(short dev)
 {
 	SuperBlock* sb;

@@ -2,7 +2,7 @@
 #include <linux/blkdev.h>
 #include <linux/mm.h>
 
-#include "secondfs_user.h"
+#include "secondfs.h"
 
 /*
  * secondfs_submit_bio : 跳过系统为块设备准备的缓存, 直接操作块设备

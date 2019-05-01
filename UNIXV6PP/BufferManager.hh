@@ -118,7 +118,7 @@ public:
 
 public:
 	void GetError(Buf* bp);			/* 获取I/O操作中发生的错误信息 */
-	void NotAvail(Buf* bp);			/* 从自由队列中摘下指定的缓存控制块buf */
+	void NotAvail(Buf* bp, u32 lockFirst);	/* 从自由队列中摘下指定的缓存控制块buf */
 	Buf* InCore(Devtab *adev, int blkno);	/* 检查指定字符块是否已在缓存中 */
 	
 public:

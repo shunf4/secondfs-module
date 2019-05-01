@@ -14,7 +14,7 @@
 #include <linux/cpufreq.h>
 #include <linux/slub_def.h>
 
-#include "secondfs_user.h"
+#include "secondfs.h"
 #include "c_helper_for_cc.h"
 
 #define DO_MEMDBG
@@ -155,6 +155,10 @@ void secondfs_c_helper_spin_unlock(void *lockp) {
 	spin_unlock((spinlock_t *)lockp);
 }
 
+int secondfs_c_helper_spin_is_locked(void *lockp) {
+	return spin_is_locked((spinlock_t *)lockp);
+}
+
 void secondfs_c_helper_sema_init(void *semap, int val) {
 	sema_init((struct semaphore *)semap, val);
 }
@@ -185,4 +189,8 @@ void secondfs_c_helper_mutex_unlock(void *mutexp) {
 
 int secondfs_c_helper_mutex_is_locked(void *mutexp) {
 	return mutex_is_locked((struct mutex *)mutexp);
+}
+
+int secondfs_c_helper_mutex_trylock(void *mutexp) {
+	return mutex_trylock((struct mutex *)mutexp);
 }

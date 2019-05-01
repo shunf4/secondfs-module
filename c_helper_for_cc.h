@@ -18,6 +18,7 @@ unsigned long secondfs_c_helper_get_seconds(void);
 void secondfs_c_helper_spin_lock_init(void *lockp);
 void secondfs_c_helper_spin_lock(void *lockp);
 void secondfs_c_helper_spin_unlock(void *lockp);
+int secondfs_c_helper_spin_is_locked(void *lockp);
 void secondfs_c_helper_sema_init(void *semap, int val);
 void secondfs_c_helper_up(void *semap);
 void secondfs_c_helper_down(void *semap);
@@ -26,6 +27,7 @@ void secondfs_c_helper_mutex_init(void *mutexp);
 void secondfs_c_helper_mutex_lock(void *mutexp);
 void secondfs_c_helper_mutex_unlock(void *mutexp);
 int secondfs_c_helper_mutex_is_locked(void *mutexp);
+int secondfs_c_helper_mutex_trylock(void *mutexp);
 
 #ifdef __cplusplus
 }

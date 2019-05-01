@@ -4,12 +4,18 @@
 #include "../common_c_cpp_types.h"
 #include "Common.hh"
 
+#ifndef __cplusplus
+#include <linux/fs.h>
+#endif // __cplusplus
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
 // Inode 类的 C 包装
-
+// 注: i_flag 的 ILOCK, i_count 等锁机制和引用计数机制
+// 在本工程中不用, 交由系统管理
 #ifndef __cplusplus
 typedef struct Inode
 {
@@ -19,7 +25,7 @@ typedef struct Inode
 	s32		i_count;		/* 引用计数 */
 	s32		i_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
 	
-	u16		i_dev;			/* 外存inode所在存储设备的设备号 */
+	Devtab*		i_dev;			/* 外存inode所在存储设备的设备号 */
 	s32		i_number;		/* 外存inode区中的编号 */
 	
 	u16		i_uid;			/* 文件所有者的用户标识数 */
@@ -29,6 +35,8 @@ typedef struct Inode
 	s32		i_addr[10];		/* 用于文件逻辑块好和物理块好转换的基本索引表 */
 	
 	s32		i_lastr;		/* 存放最近一次读取文件的逻辑块号，用于判断是否需要预读 */
+
+	struct inode	vfs_inode;	/* 包含的 VFS Inode 数据结构. */
 } Inode;
 #else // __cplusplus
 class Inode;

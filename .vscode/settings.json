@@ -6,8 +6,8 @@
         "random.h": "c",
         "blkdev.h": "c",
         "secondfs.h": "c",
-        "secondfs_kern.h": "c",
-        "secondfs_user.h": "c",
+        "secondfs.h": "c",
+        "secondfs.h": "c",
         "filesystem_c_wrapper.h": "c",
         "limits.h": "c",
         "inode_c_wrapper.h": "c",
@@ -18,7 +18,9 @@
         "buffermanager_c_wrapper.h": "c",
         "common_c_cpp_types.h": "c",
         "mm.h": "c",
-        "common.hh": "c"
+        "common.hh": "c",
+        "kernel.h": "c",
+        "inode.hh": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

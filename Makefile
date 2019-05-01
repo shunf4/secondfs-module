@@ -22,7 +22,7 @@ std_module/hello.ko :
 # 模仿内核模块构建器 kbuild 构建 .c 文件的过程, 生成构建 C++ 源文件的参数, 从 cxxflags.tmp 读取
 # 然后设置 CXXMACROS (包含了一些 C 结构的大小) 和 CXXFLAGS 变量
 set_and_print_cxxflags : std_module/hello.ko
-	$(eval CXXMACROS := -D SECONDFS_SEMAPHORE_SIZE=$(shell objcopy -jsemaphore_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{$$1=$$1}1') -D SECONDFS_SPINLOCK_T_SIZE=$(shell objcopy -jspinlock_t_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{$$1=$$1}1') -D SECONDFS_MUTEX_SIZE=$(shell objcopy -jmutex_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{$$1=$$1}1'))
+	$(eval CXXMACROS := -D SECONDFS_SEMAPHORE_SIZE=$(shell objcopy -jsemaphore_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{$$1=$$1}1') -D SECONDFS_SPINLOCK_T_SIZE=$(shell objcopy -jspinlock_t_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{$$1=$$1}1') -D SECONDFS_MUTEX_SIZE=$(shell objcopy -jmutex_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{$$1=$$1}1') -D SECONDFS_INODE_SIZE=$(shell objcopy -jinode_size -Obinary ./std_module/hello.ko /dev/stdout|od -A n -v -t u4 | awk '{$$1=$$1}1'))
 	$(eval CXXFLAGS := $(shell cat cxxflags.tmp) -I/usr/src/linux-headers-$(shell uname -r)/include $(CXXMACROS))
 	$(Q)echo CXXFLAGS = $(CXXFLAGS)
 
@@ -50,34 +50,34 @@ UNIXV6PP/CCNewDelete.o : UNIXV6PP/CCNewDelete.cc c_helper_for_cc.h
 
 $(obj)/c_helper_for_cc.o : $(obj)/c_helper_for_cc.h
 
-$(obj)/bio.o : $(obj)/secondfs_user.h $(wrapper-headers)
+$(obj)/bio.o : $(obj)/secondfs.h $(wrapper-headers)
 
-$(obj)/main.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers)
+$(obj)/main.o : $(obj)/secondfs.h $(obj)/secondfs.h $(wrapper-headers)
 
 ######### 下面是超块相关模块 super.o(C)/FileSystem.o(C) 的编译 #########
 
-$(obj)/super.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers) common_c_cpp_types.h
+$(obj)/super.o : $(obj)/secondfs.h $(obj)/secondfs.h $(wrapper-headers) common_c_cpp_types.h
 
 UNIXV6PP/FileSystem.o : UNIXV6PP/FileSystem.cc UNIXV6PP/FileSystem.hh UNIXV6PP/FileSystem_c_wrapper.h common_c_cpp_types.h
 	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
 
 ######### 下面是 Inode 相关模块 inode.o(C)/Inode.o(C) 的编译 #########
 
-$(obj)/inode.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers) common_c_cpp_types.h
+$(obj)/inode.o : $(obj)/secondfs.h $(obj)/secondfs.h $(wrapper-headers) common_c_cpp_types.h
 
 UNIXV6PP/Inode.o : UNIXV6PP/Inode.cc UNIXV6PP/Inode.hh UNIXV6PP/Inode_c_wrapper.h common_c_cpp_types.h
 	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
 
 ######### 下面是文件操作相关模块 fileops.o(C)/FileOperations.o(C) 的编译 #########
 
-$(obj)/fileops.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers) common_c_cpp_types.h
+$(obj)/fileops.o : $(obj)/secondfs.h $(obj)/secondfs.h $(wrapper-headers) common_c_cpp_types.h
 
 UNIXV6PP/FileOperations.o : UNIXV6PP/FileOperations.cc UNIXV6PP/FileOperations.hh UNIXV6PP/FileOperations_c_wrapper.h common_c_cpp_types.h
 	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
 
 ######### 下面是高速缓存相关模块 fileops.o(C)/FileOperations.o(C) 的编译 #########
 
-$(obj)/buffer.o : $(obj)/secondfs_kern.h $(obj)/secondfs_user.h $(wrapper-headers) common_c_cpp_types.h
+$(obj)/buffer.o : $(obj)/secondfs.h $(obj)/secondfs.h $(wrapper-headers) common_c_cpp_types.h
 
 UNIXV6PP/BufferManager.o : UNIXV6PP/BufferManager.cc UNIXV6PP/BufferManager.hh UNIXV6PP/BufferManager_c_wrapper.h common_c_cpp_types.h
 	$(Q)$(CXX) $(CXXFLAGS) -c -o$@ $(filter-out %.h %.hh, $^)
