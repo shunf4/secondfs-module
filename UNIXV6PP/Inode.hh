@@ -7,6 +7,7 @@
 #include "../common_c_cpp_types.h"
 #include "../c_helper_for_cc.h"
 #include "Inode_c_wrapper.h"
+#include "FileSystem.hh"
 #include "BufferManager.hh"
 
 /*
@@ -87,7 +88,7 @@ public:
 	 * 的文件数据
 	 */
 	void ReadI();
-#if false
+
 	/* 
 	 * @comment 根据Inode对象中的物理磁盘块索引表，将数据写入文件
 	 */
@@ -109,7 +110,8 @@ public:
 	void CloseI(int mode);
 	
 	/* 
-	 * @comment 更新外存Inode的最后的访问时间、修改时间
+	 * @comment 更新/写回外存Inode的最后的访问时间、修改时间
+	 * 检查 IUPD 或 IACC 是否置位, 置为才更新并且写回
 	 */
 	void IUpdate(int time);
 	/* 
@@ -141,7 +143,7 @@ public:
 	 * @comment 清空Inode对象中的数据
 	 */
 	void Clean();
-#endif
+
 	/* 
 	 * @comment 将包含外存Inode字符块中信息拷贝到内存Inode中
 	 */
@@ -155,7 +157,7 @@ public:
 	s32		i_count;		/* 引用计数 */
 	s32		i_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
 	
-	Devtab*		i_dev;			/* 外存inode所在存储设备的设备号 */
+	SuperBlock*	i_ssb;			/* 外存inode所在 SuperBlock */
 	s32		i_number;		/* 外存inode区中的编号 */
 	
 	u16		i_uid;			/* 文件所有者的用户标识数 */

@@ -25,7 +25,7 @@ typedef struct Inode
 	s32		i_count;		/* 引用计数 */
 	s32		i_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
 	
-	Devtab*		i_dev;			/* 外存inode所在存储设备的设备号 */
+	SuperBlock*	i_ssb;			/* 外存inode所在 SuperBlock */
 	s32		i_number;		/* 外存inode区中的编号 */
 	
 	u16		i_uid;			/* 文件所有者的用户标识数 */
@@ -91,6 +91,7 @@ extern s32 *secondfs_inode_rablockp;	/* 顺序读时，使用预读技术读入�
 
 SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Inode)
 void Inode_ReadI(Inode *);
+void Inode_IUpdate(Inode *i, int time);
 
 
 // DiskInode 类的 C 包装

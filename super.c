@@ -39,7 +39,7 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 
 	si = SECONDFS_INODE(inode);	// 获得包含 VFS Inode 的那个 SecondFS Inode
 	
-	si->i_dev = SECONDFS_SB(sb)->s_dev;
+	si->i_ssb = SECONDFS_SB(sb);
 	si->i_number = ino;
 	// si->i_flag = SECONDFS_ILOCK;
 	// si->i_count++;
@@ -68,6 +68,22 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 }
 
 /* secondfs_alloc_inode : 在系统 alloc_inode 函数中调用.
+ *			用以为 SecondFS 分配一个 VFS Inode.
+ * 其指针会传给内核供其调用.
+ *      sb : 系统传过来的 (VFS) 超块指针
+ * 
+ * 从 kmem_cache 里分配一个 Inode, 然后
+ * 把指向它的成员 vfs_inode 的指针返回.
+ * 这样就能保证每一个 SecondFS VFS Inode
+ * 都伴随一个 SecondFS Inode.
+ *
+ */
+void secondfs_destroy_inode(struct inode *inode)
+{
+	kmem_cache_free(secondfs_icachep, SECONDFS_INODE(inode));
+}
+
+/* secondfs_destroy_inode : 在系统中调用.
  *			用以为 SecondFS 分配一个 VFS Inode.
  * 其指针会传给内核供其调用.
  *      sb : 系统传过来的 (VFS) 超块指针

@@ -6,8 +6,6 @@
         "random.h": "c",
         "blkdev.h": "c",
         "secondfs.h": "c",
-        "secondfs.h": "c",
-        "secondfs.h": "c",
         "filesystem_c_wrapper.h": "c",
         "limits.h": "c",
         "inode_c_wrapper.h": "c",
@@ -20,7 +18,8 @@
         "mm.h": "c",
         "common.hh": "c",
         "kernel.h": "c",
-        "inode.hh": "c"
+        "inode.hh": "c",
+        "filesystem.hh": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

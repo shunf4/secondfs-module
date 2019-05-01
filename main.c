@@ -48,8 +48,22 @@ struct file_system_type secondfs_fs_type = {
 
 // 要注册的超块操作函数表
 const struct super_operations secondfs_sb_ops = {
-	.destroy_inode = NULL,
-	.put_super = NULL
+	.alloc_inode	= secondfs_alloc_inode,
+	.destroy_inode	= secondfs_destroy_inode,
+	.write_inode	= secondfs_write_inode,
+	.evict_inode	= ext2_evict_inode,
+	.put_super	= ext2_put_super,
+	.sync_fs	= ext2_sync_fs,
+	.freeze_fs	= ext2_freeze,
+	.unfreeze_fs	= ext2_unfreeze,
+	.statfs		= ext2_statfs,
+	.remount_fs	= ext2_remount,
+	.show_options	= ext2_show_options,
+#ifdef CONFIG_QUOTA
+	.quota_read	= ext2_quota_read,
+	.quota_write	= ext2_quota_write,
+	.get_dquots	= ext2_get_dquots,
+#endif
 };
 
 static int __init secondfs_init(void) {

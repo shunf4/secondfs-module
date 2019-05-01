@@ -57,6 +57,7 @@ static inline SuperBlock *SECONDFS_SB(struct super_block *sb)
 
 extern struct inode *secondfs_iget(struct super_block *sb, unsigned long ino);
 extern struct inode *secondfs_alloc_inode(struct super_block *sb);
+extern void secondfs_destroy_inode(struct inode *inode);
 extern int secondfs_sync_fs(struct super_block *sb, int wait);
 extern int secondfs_fill_super(struct super_block *sb, void *data, int silent);
 extern void secondfs_put_super(struct super_block *sb);
