@@ -52,6 +52,7 @@ public:
 
 	Inode*	s_inodep;		// SuperBlock 所在文件系统的根节点
 	Devtab*	s_dev;			// SuperBlock 所在文件系统的设备
+	void * /* struct super_block * */s_vsb;		// VFS 超块
 
 	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_update_lock;
 	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_flock;
@@ -116,13 +117,12 @@ public:
 	 */
 	void Update(SuperBlock *secsb);
 
-#if false
 	/* 
 	 * @comment  在存储设备dev上分配一个空闲
 	 * 外存INode，一般用于创建新的文件。
 	 */
-	Inode* IAlloc(short dev);
-#endif
+	Inode* IAlloc(SuperBlock *secsb);
+
 	/* 
 	 * @comment  释放超级块secsb所在文件系统中编号为number
 	 * 的外存INode，一般用于删除文件。
@@ -132,7 +132,7 @@ public:
 	/* 
 	 * @comment 在存储设备dev上分配空闲磁盘块
 	 */
-	Buf* Alloc(short dev);
+	Buf* Alloc(SuperBlock *secsb);
 	/* 
 	 * @comment 释放secsb所在文件系统编号为blkno的磁盘块
 	 */

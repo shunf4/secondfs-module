@@ -1,9 +1,10 @@
 /* UNIXV6PP 文件系统(主要是Inode操作)代码裁剪. */
 #include "Inode.hh"
+#include "FileOperations.hh"
 #include "Common.hh"
 #include <FileSystem_c_wrapper.h>
-#include <linux/byteorder/generic.h>
 #include "../secondfs.h"
+#include "../c_helper_for_cc.h"
 
 // @Feng Shun: 以下为 C++ 部分
 
@@ -39,6 +40,8 @@ Inode::Inode()
 		this->i_addr[i] = 0;
 	}
 	// VFS Inode 部分不用初始化了
+
+	secondfs_c_helper_mutex_init(&this->i_lock);
 }
 
 Inode::~Inode()
@@ -46,21 +49,19 @@ Inode::~Inode()
 	//nothing to do here
 }
 
-extern "C" void Inode_ReadI(Inode *i) { i->ReadI(); }
-void Inode::ReadI()
+extern "C" void Inode_ReadI(Inode *i, IOParameter *io_paramp) { i->ReadI(io_paramp); }
+void Inode::ReadI(IOParameter *io_paramp)
 {
-#if false
 	int lbn;	/* 文件逻辑块号 */
 	int bn;		/* lbn对应的物理盘块号 */
 	int offset;	/* 当前字符块内起始传送位置 */
 	int nbytes;	/* 传送至用户目标区字节数量 */
-	short dev;
+	Devtab *dev;
 	Buf* pBuf;
-	User& u = Kernel::Instance().GetUser();
-	BufferManager& bufMgr = Kernel::Instance().GetBufferManager();
-	DeviceManager& devMgr = Kernel::Instance().GetDeviceManager();
 
-	if( 0 == u.u_IOParam.m_Count )
+	BufferManager& bufMgr = *secondfs_buffermanagerp;
+
+	if( 0 == io_paramp->m_Count )
 	{
 		/* 需要读字节数为零，则返回 */
 		return;
@@ -68,34 +69,25 @@ void Inode::ReadI()
 
 	this->i_flag |= Inode::IACC;
 
-	/* 如果是字符设备文件 ，调用外设读函数*/
-	if( (this->i_mode & Inode::IFMT) == Inode::IFCHR )
-	{
-		short major = Utility::GetMajor(this->i_addr[0]);
-
-		devMgr.GetCharDevice(major).Read(this->i_addr[0]);
-		return;
-	}
-
 	/* 一次一个字符块地读入所需全部数据，直至遇到文件尾 */
-	while( User::NOERROR == u.u_error && u.u_IOParam.m_Count != 0)
+	while( io_paramp->m_Count != 0)
 	{
-		lbn = bn = u.u_IOParam.m_Offset / Inode::BLOCK_SIZE;
-		offset = u.u_IOParam.m_Offset % Inode::BLOCK_SIZE;
+		lbn = bn = io_paramp->m_Offset / Inode::BLOCK_SIZE;
+		offset = io_paramp->m_Offset % Inode::BLOCK_SIZE;
 		/* 传送到用户区的字节数量，取读请求的剩余字节数与当前字符块内有效字节数较小值 */
-		nbytes = Utility::Min(Inode::BLOCK_SIZE - offset /* 块内有效字节数 */, u.u_IOParam.m_Count);
+		nbytes = (Inode::BLOCK_SIZE - offset /* 块内有效字节数 */) < io_paramp->m_Count ? (Inode::BLOCK_SIZE - offset) : io_paramp->m_Count;
 
 		if( (this->i_mode & Inode::IFMT) != Inode::IFBLK )
 		{	/* 如果不是特殊块设备文件 */
 		
-			int remain = this->i_size - u.u_IOParam.m_Offset;
+			int remain = this->i_size - io_paramp->m_Offset;
 			/* 如果已读到超过文件结尾 */
 			if( remain <= 0)
 			{
 				return;
 			}
 			/* 传送的字节数量还取决于剩余文件的长度 */
-			nbytes = Utility::Min(nbytes, remain);
+			nbytes = nbytes < remain ? nbytes : remain;
 
 			/* 将逻辑块号lbn转换成物理盘块号bn ，Bmap有设置Inode::rablock。当UNIX认为获取预读块的开销太大时，
 			 * 会放弃预读，此时 Inode::rablock 值为 0。
@@ -104,18 +96,19 @@ void Inode::ReadI()
 			{
 				return;
 			}
-			dev = this->i_dev;
+			dev = this->i_ssb->s_dev;
 		}
-		else	/* 如果是特殊块设备文件 */
+		else	/* 如果是特殊块设备文件, 我们不处理 */
 		{
-			dev = this->i_addr[0];	/* 特殊块设备文件i_addr[0]中存放的是设备号 */
-			Inode::rablock = bn + 1;
+			// dev = this->i_addr[0];	/* 特殊块设备文件i_addr[0]中存放的是设备号 */
+			// Inode::rablock = bn + 1;
+			return;
 		}
 
-		if( this->i_lastr + 1 == lbn )	/* 如果是顺序读，则进行预读 */
+		if( this->i_lastr + 1 == lbn && false )	/* 即使是顺序读, 为简单我们也不进行预读 */
 		{
 			/* 读当前块，并预读下一块 */
-			pBuf = bufMgr.Breada(dev, bn, Inode::rablock);
+			//pBuf = bufMgr.Breada(dev, bn, Inode::rablock);
 		}
 		else
 		{
@@ -130,29 +123,27 @@ void Inode::ReadI()
 		/* 读操作: 从缓冲区拷贝到用户目标区
 		 * i386芯片用同一张页表映射用户空间和内核空间，这一点硬件上的差异 使得i386上实现 iomove操作
 		 * 比PDP-11要容易许多*/
-		Utility::IOMove(start, u.u_IOParam.m_Base, nbytes);
+		secondfs_c_helper_copy_to_user(start, io_paramp->m_Base, nbytes);
 
 		/* 用传送字节数nbytes更新读写位置 */
-		u.u_IOParam.m_Base += nbytes;
-		u.u_IOParam.m_Offset += nbytes;
-		u.u_IOParam.m_Count -= nbytes;
+		io_paramp->m_Base += nbytes;
+		io_paramp->m_Offset += nbytes;
+		io_paramp->m_Count -= nbytes;
 
 		bufMgr.Brelse(pBuf);	/* 使用完缓存，释放该资源 */
 	}
-#endif
 }
-#if false
-void Inode::WriteI()
+
+extern "C" void Inode_WriteI(Inode *i, IOParameter *io_paramp) { i->WriteI(io_paramp); }
+void Inode::WriteI(IOParameter *io_paramp)
 {
 	int lbn;	/* 文件逻辑块号 */
 	int bn;		/* lbn对应的物理盘块号 */
 	int offset;	/* 当前字符块内起始传送位置 */
 	int nbytes;	/* 传送字节数量 */
-	short dev;
+	Devtab *dev;
 	Buf* pBuf;
-	User& u = Kernel::Instance().GetUser();
-	BufferManager& bufMgr = Kernel::Instance().GetBufferManager();
-	DeviceManager& devMgr = Kernel::Instance().GetDeviceManager();
+	BufferManager& bufMgr = *secondfs_buffermanagerp;
 
 	/* 设置Inode被访问标志位 */
 	this->i_flag |= (Inode::IACC | Inode::IUPD);
@@ -160,23 +151,23 @@ void Inode::WriteI()
 	/* 对字符设备的访问 */
 	if( (this->i_mode & Inode::IFMT) == Inode::IFCHR )
 	{
-		short major = Utility::GetMajor(this->i_addr[0]);
+		// short major = Utility::GetMajor(this->i_addr[0]);
 
-		devMgr.GetCharDevice(major).Write(this->i_addr[0]);
+		// devMgr.GetCharDevice(major).Write(this->i_addr[0]);
 		return;
 	}
 
-	if( 0 == u.u_IOParam.m_Count)
+	if( 0 == io_paramp->m_Count)
 	{
 		/* 需要读字节数为零，则返回 */
 		return;
 	}
 
-	while( User::NOERROR == u.u_error && u.u_IOParam.m_Count != 0 )
+	while( io_paramp->m_Count != 0 )
 	{
 		lbn = u.u_IOParam.m_Offset / Inode::BLOCK_SIZE;
 		offset = u.u_IOParam.m_Offset % Inode::BLOCK_SIZE;
-		nbytes = Utility::Min(Inode::BLOCK_SIZE - offset, u.u_IOParam.m_Count);
+		nbytes = (Inode::BLOCK_SIZE - offset) < io_paramp->m_Count ? (Inode::BLOCK_SIZE - offset) : io_paramp->m_Count;
 
 		if( (this->i_mode & Inode::IFMT) != Inode::IFBLK )
 		{	/* 普通文件 */
@@ -186,11 +177,13 @@ void Inode::WriteI()
 			{
 				return;
 			}
-			dev = this->i_dev;
+			dev = this->i_ssb->s_dev;
 		}
 		else
 		{	/* 块设备文件，也就是硬盘 */
-			dev = this->i_addr[0];
+			// dev = this->i_addr[0];
+			// 不处理, 返回
+			return;
 		}
 
 		if(Inode::BLOCK_SIZE == nbytes)
@@ -208,21 +201,23 @@ void Inode::WriteI()
 		unsigned char* start = pBuf->b_addr + offset;
 
 		/* 写操作: 从用户目标区拷贝数据到缓冲区 */
-		Utility::IOMove(u.u_IOParam.m_Base, start, nbytes);
+		secondfs_c_helper_copy_to_user(io_paramp->m_Base, start, nbytes);
 
 		/* 用传送字节数nbytes更新读写位置 */
-		u.u_IOParam.m_Base += nbytes;
-		u.u_IOParam.m_Offset += nbytes;
-		u.u_IOParam.m_Count -= nbytes;
+		io_paramp->m_Base += nbytes;
+		io_paramp->m_Offset += nbytes;
+		io_paramp->m_Count -= nbytes;
 
-		if( u.u_error != User::NOERROR )	/* 写过程中出错 */
+		if( /* u.u_error != User::NOERROR */ false )	/* 写过程中出错 */
 		{
 			bufMgr.Brelse(pBuf);
 		}
-		else if( (u.u_IOParam.m_Offset % Inode::BLOCK_SIZE) == 0 )	/* 如果写满一个字符块 */
+		else if( (io_paramp->m_Offset % Inode::BLOCK_SIZE) == 0 )	/* 如果写满一个字符块 */
 		{
 			/* 以异步方式将字符块写入磁盘，进程不需等待I/O操作结束，可以继续往下执行 */
-			bufMgr.Bawrite(pBuf);
+			// bufMgr.Bawrite(pBuf);
+			// 所有的异步写改为同步写
+			bufMgr.Bwrite(pBuf);
 		}
 		else /* 如果缓冲区未写满 */
 		{
@@ -248,6 +243,7 @@ void Inode::WriteI()
 	}
 }
 
+extern "C" int Inode_Bmap(Inode *i, int lbn) { return i->Bmap(lbn); }
 int Inode::Bmap(int lbn)
 {
 	Buf* pFirstBuf;
@@ -255,9 +251,9 @@ int Inode::Bmap(int lbn)
 	int phyBlkno;	/* 转换后的物理盘块号 */
 	int* iTable;	/* 用于访问索引盘块中一次间接、两次间接索引表 */
 	int index;
-	User& u = Kernel::Instance().GetUser();
-	BufferManager& bufMgr = Kernel::Instance().GetBufferManager();
-	FileSystem& fileSys = Kernel::Instance().GetFileSystem();
+
+	BufferManager& bufMgr = *secondfs_buffermanagerp;
+	FileSystem& fileSys = *secondfs_filesystemp;
 	
 	/* 
 	 * Unix V6++的文件索引结构：(小型、大型和巨型文件)
@@ -273,7 +269,7 @@ int Inode::Bmap(int lbn)
 
 	if(lbn >= Inode::HUGE_FILE_BLOCK)
 	{
-		u.u_error = User::EFBIG;
+		secondfs_c_helper_bug();
 		return 0;
 	}
 
@@ -287,7 +283,7 @@ int Inode::Bmap(int lbn)
 		 * 文件进行扩充写入，就需要分配额外的磁盘块，并为之建立逻辑块号
 		 * 与物理盘块号之间的映射。
 		 */
-		if( phyBlkno == 0 && (pFirstBuf = fileSys.Alloc(this->i_dev)) != NULL )
+		if( phyBlkno == 0 && (pFirstBuf = fileSys.Alloc(this->i_ssb)) != NULL )
 		{
 			/* 
 			 * 因为后面很可能马上还要用到此处新分配的数据块，所以不急于立刻输出到
@@ -299,9 +295,10 @@ int Inode::Bmap(int lbn)
 			this->i_addr[lbn] = phyBlkno;
 			this->i_flag |= Inode::IUPD;
 		}
+		// @Feng Shun: 我们这里不考虑预读
 		/* 找到预读块对应的物理盘块号 */
 		Inode::rablock = 0;
-		if(lbn <= 4)
+		if(lbn <= 4 && false)
 		{
 			/* 
 			 * i_addr[0] - i_addr[5]为直接索引表。如果预读块对应物理块号可以从
@@ -332,7 +329,7 @@ int Inode::Bmap(int lbn)
 		{
 			this->i_flag |= Inode::IUPD;
 			/* 分配一空闲盘块存放间接索引表 */
-			if( (pFirstBuf = fileSys.Alloc(this->i_dev)) == NULL )
+			if( (pFirstBuf = fileSys.Alloc(this->i_ssb)) == NULL )
 			{
 				return 0;	/* 分配失败 */
 			}
@@ -342,7 +339,7 @@ int Inode::Bmap(int lbn)
 		else
 		{
 			/* 读出存储间接索引表的字符块 */
-			pFirstBuf = bufMgr.Bread(this->i_dev, phyBlkno);
+			pFirstBuf = bufMgr.Bread(this->i_ssb->s_dev, phyBlkno);
 		}
 		/* 获取缓冲区首址 */
 		iTable = (int *)pFirstBuf->b_addr;
@@ -359,7 +356,7 @@ int Inode::Bmap(int lbn)
 			phyBlkno = iTable[index];
 			if( 0 == phyBlkno )
 			{
-				if( (pSecondBuf = fileSys.Alloc(this->i_dev)) == NULL)
+				if( (pSecondBuf = fileSys.Alloc(this->i_ssb)) == NULL)
 				{
 					/* 分配一次间接索引表磁盘块失败，释放缓存中的二次间接索引表，然后返回 */
 					bufMgr.Brelse(pFirstBuf);
@@ -374,7 +371,7 @@ int Inode::Bmap(int lbn)
 			{
 				/* 释放二次间接索引表占用的缓存，并读入一次间接索引表 */
 				bufMgr.Brelse(pFirstBuf);
-				pSecondBuf = bufMgr.Bread(this->i_dev, phyBlkno);
+				pSecondBuf = bufMgr.Bread(this->i_ssb->s_dev, phyBlkno);
 			}
 
 			pFirstBuf = pSecondBuf;
@@ -393,7 +390,7 @@ int Inode::Bmap(int lbn)
 			index = (lbn - Inode::LARGE_FILE_BLOCK) % Inode::ADDRESS_PER_INDEX_BLOCK;
 		}
 
-		if( (phyBlkno = iTable[index]) == 0 && (pSecondBuf = fileSys.Alloc(this->i_dev)) != NULL)
+		if( (phyBlkno = iTable[index]) == 0 && (pSecondBuf = fileSys.Alloc(this->i_ssb)) != NULL)
 		{
 			/* 将分配到的文件数据盘块号登记在一次间接索引表中 */
 			phyBlkno = pSecondBuf->b_blkno;
@@ -415,8 +412,11 @@ int Inode::Bmap(int lbn)
 		}
 		return phyBlkno;
 	}
+	// @Feng Shun: 为保险, 我们这里还是刷新一下缓冲吧
+	bufMgr.Bflush(this->i_ssb->s_dev);
 }
 
+#if false
 void Inode::OpenI(int mode)
 {
 	short dev;
@@ -501,7 +501,7 @@ void Inode::IUpdate(int time)
 	 * 目录搜索，不会设置所途径的目录文件的IACC和IUPD标志 */
 	if( (this->i_flag & (Inode::IUPD | Inode::IACC))!= 0 )
 	{
-		if( this->i_ssb->s_ronly != 0 )
+		if( le32_to_cpu(this->i_ssb->s_ronly) != 0 )
 		{
 			/* 如果该文件系统只读 */
 			return;
@@ -630,7 +630,6 @@ void Inode::ITrunc()
 	this->i_nlink = 1;
 }
 
-#if false
 void Inode::NFrele()
 {
 	/* 解锁pipe或Inode,并且唤醒相应进程 */
@@ -639,22 +638,19 @@ void Inode::NFrele()
 	if (this->i_flag & Inode::IWANT)
 	{
 		this->i_flag &= ~Inode::IWANT;
-		Kernel::Instance().GetProcessManager().WakeUpAll((unsigned long)this);
 	}
+
+	secondfs_c_helper_mutex_unlock(&this->i_lock);
 }
 
 void Inode::NFlock()
 {
-	User& u = Kernel::Instance().GetUser();
-
-	while( this->i_flag & Inode::ILOCK )
-	{
+	if (secondfs_c_helper_mutex_is_locked(&this->i_lock))
 		this->i_flag |= Inode::IWANT;
-		u.u_procp->Sleep((unsigned long)this, ProcessManager::PRIBIO);
-	}
+		
+	secondfs_c_helper_mutex_lock(&this->i_lock);
 	this->i_flag |= Inode::ILOCK;
 }
-#endif
 
 #if false
 void Inode::Prele()
@@ -681,6 +677,7 @@ void Inode::Plock()
 	}
 	this->i_flag |= Inode::ILOCK;
 }
+#endif
 
 void Inode::Clean()
 {
@@ -706,7 +703,6 @@ void Inode::Clean()
 		this->i_addr[i] = 0;
 	}
 }
-#endif
 
 extern "C" void Inode_ICopy(Inode *i, Buf *bp, int inumber) { i->ICopy(bp, inumber); }
 void Inode::ICopy(Buf *bp, int inumber)
@@ -806,7 +802,7 @@ extern "C" {
 
 	s32 *secondfs_inode_rablockp = &Inode::rablock;
 
-	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(Inode)
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(Inode)
 
-	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(DiskInode)
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(DiskInode)
 }

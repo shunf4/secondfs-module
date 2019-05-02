@@ -40,6 +40,7 @@ typedef struct Inode
 	s32		i_mtime;		/* 最后修改时间 */
 
 	struct inode	vfs_inode;	/* 包含的 VFS Inode 数据结构. */
+	struct mutex	i_lock;		/* 互斥锁 */
 } Inode;
 #else // __cplusplus
 class Inode;
@@ -92,10 +93,12 @@ extern s32 *secondfs_inode_rablockp;	/* 顺序读时，使用预读技术读入�
 
 #define secondfs_inode_rablock (*secondfs_inode_rablockp)
 
-SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Inode)
-void Inode_ReadI(Inode *);
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(Inode)
+void Inode_ReadI(Inode *i, IOParameter *io_paramp);
+void Inode_WriteI(Inode *i, IOParameter *io_paramp);
 void Inode_IUpdate(Inode *i, int time);
 void Inode_ICopy(Inode *i, Buf *bp, int inumber);
+int Inode_Bmap(Inode *i, int lbn) { return i->Bmap(lbn); };
 
 
 // DiskInode 类的 C 包装
@@ -119,7 +122,7 @@ typedef struct DiskInode
 class DiskInode;
 #endif // __cplusplus
 
-SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(DiskInode)
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(DiskInode)
 
 #ifdef __cplusplus
 }

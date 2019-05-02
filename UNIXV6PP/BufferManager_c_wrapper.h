@@ -62,7 +62,7 @@ extern const u32
 	SECONDFS_B_DELWRI	/* 延迟写，在相应缓存要移做他用时，再将其内容写到相应块设备上 */
 ;
 
-SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Buf)
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(Buf)
 
 // Devtab 类的 C 包装
 #ifndef __cplusplus
@@ -80,7 +80,7 @@ typedef struct _Devtab{
 class Devtab;
 #endif // __cplusplus
 
-SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(Devtab)
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(Devtab)
 
 
 // BufferManager 类的 C 包装
@@ -108,7 +108,7 @@ class BufferManager;
 #endif // __cplusplus
 
 
-SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(BufferManager)
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(BufferManager)
 
 void BufferManager_Initialize(BufferManager *bm);
 Buf* BufferManager_GetBlk(BufferManager *bm, Devtab *dev, int blkno);
@@ -118,6 +118,9 @@ Buf* BufferManager_Bread(BufferManager *bm, Devtab *dev, int blkno);
 void BufferManager_Bwrite(BufferManager *bm, Buf *bp);
 void BufferManager_NotAvail(BufferManager *bm, Buf *bp, u32 lockFirst);
 Buf* BufferManager_InCore(BufferManager *bm, Devtab *adev, int blkno);
+void BufferManager_ClrBuf(BufferManager *bm, Buf *bp);
+void BufferManager_Bdwrite(BufferManager *bm, Buf *bp);
+void BufferManager_Bflush(BufferManager *bm, Devtab *dev);
 
 #ifdef __cplusplus
 }

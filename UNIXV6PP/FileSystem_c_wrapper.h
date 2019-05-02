@@ -33,6 +33,7 @@ typedef struct
 
 	Inode*	s_inodep;		// SuperBlock 所在文件系统的根节点
 	Devtab*	s_dev;			// SuperBlock 所在文件系统的设备
+	struct super_block *s_vsb;	// VFS 超块
 	struct mutex s_update_lock;
 	struct mutex s_flock;
 	struct mutex s_ilock;
@@ -44,7 +45,7 @@ typedef struct
 class SuperBlock;
 #endif // __cplusplus
 
-SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(SuperBlock)
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(SuperBlock)
 
 // FileSystem 类的 C 包装
 
@@ -71,12 +72,13 @@ extern const s32
 	SECONDFS_DATA_ZONE_SIZE			/* 数据区占据的扇区数量 */
 ;
 
-SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR_DECLARATION(FileSystem)
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(FileSystem)
 
 void FileSystem_Initialize(FileSystem *fs);
 void FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb);
 void FileSystem_Update(FileSystem *fs, SuperBlock *secsb);
 void FileSystem_IFree(FileSystem *fs, SuperBlock *secsb, int number);
+void FileSystem_Alloc(FileSystem *fs, SuperBlock *secsb);
 
 
 #ifdef __cplusplus

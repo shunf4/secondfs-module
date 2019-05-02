@@ -1,5 +1,50 @@
 #include "secondfs.h"
 
+
+ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
+				loff_t *ppos)
+{
+	// filp->f_inode 是缓存数据, 实时数据在 path 结构里面
+	struct inode *inode = filp->f_path.dentry->d_inode;
+	Inode *si = SECONDFS_INODE(inode);
+	ssize_t ret;
+	
+	ret = FileManager_Read(secondfs_filemanagerp, buf, len, ppos, si);
+	return ret;
+}
+
+ssize_t secondfs_file_write(struct file *filp, char __user *buf, size_t len,
+				loff_t *ppos)
+{
+	// filp->f_inode 是缓存数据, 实时数据在 path 结构里面
+	struct inode *inode = filp->f_path.dentry->d_inode;
+	Inode *si = SECONDFS_INODE(inode);
+	ssize_t ret;
+	
+	ret = FileManager_Write(secondfs_filemanagerp, buf, len, ppos, si);
+	secondfs_conform_s2v(inode, si);
+	mark_inode_dirty_sync(inode);
+	return ret;
+}
+
+int secondfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
+{
+	// 要求将文件同步到磁盘上
+	// 我们就简单地整设备同步即可
+	BufferManager_Bflush(secondfs_buffermanagerp, SECONDFS_INODE(file->f_path.dentry->d_inode)->i_ssb->s_dev);
+	return 0;
+}
+
+static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl)
+{
+	// 要求在 dir 下为新创建文件
+	struct inode *inode;
+	int err;
+
+	// 先为文件分配新 inode
+	inode = secondfs_new_inode(dir, mode, dentry->d_name);
+}
+
 struct file_operations secondfs_file_operations = {
 	.llseek = generic_file_llseek,
 
@@ -15,9 +60,9 @@ struct file_operations secondfs_file_operations = {
 	.read = secondfs_file_read,
 	.write = secondfs_file_write,
 
-	.open = secondfs_file_open,
+	.open = generic_file_open,
 	.write = secondfs_file_write,
-	.release = secondfs_release_file
+	.fsync = secondfs_fsync
 };
 
 struct file_operations secondfs_dir_operations = {

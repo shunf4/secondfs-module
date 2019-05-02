@@ -58,6 +58,8 @@ extern void secondfs_put_super(struct super_block *sb);
 extern struct dentry *secondfs_mount(struct file_system_type *fs_type,
 				int flags, const char *devname,
 				void *data);
+struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
+				const struct qstr *str);
 
 extern struct super_operations secondfs_sb_ops;
 extern struct file_operations secondfs_file_operations;
@@ -102,11 +104,13 @@ extern int secondfs_submit_bio_sync_read(void * /* struct block_device * */ bdev
 				void *buf);
 extern int secondfs_submit_bio_sync_write(void * /* struct block_device * */ bdev, u32 sector,
 				void *buf);
+extern Inode *secondfs_iget_forcc(SuperBlock *secsb, unsigned long ino);
 
 
 /*** 一次性 C++ 对象 ***/
 extern BufferManager *secondfs_buffermanagerp;
 extern FileSystem *secondfs_filesystemp;
+extern FileManager *secondfs_filemanagerp;
 
 #ifdef __cplusplus
 }

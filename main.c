@@ -15,6 +15,9 @@
  *     这也就导致一个不优雅的地方:
  *       SuperBlock 写回时可以直接写回;
  *       内存中 Inode 结构则需转换为小端序的 DiskInode 再写回
+ *   * 将 unsigned int 转换为 signed int 的方法
+ *     一律是 C 风格 cast. 我知道这在 C++ 里是实现依赖的行为,
+ *     语言律师退散!
  */
 
 MODULE_LICENSE("GPL");
@@ -82,6 +85,8 @@ static int __init secondfs_init(void) {
 	printk(KERN_INFO "secondfs: FileSystem size : %u %lu\n", SECONDFS_SIZEOF_FileSystem, sizeof(FileSystem));
 	printk(KERN_INFO "secondfs: Inode size : %u %lu\n", SECONDFS_SIZEOF_Inode, sizeof(Inode));
 	printk(KERN_INFO "secondfs: SuperBlock size : %u %lu\n", SECONDFS_SIZEOF_SuperBlock, sizeof(SuperBlock));
+	printk(KERN_INFO "secondfs: FileManager size : %u %lu\n", SECONDFS_SIZEOF_FileManager, sizeof(FileManager));
+	printk(KERN_INFO "secondfs: DirectoryEntry size : %u %lu\n", SECONDFS_SIZEOF_DirectoryEntry, sizeof(DirectoryEntry));
 
 	// 初始化一次性的对象
 	secondfs_buffermanagerp = newBufferManager();
@@ -89,6 +94,9 @@ static int __init secondfs_init(void) {
 
 	secondfs_filesystemp = newFileSystem();
 	FileSystem_Initialize(secondfs_filesystemp);
+	secondfs_filesystemp->m_BufferManager = secondfs_buffermanagerp;
+
+	secondfs_filemanagerp = newFileManager();
 
 	if (	0
 		|| !secondfs_diskinode_cachep
@@ -120,6 +128,7 @@ static void __exit secondfs_exit(void) {
 	// 析构一次性的对象
 	deleteBufferManager(secondfs_buffermanagerp);
 	deleteFileSystem(secondfs_filesystemp);
+	deleteFileManager(secondfs_filemanagerp);
 
 	// 将所有数据结构的 kmem_cache 析构
 	kmem_cache_destroy(secondfs_diskinode_cachep);

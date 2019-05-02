@@ -9,6 +9,13 @@ extern "C" {
 
 #define SECONDFS_TYPE_DISKINODE 1
 
+#ifdef __cplusplus
+#define cpu_to_le32 secondfs_c_helper_cpu_to_le32
+#define cpu_to_le16 secondfs_c_helper_cpu_to_le16
+#define le32_to_cpu secondfs_c_helper_le32_to_cpu
+#define le16_to_cpu secondfs_c_helper_le16_to_cpu
+#endif // __cplusplus
+
 void *secondfs_c_helper_malloc(size_t size);
 void secondfs_c_helper_free(void *pointer);
 void secondfs_c_helper_mdebug(void);
@@ -28,6 +35,19 @@ void secondfs_c_helper_mutex_lock(void *mutexp);
 void secondfs_c_helper_mutex_unlock(void *mutexp);
 int secondfs_c_helper_mutex_is_locked(void *mutexp);
 int secondfs_c_helper_mutex_trylock(void *mutexp);
+unsigned long secondfs_c_helper_copy_to_user(void 
+#ifndef __cplusplus
+__user
+#endif
+*to, const void *from, unsigned long n);
+void secondfs_c_helper_bug(void);
+struct inode *secondfs_c_helper_ilookup_without_iget(void *sb, unsigned long ino);
+void secondfs_c_helper_iput(void *inode);
+
+u32 secondfs_c_helper_cpu_to_le32(u32 x);
+u16 secondfs_c_helper_cpu_to_le16(u16 x);
+u32 secondfs_c_helper_le32_to_cpu(u32 x);
+u16 secondfs_c_helper_le16_to_cpu(u16 x);
 
 #ifdef __cplusplus
 }

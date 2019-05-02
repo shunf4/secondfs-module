@@ -76,8 +76,17 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 
 	/* 释放缓存 */
 	BufferManager_Brelse(bm, pBuf);
+	unlock_new_inode(inode);
 	return inode;
 	
+}
+
+Inode *secondfs_iget_forcc(SuperBlock *secsb, unsigned long ino)
+{
+	struct inode *inode = secondfs_iget(secsb->s_vsb, ino);
+	if (IS_ERR_OR_NULL(inode))
+		return NULL;
+	return container_of(secondfs_iget(secsb->s_vsb, ino), Inode, vfs_inode);
 }
 
 /* secondfs_alloc_inode : 在系统 alloc_inode 函数中调用.
@@ -147,6 +156,8 @@ int secondfs_sync_fs(struct super_block *sb, int wait)
 
 	pr_info("secondfs: syncing fs");
 	FileSystem_Update(secondfs_filesystemp, secsb);
+	
+	BufferManager_Bflush(secondfs_buffermanagerp, secsb->s_dev);
 
 	return 0;
 }
@@ -201,6 +212,7 @@ int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	secsb->s_dev = devtab;
 	secsb->s_dev->d_bdev = sb->s_bdev;
+	secsb->s_vsb = sb;
 	
 	// 从硬盘读入 Superblock 块. 注意, 未作任何大小字序转换!
 	FileSystem_LoadSuperBlock(secondfs_filesystemp, secsb);
@@ -214,7 +226,7 @@ int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 	// 需要文件系统特定的 dentry 操作函数吗?
 	//sb->s_d_op = &dentry; //?
 
-	if (be32_to_cpu(secsb->s_ronly)) {
+	if (le32_to_cpu(secsb->s_ronly)) {
 		pr_warn("this SecondFS volume is read-only.");
 		sb->s_flags |= SB_RDONLY;
 	}

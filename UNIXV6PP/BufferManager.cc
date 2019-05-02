@@ -387,7 +387,7 @@ void BufferManager::Bwrite(Buf *bp)
 	return;
 }
 
-#if false
+extern "C" void BufferManager_Bdwrite(BufferManager *bm, Buf *bp) { bm->Bdwrite(bp); }
 void BufferManager::Bdwrite(Buf *bp)
 {
 	/* 置上B_DONE允许其它进程使用该磁盘块内容 */
@@ -396,6 +396,7 @@ void BufferManager::Bdwrite(Buf *bp)
 	return;
 }
 
+#if false
 void BufferManager::Bawrite(Buf *bp)
 {
 	/* 标记为异步写 */
@@ -403,19 +404,20 @@ void BufferManager::Bawrite(Buf *bp)
 	this->Bwrite(bp);
 	return;
 }
+#endif
 
+extern "C" void BufferManager_ClrBuf(BufferManager *bm, Buf *bp) { bm->ClrBuf(bp); }
 void BufferManager::ClrBuf(Buf *bp)
 {
-	int* pInt = (int *)bp->b_addr;
+	s32* pInt = (s32 *)bp->b_addr;
 
 	/* 将缓冲区中数据清零 */
-	for(unsigned int i = 0; i < BufferManager::BUFFER_SIZE / sizeof(int); i++)
+	for(unsigned int i = 0; i < SECONDFS_BUFFER_SIZE / sizeof(s32); i++)
 	{
 		pInt[i] = 0;
 	}
 	return;
 }
-#endif
 
 extern "C" void BufferManager_Bflush(BufferManager *bm, Devtab *dev) { bm->Bflush(dev); }
 void BufferManager::Bflush(Devtab *dev)
@@ -440,7 +442,7 @@ loop:
 			 * 采取的操作仅为"异步写"
 			 * 此处改为 "同步写"
 			 */
-			bp->b_flags |= Buf::B_ASYNC;
+			// bp->b_flags |= Buf::B_ASYNC;
 			// 在 NotAvail 中会把自旋锁解锁
 			this->NotAvail(bp, 0);
 			this->Bwrite(bp);
@@ -562,9 +564,9 @@ extern "C" {
 		SECONDFS_B_DELWRI = Buf::BufFlag::B_DELWRI	/* 延迟写，在相应缓存要移做他用时，再将其内容写到相应块设备上 */
 	;
 
-	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(Buf);
-	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(BufferManager);
-	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DECONSTRUCTOR(Devtab);
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(Buf);
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(BufferManager);
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(Devtab);
 
 
 }

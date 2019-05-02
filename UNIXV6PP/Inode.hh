@@ -87,12 +87,12 @@ public:
 	 * @comment 根据Inode对象中的物理磁盘块索引表，读取相应
 	 * 的文件数据
 	 */
-	void ReadI();
+	void ReadI(IOParameter *);
 
 	/* 
 	 * @comment 根据Inode对象中的物理磁盘块索引表，将数据写入文件
 	 */
-	void WriteI();
+	void WriteI(IOParameter *);
 	/* 
 	 * @comment 将文件的逻辑块号转换成对应的物理盘块号
 	 */
@@ -173,6 +173,7 @@ public:
 	s32		i_mtime;		/* 最后修改时间 */
 
 	struct {u8 data[SECONDFS_INODE_SIZE];}	vfs_inode;	/* 包含的 VFS Inode 数据结构. */
+	struct {u8 data[SECONDFS_MUTEX_SIZE];}	i_lock;		/* 包含互斥锁 */
 };
 
 

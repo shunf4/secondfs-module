@@ -10,7 +10,8 @@
             ],
             "defines": [
                 "CONFIG_BLOCK",
-                "__KERNEL__"
+                "__KERNEL__",
+                "__IN_VSCODE__"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
