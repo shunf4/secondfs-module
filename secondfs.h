@@ -62,7 +62,11 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 				const struct qstr *str);
 
 extern struct super_operations secondfs_sb_ops;
+
+extern struct inode_operations secondfs_file_inode_operations;
 extern struct file_operations secondfs_file_operations;
+extern struct inode_operations secondfs_dir_inode_operations;
+extern struct file_operations secondfs_dir_operations;
 
 #endif // __cplusplus
 

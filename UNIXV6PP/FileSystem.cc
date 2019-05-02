@@ -151,7 +151,7 @@ void FileSystem::Update(SuperBlock *secsb)
 	this->m_BufferManager->Bflush(secsb->s_dev);
 }
 
-extern "C" void FileSystem_IAlloc(FileSystem *fs, SuperBlock *secsb) { fs->IAlloc(secsb); }
+extern "C" Inode *FileSystem_IAlloc(FileSystem *fs, SuperBlock *secsb) { return fs->IAlloc(secsb); }
 Inode* FileSystem::IAlloc(SuperBlock *secsb)
 {
 	SuperBlock* sb = secsb;

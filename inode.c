@@ -4,7 +4,53 @@
  */
 static void secondfs_conform_v2s(Inode *si, struct inode *inode)
 {
-	si->i_mode = inode->i_mode;
+	// TODO: 是否能假设 Inode 一定是 IALLOC 的?
+	si->i_mode &= ~SECONDFS_IFMT;
+	if (S_ISDIR(inode->i_mode)) {
+		si->i_mode |= SECONDFS_IFDIR;
+	} else if (S_ISCHR(inode->i_mode)) {
+		si->i_mode |= SECONDFS_IFCHR;
+	} else if (S_ISBLK(inode->i_mode)) {
+		si->i_mode |= SECONDFS_IFBLK;
+	}
+
+	si->i_mode &= ~SECONDFS_ISUID;
+	if (inode->i_mode & S_ISUID) {
+		si->i_mode |= SECONDFS_ISUID;
+	}
+
+	si->i_mode &= ~SECONDFS_ISGID;
+	if (inode->i_mode & S_ISGID) {
+		si->i_mode |= SECONDFS_ISGID;
+	}
+
+	si->i_mode &= ~SECONDFS_ISVTX;
+	if (inode->i_mode & S_ISVTX) {
+		si->i_mode |= SECONDFS_ISVTX;
+	}
+
+	si->i_mode &= ~SECONDFS_IRWXU;
+	si->i_mode &= ~SECONDFS_IRWXG;
+	si->i_mode &= ~SECONDFS_IRWXO;
+	if (inode->i_mode & S_IRUSR) 
+		si->i_mode |= SECONDFS_IREAD;
+	if (inode->i_mode & S_IWUSR) 
+		si->i_mode |= SECONDFS_IWRITE;
+	if (inode->i_mode & S_IXUSR) 
+		si->i_mode |= SECONDFS_IEXEC;
+	if (inode->i_mode & S_IRGRP) 
+		si->i_mode |= SECONDFS_IREAD >> 3;
+	if (inode->i_mode & S_IWGRP) 
+		si->i_mode |= SECONDFS_IWRITE >> 3;
+	if (inode->i_mode & S_IXGRP) 
+		si->i_mode |= SECONDFS_IEXEC >> 3;
+	if (inode->i_mode & S_IROTH) 
+		si->i_mode |= SECONDFS_IREAD >> 6;
+	if (inode->i_mode & S_IWOTH) 
+		si->i_mode |= SECONDFS_IWRITE >> 6;
+	if (inode->i_mode & S_IXOTH) 
+		si->i_mode |= SECONDFS_IEXEC >> 6;
+
 	si->i_uid = i_uid_read(inode);
 	si->i_gid = i_gid_read(inode);
 	si->i_nlink = inode->i_nlink;
@@ -17,7 +63,54 @@ static void secondfs_conform_v2s(Inode *si, struct inode *inode)
  */
 static void secondfs_conform_s2v(struct inode *inode, Inode *si)
 {
-	inode->i_mode = si->i_mode;
+	//inode->i_mode = si->i_mode;
+	inode->i_mode &= ~S_IFMT;
+	if (si->i_mode & SECONDFS_IFMT == SECONDFS_IFDIR) {
+		inode->i_mode |= S_IFDIR;
+	} else if (si->i_mode & SECONDFS_IFMT == SECONDFS_IFCHR) {
+		inode->i_mode |= S_IFCHR;
+	} else if (si->i_mode & SECONDFS_IFMT == SECONDFS_IFBLK) {
+		inode->i_mode |= S_IFBLK;
+	}
+
+	inode->i_mode &= ~S_ISUID;
+	if (si->i_mode & SECONDFS_ISUID) {
+		inode->i_mode |= S_ISUID;
+	}
+
+	inode->i_mode &= ~S_ISGID;
+	if (si->i_mode & SECONDFS_ISGID) {
+		inode->i_mode |= S_ISGID;
+	}
+
+	inode->i_mode &= ~S_ISVTX;
+	if (si->i_mode & SECONDFS_ISVTX) {
+		inode->i_mode |= S_ISVTX;
+	}
+
+	inode->i_mode &= ~S_IRWXU;
+	inode->i_mode &= ~S_IRWXG;
+	inode->i_mode &= ~S_IRWXO;
+
+	if (si->i_mode & SECONDFS_IREAD) 
+		inode->i_mode |= S_IRUSR;
+	if (si->i_mode & SECONDFS_IWRITE) 
+		inode->i_mode |= S_IWUSR;
+	if (si->i_mode & SECONDFS_IEXEC) 
+		inode->i_mode |= S_IXUSR;
+	if (si->i_mode & SECONDFS_IREAD >> 3) 
+		inode->i_mode |= S_IRGRP;
+	if (si->i_mode & SECONDFS_IWRITE >> 3) 
+		inode->i_mode |= S_IWGRP;
+	if (si->i_mode & SECONDFS_IEXEC >> 3) 
+		inode->i_mode |= S_IXGRP;
+	if (si->i_mode & SECONDFS_IREAD >> 6) 
+		inode->i_mode |= S_IROTH;
+	if (si->i_mode & SECONDFS_IWRITE >> 6) 
+		inode->i_mode |= S_IWOTH;
+	if (si->i_mode & SECONDFS_IEXEC >> 6) 
+		inode->i_mode |= S_IXOTH;
+
 	i_uid_write(inode, si->i_uid);
 	i_gid_write(inode, si->i_gid);
 	set_nlink(inode, si->i_nlink);
@@ -98,14 +191,35 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	struct inode *inode;
 	Inode *si;
 	SuperBlock *secsb;
+	DirectoryEntry de;
+	IOParameter io_param;
 
-	// 分配一个新 inode. 由于我们给了文件系统特定的 alloc_inode
-	// 所以这个 inode 外面会包裹着 Inode
-	inode = new_inode(sb);
-	if (!inode)
-		return ERR_PTR(-ENOMEM);
-
-	si = SECONDFS_INODE(inode);
 	secsb = SECONDFS_SB(sb);
+
+	si = FileSystem_IAlloc(secondfs_filesystemp, secsb);
+	if (si == NULL)
+		return ERR_PTR(-ENOMEM);	// TODO: 更严谨的错误号
+	// 此处参考 FileManager::MakNode
+	si->i_flag |= (SECONDFS_IACC | SECONDFS_IUPD);
+	si->i_nlink = 1;
+
+	// 此处参考 FileManager::WriteDir
+	de.m_ino = inode->i_ino;
+	memset(de.m_name, sizeof(de.m_name), 0);
+	for (int i = 0; i < min(SECONDFS_DIRSIZ, str->len); i++) {
+		de.m_name[i] = str->name[i];
+	}
+	// need namei
+	io_param.
+	Inode_WriteI(SECONDFS_INODE(dir), )
+
+	inode = &si->vfs_inode;
+	secondfs_conform_s2v(inode, si);
+
+	inode->i_mtime = inode->i_atime = inode->i_ctime = current_time(inode);
+	inode_init_owner(inode, dir, mode);
+	mark_inode_dirty(inode);
+	secondfs_conform_v2s(si, inode);
 	
+	return inode;
 }

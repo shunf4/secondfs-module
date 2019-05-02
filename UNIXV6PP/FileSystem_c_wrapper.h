@@ -79,7 +79,7 @@ void FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb);
 void FileSystem_Update(FileSystem *fs, SuperBlock *secsb);
 void FileSystem_IFree(FileSystem *fs, SuperBlock *secsb, int number);
 void FileSystem_Alloc(FileSystem *fs, SuperBlock *secsb);
-
+Inode *FileSystem_IAlloc(FileSystem *fs, SuperBlock *secsb);
 
 #ifdef __cplusplus
 }

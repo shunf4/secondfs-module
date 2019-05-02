@@ -9,6 +9,7 @@
 #include "Inode_c_wrapper.h"
 #include "FileSystem.hh"
 #include "BufferManager.hh"
+#include "FileOperations.hh"
 
 /*
  * 内存索引节点(INode)的定义

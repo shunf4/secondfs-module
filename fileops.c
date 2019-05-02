@@ -42,7 +42,14 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 	int err;
 
 	// 先为文件分配新 inode
-	inode = secondfs_new_inode(dir, mode, dentry->d_name);
+	inode = secondfs_new_inode(dir, mode, &dentry->d_name);
+
+	if (IS_ERR_OR_NULL(inode))
+		return PTR_ERR(inode);
+
+	inode->i_op = &secondfs_file_inode_operations;
+	inode->i_fop = &secondfs_file_operations;
+	
 }
 
 struct file_operations secondfs_file_operations = {
@@ -63,6 +70,9 @@ struct file_operations secondfs_file_operations = {
 	.open = generic_file_open,
 	.write = secondfs_file_write,
 	.fsync = secondfs_fsync
+};
+
+struct file_operations secondfs_file_inode_operations = {
 };
 
 struct file_operations secondfs_dir_operations = {

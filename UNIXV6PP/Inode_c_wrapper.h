@@ -3,11 +3,11 @@
 
 #include "../common_c_cpp_types.h"
 #include "Common.hh"
+#include "FileOperations_c_wrapper.h"
 
 #ifndef __cplusplus
 #include <linux/fs.h>
 #endif // __cplusplus
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,7 +98,7 @@ void Inode_ReadI(Inode *i, IOParameter *io_paramp);
 void Inode_WriteI(Inode *i, IOParameter *io_paramp);
 void Inode_IUpdate(Inode *i, int time);
 void Inode_ICopy(Inode *i, Buf *bp, int inumber);
-int Inode_Bmap(Inode *i, int lbn) { return i->Bmap(lbn); };
+int Inode_Bmap(Inode *i, int lbn);
 
 
 // DiskInode 类的 C 包装
