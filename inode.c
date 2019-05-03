@@ -2,7 +2,7 @@
 
 /* secondfs_conform_v2s : 使 Inode 与 struct inode 一致
  */
-static void secondfs_conform_v2s(Inode *si, struct inode *inode)
+void secondfs_conform_v2s(Inode *si, struct inode *inode)
 {
 	// TODO: 是否能假设 Inode 一定是 IALLOC 的?
 	si->i_mode &= ~SECONDFS_IFMT;
@@ -57,11 +57,16 @@ static void secondfs_conform_v2s(Inode *si, struct inode *inode)
 	si->i_size = inode->i_size;
 	si->i_atime = inode->i_atime.tv_sec;
 	si->i_mtime = inode->i_mtime.tv_sec;
+
+	// 在 dirty_inode 里做过了
+	/* if (is_inode_dirty) {
+		si->i_flag |= SECONDFS_IUPD;
+	} */
 }
 
 /* secondfs_conform_s2v : 使 struct inode 与 Inode 一致
  */
-static void secondfs_conform_s2v(struct inode *inode, Inode *si)
+void secondfs_conform_s2v(struct inode *inode, Inode *si)
 {
 	//inode->i_mode = si->i_mode;
 	inode->i_mode &= ~S_IFMT;
@@ -117,6 +122,10 @@ static void secondfs_conform_s2v(struct inode *inode, Inode *si)
 	inode->i_size = si->i_size;
 	inode->i_atime.tv_sec = si->i_atime;
 	inode->i_mtime.tv_sec = si->i_mtime;
+
+	if (si->i_flag & SECONDFS_IUPD) {
+		mark_inode_dirty_sync(inode);
+	}
 }
 
 /* secondfs_write_inode : 写回 Inode.
@@ -133,6 +142,7 @@ int secondfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 	// 在此之前: 将 VFS Inode 的状态同步回 Inode
 	secondfs_conform_v2s(si, inode);
 
+	// IUpdate 已经修改, 不会更新时间
 	Inode_IUpdate(si, ktime_get_real_seconds());
 }
 
@@ -149,8 +159,10 @@ void secondfs_evict_inode(struct inode *inode)
 
 	// 先让 Inode 与 VFS Inode 同步
 	secondfs_conform_v2s(pNode, inode);
-	// 把与这个 VFS Inode 关联的文件页全部释放
-	truncate_inode_pages_final(&inode->i_data);
+	// 把与这个 VFS Inode 关联的文件页全部释放 ?
+	// 由于我们不使用 address_space 和页缓存机制,
+	// 这里没有必要
+	// truncate_inode_pages_final(&inode->i_data);
 
 	/* 该文件已经没有目录路径指向它, 删除它 */
 	if(inode->i_nlink <= 0)
@@ -163,6 +175,7 @@ void secondfs_evict_inode(struct inode *inode)
 	}
 
 	/* 更新外存Inode信息 */
+	// IUpdate 已经修改, 不会更新时间
 	Inode_IUpdate(pNode, ktime_get_real_seconds());
 
 	/* 解锁内存Inode，并且唤醒等待进程 */
@@ -177,11 +190,12 @@ void secondfs_evict_inode(struct inode *inode)
 	invalidate_inode_buffers(inode);
 	clear_inode(inode);
 
-	// 若是要删除的, 此时再在磁盘 Inode 表中释放它. 具体原因
+	// 若是要删除的, 此时才能在磁盘 Inode 表中释放它. 具体原因
 	// 见 linux/fs/ext2/inode.c : ext2_evict_inode
 	if (want_delete) {
 		FileSystem_IFree(secondfs_filesystemp, pNode->i_ssb, pNode->i_number);
 	}
+	// TODO: 在目录项中删除
 }
 
 struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
@@ -195,23 +209,11 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	IOParameter io_param;
 
 	secsb = SECONDFS_SB(sb);
-
+	
+	// 先在内存 & 文件系统分配 Inode
 	si = FileSystem_IAlloc(secondfs_filesystemp, secsb);
 	if (si == NULL)
 		return ERR_PTR(-ENOMEM);	// TODO: 更严谨的错误号
-	// 此处参考 FileManager::MakNode
-	si->i_flag |= (SECONDFS_IACC | SECONDFS_IUPD);
-	si->i_nlink = 1;
-
-	// 此处参考 FileManager::WriteDir
-	de.m_ino = inode->i_ino;
-	memset(de.m_name, sizeof(de.m_name), 0);
-	for (int i = 0; i < min(SECONDFS_DIRSIZ, str->len); i++) {
-		de.m_name[i] = str->name[i];
-	}
-	// need namei
-	io_param.
-	Inode_WriteI(SECONDFS_INODE(dir), )
 
 	inode = &si->vfs_inode;
 	secondfs_conform_s2v(inode, si);
@@ -222,4 +224,9 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	secondfs_conform_v2s(si, inode);
 	
 	return inode;
+}
+
+void secondfs_dirty_inode(struct inode *inode, int flags)
+{
+	SECONDFS_INODE(inode)->i_flag |= SECONDFS_IUPD;
 }

@@ -5,6 +5,7 @@
 #include <FileSystem_c_wrapper.h>
 #include "../secondfs.h"
 #include "../c_helper_for_cc.h"
+#include <memory.h>
 
 // @Feng Shun: 以下为 C++ 部分
 
@@ -123,7 +124,11 @@ void Inode::ReadI(IOParameter *io_paramp)
 		/* 读操作: 从缓冲区拷贝到用户目标区
 		 * i386芯片用同一张页表映射用户空间和内核空间，这一点硬件上的差异 使得i386上实现 iomove操作
 		 * 比PDP-11要容易许多*/
-		secondfs_c_helper_copy_to_user(start, io_paramp->m_Base, nbytes);
+		if (io_paramp->isUserP)
+			secondfs_c_helper_copy_to_user(io_paramp->m_Base, start, nbytes);
+		else
+			memcpy(io_paramp->m_Base, start, nbytes);
+		
 
 		/* 用传送字节数nbytes更新读写位置 */
 		io_paramp->m_Base += nbytes;
@@ -165,8 +170,8 @@ void Inode::WriteI(IOParameter *io_paramp)
 
 	while( io_paramp->m_Count != 0 )
 	{
-		lbn = u.u_IOParam.m_Offset / Inode::BLOCK_SIZE;
-		offset = u.u_IOParam.m_Offset % Inode::BLOCK_SIZE;
+		lbn = io_paramp->m_Offset / Inode::BLOCK_SIZE;
+		offset = io_paramp->m_Offset % Inode::BLOCK_SIZE;
 		nbytes = (Inode::BLOCK_SIZE - offset) < io_paramp->m_Count ? (Inode::BLOCK_SIZE - offset) : io_paramp->m_Count;
 
 		if( (this->i_mode & Inode::IFMT) != Inode::IFBLK )
@@ -201,7 +206,10 @@ void Inode::WriteI(IOParameter *io_paramp)
 		unsigned char* start = pBuf->b_addr + offset;
 
 		/* 写操作: 从用户目标区拷贝数据到缓冲区 */
-		secondfs_c_helper_copy_to_user(io_paramp->m_Base, start, nbytes);
+		if (io_paramp->isUserP)
+			secondfs_c_helper_copy_from_user(start, io_paramp->m_Base, nbytes);
+		else
+			memcpy(start, io_paramp->m_Base, nbytes);
 
 		/* 用传送字节数nbytes更新读写位置 */
 		io_paramp->m_Base += nbytes;
@@ -226,9 +234,9 @@ void Inode::WriteI(IOParameter *io_paramp)
 		}
 
 		/* 普通文件长度增加 */
-		if( (this->i_size < u.u_IOParam.m_Offset) && (this->i_mode & (Inode::IFBLK & Inode::IFCHR)) == 0 )
+		if( (this->i_size < io_paramp->m_Offset) && (this->i_mode & (Inode::IFBLK & Inode::IFCHR)) == 0 )
 		{
-			this->i_size = u.u_IOParam.m_Offset;
+			this->i_size = io_paramp->m_Offset;
 		}
 
 		/* 
@@ -532,12 +540,14 @@ void Inode::IUpdate(int time)
 		if (this->i_flag & Inode::IACC)
 		{
 			/* 更新最后访问时间 */
-			pNode->d_atime = cpu_to_le32(time);
+			// 我们不修改了
+			// pNode->d_atime = cpu_to_le32(time);
 		}
 		if (this->i_flag & Inode::IUPD)
 		{
 			/* 更新最后访问时间 */
-			pNode->d_mtime = cpu_to_le32(time);
+			// 我们不修改了
+			// pNode->d_mtime = cpu_to_le32(time);
 		}
 
 		/* 将缓存写回至磁盘，达到更新旧外存Inode的目的 */
@@ -627,7 +637,9 @@ void Inode::ITrunc()
 	this->i_flag |= Inode::IUPD;
 	/* 清大文件标志 和原来的RWXRWXRWX比特*/
 	this->i_mode &= ~(Inode::ILARG & Inode::IRWXU & Inode::IRWXG & Inode::IRWXO);
-	this->i_nlink = 1;
+	
+	// @Feng Shun: 我们暂时不清理 i_nlink
+	//this->i_nlink = 1;
 }
 
 void Inode::NFrele()

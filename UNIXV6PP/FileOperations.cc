@@ -1,7 +1,10 @@
 /* UNIXV6PP 文件系统(主要是文件操作)代码裁剪. */
 #include "../secondfs.h"
 #include "Common.hh"
+#include "Inode.hh"
 #include "FileOperations.hh"
+#include <errno.h>
+#include <memory.h>
 
 // @Feng Shun: 以下为 C++ 部分
 
@@ -330,6 +333,7 @@ u32 FileManager::Rdwr(u8 *buf, size_t len, u32 *ppos, IOParameter *io_paramp, In
 {
 	io_paramp->m_Base = buf;	/* 目标缓冲区首址 */
 	io_paramp->m_Count = len;	/* 要求读/写的字节数 */
+	io_paramp->isUserP = 1;
 
 	/* 普通文件读写 ，或读写特殊文件。对文件实施互斥访问，互斥的粒度：每次系统调用。
 	为此Inode类需要增加两个方法：NFlock()、NFrele()。
@@ -746,7 +750,264 @@ out:
 	this->m_InodeTable->IPut(pInode);
 	return NULL;
 }
+#endif
 
+/* 在 dir 内定位目录项.
+ *    当 mode == OPEN,DELETE : (它们没有区别, 不再检查是否有打开/删除文件的资格, 不再有返回父/子目录的区别)
+ *	在 dir 的目录项内查找 name, 并将目录项的偏移量写入 out_iop, 将 Inode 号写入 *inop
+ *    当 mode == CREATE :
+ *	在 dir 的目录项中查找可以放置目录项的空位, 并将空位的偏移量写入 out_iop
+ *    当 mode == CHECKEMPTY :
+ *	判断 dir 是否是空目录, 若空, 将 out_iop->m_Offset 置为非 0, 否则 0
+ *    当 mode == LIST :
+ * 	从 out_iop->m_Offset 设定的偏移值出发, 扫描目录. (从这点来说 iop 也有 in 的成分了, 
+ * 	命名不太好)
+ * 
+ *	将 inop 当作一个 void * 数组的头指针.
+ *	(bool (*)(void *ctx, const char * name, int namelen, u64 ino, unsigned int type))inop[0] -> dir_emit 函数指针
+ *	(void * (实际上是 struct dir_context *))inop[1] -> ctx, 要传给上述函数的
+ *	(unsigned int *)inop[2] -> type, 要传给上述函数的, 一般是 0 (DT_UNKNOWN)
+ *	(void * (实际上是 loff_t *))inop[3] -> ppos, 每次 iop 的读头移动后, 这个也要跟着移动;
+ *		并且如果 s_has_dots 没有置位, ppos 超前 iop->m_Offset 2 个 DirectoryEntry 的位置.
+ *	
+ *	对每个目录项执行 dir_emit 函数.
+ *    当 mode == OPEN_NOT_IGNORE_DOTS :
+ *	同 OPEN, DELETE, 但不要跳过 "." ".." (意即很可能就搜索这两个目录项之一)
+ */
+extern "C" int FileManager_DELocate(FileManager *fm, Inode *dir, const char *name, u32 namelen, u32 mode, IOParameter *out_iop, u32 *inop)
+{ return fm->DELocate(dir, name, namelen, mode, out_iop, inop); }
+int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, IOParameter *out_iop, u32 *inop)
+{
+	Inode* pInode;
+	Buf* pBuf;
+	int freeEntryOffset;	/* 以创建文件模式搜索目录时，记录空闲目录项的偏移量 */
+	int ret;
+	DirectoryEntry dent;
+
+	bool (*dir_emit)(void *ctx, const char * name, int namelen, u64 ino, unsigned int type);
+	void *ctx;
+	unsigned int *type;
+	void *ppos;
+
+	s32 has_dots = dir->i_ssb->s_has_dots;
+
+	dir_emit = (decltype(dir_emit))(((void **)inop)[0]);
+	ctx = (decltype(ctx))(((void **)inop)[1]);
+	type = (decltype(type))(((void **)inop)[2]);
+	ppos = (decltype(ppos))(((void **)inop)[3]);
+
+	BufferManager& bufMgr = *secondfs_buffermanagerp;
+
+	pInode = dir;
+
+	/* 检查该Inode是否正在被使用，以及保证在整个目录搜索过程中该Inode不被释放 */
+	// 不需要了, 我们不使用 UnixV6++ 对于 Inode 的锁机制
+	//this->m_InodeTable->IGet(pInode->i_dev, pInode->i_number);
+
+	{
+		/* 循环部分对于 name 中的路径名分量，逐个搜寻匹配的目录项 */
+
+		// 如果是 SECONDFS_LIST, 应该沿着 out_iop->m_Offset 继续搜索
+		// 不能置为 0.
+		if (SECONDFS_LIST == mode) {
+			// 向右对齐
+			out_iop->m_Offset = (out_iop->m_Offset + sizeof(DirectoryEntry) - 1) / sizeof(DirectoryEntry) * sizeof(DirectoryEntry);
+			out_iop->m_Count = pInode->i_size / (SECONDFS_DIRSIZ + 4) - out_iop->m_Offset / sizeof(DirectoryEntry);
+
+			if ( NULL != pBuf )
+			{
+				bufMgr.Brelse(pBuf);
+			}
+			/* 计算要读的物理盘块号 */
+			int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
+			pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );
+		} else {
+			out_iop->m_Offset = 0;
+
+			/* 设置为目录项个数 ，含空白的目录项*/
+			out_iop->m_Count = pInode->i_size / (SECONDFS_DIRSIZ + 4);
+		}
+		freeEntryOffset = 0;
+		pBuf = NULL;
+
+		while (true)
+		{
+			/* 对目录项已经搜索完毕 */
+			if ( 0 == out_iop->m_Count )
+			{
+				if ( NULL != pBuf )
+				{
+					bufMgr.Brelse(pBuf);
+				}
+				/* 如果是创建新文件 */
+				if ( SECONDFS_CREATE == mode )
+				{
+					if ( freeEntryOffset )	/* 此变量存放了空闲目录项位于目录文件中的偏移量 */   /*问题：为何if分支没有置IUPD标志？  这是因为文件的长度没有变呀*/
+					{
+						/* 将空闲目录项偏移量存入u区中，写目录项WriteDir()会用到 */
+						out_iop->m_Offset = freeEntryOffset - (SECONDFS_DIRSIZ + 4);
+					}
+					else /*目录项只能在末尾添加, Inode 长度更新*/
+					{
+						pInode->i_flag |= SECONDFS_IUPD;
+					}
+					/* 找到可以写入的空闲目录项位置，函数返回 */
+					*inop = 0;
+					return 0;
+				}
+
+				/* 如果是判断目录是否非空 */
+				if ( SECONDFS_CHECKEMPTY == mode )
+				{
+					out_iop->m_Offset = 1;
+					return 0;
+				}
+				
+				/* 目录项搜索完毕而没有找到匹配项，释放相关Inode资源，并推出 */
+				ret = -ENOENT;
+				if (SECONDFS_LIST != mode)
+					*inop = 0;
+				goto out;
+			}
+
+			/* 已读完目录文件的当前盘块，需要读入下一目录项数据盘块 */
+			if ( 0 == out_iop->m_Offset % SECONDFS_BLOCK_SIZE )
+			{
+				if ( NULL != pBuf )
+				{
+					bufMgr.Brelse(pBuf);
+				}
+				/* 计算要读的物理盘块号 */
+				int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
+				pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );
+			}
+
+			/* 没有读完当前目录项盘块，则读取下一目录项至u.u_dent */
+			u8* src =(pBuf->b_addr + (out_iop->m_Offset % SECONDFS_BLOCK_SIZE));
+			memcpy(&dent, src, sizeof(DirectoryEntry));
+
+			out_iop->m_Offset += (SECONDFS_DIRSIZ + 4);
+			if (SECONDFS_LIST == mode) {
+				secondfs_c_helper_set_loff_t(ppos, has_dots ? out_iop->m_Offset : (out_iop->m_Offset + sizeof(DirectoryEntry) * 2));
+			}
+			out_iop->m_Count--;
+
+			/* 如果是空闲目录项，记录该项位于目录文件中偏移量 */
+			if ( 0 == le32_to_cpu(dent.m_ino) )
+			{
+				if ( 0 == freeEntryOffset )
+				{
+					freeEntryOffset = out_iop->m_Offset;
+				}
+				/* 跳过空闲目录项，继续比较下一目录项 */
+				continue;
+			}
+
+			// 我们在这里忽略 "." 和 ".."
+			// 留给上层去主动回调 "." 和 ".." 目录项
+			if (SECONDFS_OPEN_NOT_IGNORE_DOTS != mode)
+				if (dent.m_name[0] == '.' && (dent.m_name[1] == '.' && dent.m_name[2] == '\0'
+							|| dent.m_name[1] == '\0')) {
+					continue;
+				}
+
+			/* 走到这里, 说明至少有一个空闲目录项. CHECKEMPTY 可以返回了 */
+			/* 如果是判断目录是否非空 */
+			if ( SECONDFS_CHECKEMPTY == mode )
+			{
+				out_iop->m_Offset = 0;
+				return 0;
+			}
+
+			// 遍历模式, 执行一次回调函数
+			if (SECONDFS_LIST == mode) {
+				bool result;
+
+				u8 *p = dent.m_name;
+				while(*p && p - dent.m_name < sizeof(dent.m_name) / sizeof(*p)) {
+					p++;
+				}
+				// 从目录项看不出这个文件属于哪种类别, 所以只能 DT_UNKNOWN
+				result = dir_emit(ctx, (const char *)dent.m_name, p - dent.m_name, le32_to_cpu(dent.m_ino), *type);
+				if (!result) {
+					// 上层发出了停止信号
+					break;
+				}
+				continue;
+			}
+
+			int i;
+			bool matchSuc = false;
+			for ( i = 0; i < SECONDFS_DIRSIZ; i++ )
+			{
+				if (i >= namelen)
+				{
+					break;
+				}
+				if ( name[i] != dent.m_name[i] )
+				{
+					break;	/* 匹配至某一字符不符，跳出for循环 */
+				}
+				if (i == namelen - 1 && (i == SECONDFS_DIRSIZ - 1 || dent.m_name[i + 1] == '\0'))
+				{
+					matchSuc = true;
+					break;
+				}
+			}
+
+			if( ! matchSuc )
+			{
+				/* 不是要搜索的目录项，继续匹配下一目录项 */
+				continue;
+			}
+			else
+			{
+				/* 目录项匹配成功，跳出While(true)循环 */
+				break;
+			}
+		}
+
+		/* 
+		 * 从内层目录项匹配循环跳至此处，说明pathname中
+		 * 当前路径分量匹配成功了，还需匹配pathname中下一路径
+		 * 分量，直至遇到'\0'结束。
+		 */
+		if ( NULL != pBuf )
+		{
+			bufMgr.Brelse(pBuf);
+		}
+
+		// 处理 LIST 模式上层给出停止信号的情况
+		if (SECONDFS_LIST == mode) {
+			return 0;
+		} else {
+			*inop = le32_to_cpu(dent.m_ino);
+		}
+
+		// 如果当前是创建模式的话, 说明文件已经在目录项内存在, 此时是错误的
+		if (mode == SECONDFS_CREATE) {
+			return -EEXIST;
+		}
+
+		/* 
+		 * 匹配目录项成功，则释放当前目录Inode，根据匹配成功的
+		 * 目录项m_ino字段获取相应下一级目录或文件的Inode。
+		 */
+		// 无需释放和获取了
+		// this->m_InodeTable->IPut(pInode);
+		// pInode = this->m_InodeTable->IGet(dev, u.u_dent.m_ino);
+		/* 回到外层While(true)循环，继续匹配Pathname中下一路径分量 */
+
+		//if ( NULL == pInode )	/* 获取失败 */
+		//{
+		//	return NULL;
+		//}
+	}
+out:
+	return 0;
+}
+
+#if false
 char FileManager::NextChar()
 {
 	User& u = Kernel::Instance().GetUser();
@@ -1140,7 +1401,10 @@ extern "C" {
 	const u32
 		SECONDFS_OPEN = 0,		/* 以打开文件方式搜索目录 */
 		SECONDFS_CREATE = 1,		/* 以新建文件方式搜索目录 */
-		SECONDFS_DELETE = 2		/* 以删除文件方式搜索目录 */
+		SECONDFS_DELETE = 2,		/* 以删除文件方式搜索目录 */
+		SECONDFS_CHECKEMPTY = 3,	/* 检测目录是否非空 */
+		SECONDFS_LIST = 4,		/* 遍历目录 */
+		SECONDFS_OPEN_NOT_IGNORE_DOTS = 5	/* 以打开文件方式搜索目录, 不要跳过 "." 和 ".." */
 	;
 
 	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(FileManager);

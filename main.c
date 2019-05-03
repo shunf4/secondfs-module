@@ -9,7 +9,7 @@
  *   * 尽量重用 UnixV6++ 的 C++ 代码
  *   * 其他从简, 包括错误处理
  *   * Unix V6++ 的默认端序(小端序)有可能与本机不一样, 所以
- *     处理方法为: SuperBlock 和 DiskInode 结构不转换, 
+ *     处理方法为: SuperBlock, DirectoryEntry 和 DiskInode 结构不转换, 
  *     为小端序; 在向它读取和写入数据时, 做转换. 
  *     其他为本机序.
  *     这也就导致一个不优雅的地方:
@@ -57,6 +57,7 @@ const struct super_operations secondfs_sb_ops = {
 	.evict_inode	= secondfs_evict_inode,
 	.put_super	= secondfs_put_super,
 	.sync_fs	= secondfs_sync_fs,
+	.dirty_inode	= secondfs_dirty_inode,
 	//.statfs	= secondfs_statfs,
 	//.remount_fs	= secondfs_remount,
 	//.show_options	= secondfs_show_options,

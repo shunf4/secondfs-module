@@ -42,8 +42,9 @@ public:
 	s32	s_ninode;		/* 直接管理的空闲外存Inode数量 */
 	s32	s_inode[100];		/* 直接管理的空闲外存Inode索引表 */
 	
-	s32	s_flock_obsolete;		/* 封锁空闲盘块索引表标志 */
-	s32	s_ilock_obsolete;		/* 封锁空闲Inode表标志 */
+	//s32	s_flock_obsolete;	/* 封锁空闲盘块索引表标志 */
+	s32	s_has_dots;		/* 我们用两个 lock 弃置后的空间来表示 "文件系统是否有 . 和 .. 目录项"吧. */
+	s32	s_ilock_obsolete;	/* 封锁空闲Inode表标志 */
 	
 	s32	s_fmod;			/* 内存中super block副本被修改标志，意味着需要更新外存对应的Super Block */
 	s32	s_ronly;		/* 本文件系统只能读出 */

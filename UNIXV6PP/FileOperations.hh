@@ -23,7 +23,10 @@ public:
 	{
 		OPEN = 0,		/* 以打开文件方式搜索目录 */
 		CREATE = 1,		/* 以新建文件方式搜索目录 */
-		DELETE = 2		/* 以删除文件方式搜索目录 */
+		DELETE = 2,		/* 以删除(=打开)文件方式搜索目录 */
+		CHECKEMPTY = 3,
+		LIST = 4,
+		OPEN_NOT_IGNORE_DOTS = 5	/* 以打开文件方式搜索目录, 不要跳过 "." 和 ".." */
 	};
 
 	/* Functions */
@@ -119,6 +122,11 @@ public:
 	Inode* NameI(char (*func)(), enum DirectorySearchMode mode);
 
 	/* 
+	 * @comment 仅在某一目录下搜索, 节选了 NameI 函数
+	 */
+	int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, IOParameter *out_iop, u32 *inop);
+
+	/* 
 	 * @comment 获取路径中的下一个字符
 	 */
 	static char NextChar();
@@ -207,6 +215,7 @@ public:
 	u8* m_Base;	/* 当前读、写用户目标区域的首地址 */
 	s32 m_Offset;	/* 当前读、写文件的字节偏移量 */
 	s32 m_Count;	/* 当前还剩余的读、写字节数量 */
+	s32 isUserP;	/* 首地址是否隶属于用户空间 */
 };
 
 #endif // __FILEOPERATIONS_HH__

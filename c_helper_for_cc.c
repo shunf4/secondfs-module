@@ -222,6 +222,11 @@ unsigned long secondfs_c_helper_copy_to_user(void __user *to, const void *from, 
 	return copy_to_user(to, from, n);
 }
 
+unsigned long secondfs_c_helper_copy_from_user(void *to, const void __user *from, unsigned long n)
+{
+	return copy_from_user(to, from, n);
+}
+
 void secondfs_c_helper_bug()
 {
 	pr_err("BUG() called in C Helper");
@@ -256,4 +261,9 @@ u32 secondfs_c_helper_le32_to_cpu(u32 x)
 u16 secondfs_c_helper_le16_to_cpu(u16 x)
 {
 	return le16_to_cpu(x);
+}
+
+void secondfs_c_helper_set_loff_t(void *x, u32 val)
+{
+	*(loff_t *)x = val;
 }

@@ -250,6 +250,11 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 
 		/* 将空闲Inode读入内存 */
 		//pNode = g_InodeTable.IGet(dev, ino);
+		// 此函数会调用 iget_locked, iget_locked 会
+		// 间接调用 secondfs_alloc_inode, 在内存区域
+		// 分配一个 Inode. 
+		// 注意是内存内而不是文件系统内.
+		// 在文件系统中分配 Inode 则需要上面的逻辑.
 		pNode = secondfs_iget_forcc(sb, ino);
 
 		/* 未能分配到内存inode */

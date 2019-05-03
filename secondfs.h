@@ -6,8 +6,8 @@
 
 #include "UNIXV6PP/Inode_c_wrapper.h"
 #include "UNIXV6PP/BufferManager_c_wrapper.h"
-#include "UNIXV6PP/FileOperations_c_wrapper.h"
 #include "UNIXV6PP/FileSystem_c_wrapper.h"
+#include "UNIXV6PP/FileOperations_c_wrapper.h"
 
 /******* 仅 C 部分 *******/
 #ifndef __cplusplus
@@ -47,6 +47,10 @@ static inline Inode *SECONDFS_INODE(struct inode *inode)
 	return container_of(inode, Inode, vfs_inode);
 }
 
+extern void secondfs_conform_v2s(Inode *si, struct inode *inode);
+extern void secondfs_conform_s2v(struct inode *inode, Inode *si);
+
+extern void secondfs_dirty_inode(struct inode *inode, int flags);
 extern struct inode *secondfs_iget(struct super_block *sb, unsigned long ino);
 extern struct inode *secondfs_alloc_inode(struct super_block *sb);
 extern int secondfs_write_inode(struct inode *inode, struct writeback_control *wbc);
@@ -67,6 +71,7 @@ extern struct inode_operations secondfs_file_inode_operations;
 extern struct file_operations secondfs_file_operations;
 extern struct inode_operations secondfs_dir_inode_operations;
 extern struct file_operations secondfs_dir_operations;
+
 
 #endif // __cplusplus
 

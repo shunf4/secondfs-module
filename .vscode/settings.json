@@ -19,7 +19,8 @@
         "common.hh": "c",
         "kernel.h": "c",
         "inode.hh": "c",
-        "filesystem.hh": "c"
+        "filesystem.hh": "c",
+        "fileoperations_c_wrapper.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

@@ -99,6 +99,7 @@ void Inode_WriteI(Inode *i, IOParameter *io_paramp);
 void Inode_IUpdate(Inode *i, int time);
 void Inode_ICopy(Inode *i, Buf *bp, int inumber);
 int Inode_Bmap(Inode *i, int lbn);
+void Inode_ITrunc(Inode *i);
 
 
 // DiskInode 类的 C 包装
