@@ -9,6 +9,31 @@
 
 // @Feng Shun: 以下为 C++ 部分
 
+/*======================class IOParameter======================*/
+IOParameter::IOParameter()
+{
+	this->m_Base = 0;
+	this->m_Count = 0;
+	this->m_Offset = 0;
+}
+
+IOParameter::~IOParameter()
+{
+	//nothing to do here
+}
+
+/*======================class DirectoryEntry======================*/
+DirectoryEntry::DirectoryEntry()
+{
+	this->m_ino = 0;
+	this->m_name[0] = '\0';
+}
+
+DirectoryEntry::~DirectoryEntry()
+{
+	//nothing to do here
+}
+
 /*======================class Inode======================*/
 /*	预读块的块号，对普通文件这是预读块所在的物理块号。对硬盘而言，这是当前物理块（扇区）的下一个物理块（扇区）*/
 int Inode::rablock = 0;
@@ -814,7 +839,9 @@ extern "C" {
 
 	s32 *secondfs_inode_rablockp = &Inode::rablock;
 
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(IOParameter)
+	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(DirectoryEntry)
 	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(Inode)
-
 	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(DiskInode)
+	
 }

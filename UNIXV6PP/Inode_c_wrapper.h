@@ -13,6 +13,35 @@
 extern "C" {
 #endif // __cplusplus
 
+// IOParameter 类的 C 包装
+#ifndef __cplusplus
+typedef struct _IOParameter{
+	u8* m_Base;	/* 当前读、写用户目标区域的首地址 */
+	s32 m_Offset;	/* 当前读、写文件的字节偏移量 */
+	s32 m_Count;	/* 当前还剩余的读、写字节数量 */
+	s32 isUserP;	/* 首地址是否隶属于用户空间 */
+} IOParameter;
+#else // __cplusplus
+class IOParameter;
+#endif // __cplusplus
+
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(IOParameter)
+
+// DirectoryEntry 类的 C 包装
+
+#define SECONDFS_DIRSIZ 28	/* 目录项中路径部分的最大字符串长度 */
+
+#ifndef __cplusplus
+typedef struct _DirectoryEntry{
+	u32 m_ino;		/* 目录项中Inode编号部分 */
+	u8 m_name[SECONDFS_DIRSIZ];	/* 目录项中路径名部分 */
+} DirectoryEntry;
+#else // __cplusplus
+class DirectoryEntry;
+#endif // __cplusplus
+
+SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(DirectoryEntry)
+
 // Inode 类的 C 包装
 // 注: i_flag 的 ILOCK, i_count 等锁机制和引用计数机制
 // 在本工程中不用, 交由系统管理

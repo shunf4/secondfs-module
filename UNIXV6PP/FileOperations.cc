@@ -1,10 +1,11 @@
 /* UNIXV6PP 文件系统(主要是文件操作)代码裁剪. */
 #include "../secondfs.h"
+#include <errno.h>
+#include <memory.h>
+
 #include "Common.hh"
 #include "Inode.hh"
 #include "FileOperations.hh"
-#include <errno.h>
-#include <memory.h>
 
 // @Feng Shun: 以下为 C++ 部分
 
@@ -1365,31 +1366,6 @@ void FileManager::MkNod()
 }
 #endif
 
-/*======================class DirectoryEntry======================*/
-DirectoryEntry::DirectoryEntry()
-{
-	this->m_ino = 0;
-	this->m_name[0] = '\0';
-}
-
-DirectoryEntry::~DirectoryEntry()
-{
-	//nothing to do here
-}
-
-/*======================class IOParameter======================*/
-IOParameter::IOParameter()
-{
-	this->m_Base = 0;
-	this->m_Count = 0;
-	this->m_Offset = 0;
-}
-
-IOParameter::~IOParameter()
-{
-	//nothing to do here
-}
-
 // @Feng Shun: 以下为 C wrapping 部分
 extern "C" {
 	const u32
@@ -1408,7 +1384,5 @@ extern "C" {
 	;
 
 	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(FileManager);
-	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(DirectoryEntry);
-	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(IOParameter);
 
 }

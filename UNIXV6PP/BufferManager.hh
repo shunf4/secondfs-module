@@ -5,7 +5,10 @@
 #include <cstddef>
 #include "../common_c_cpp_types.h"
 #include "../c_helper_for_cc.h"
+
 #include "BufferManager_c_wrapper.h"
+
+class Buf;
 
 /* 块设备表devtab定义 */
 class Devtab

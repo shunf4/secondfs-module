@@ -6,6 +6,7 @@
 #include "../common_c_cpp_types.h"
 #include "../c_helper_for_cc.h"
 #include "Inode.hh"
+
 #include "FileOperations_c_wrapper.h"
 
 
@@ -175,47 +176,6 @@ public:
 	void MkNod();
 	
 public:
-};
-
-class DirectoryEntry
-{
-	/* static members */
-public:
-	static const int DIRSIZ = 28;	/* 目录项中路径部分的最大字符串长度 */
-
-	/* Functions */
-public:
-	/* Constructors */
-	DirectoryEntry();
-	/* Destructors */
-	~DirectoryEntry();
-
-	/* Members */
-public:
-	u32 m_ino;		/* 目录项中Inode编号部分 */
-	u8 m_name[DIRSIZ];	/* 目录项中路径名部分 */
-};
-
-/*
- * 文件I/O的参数类
- * 对文件读、写时需用到的读、写偏移量、
- * 字节数以及目标区域首地址参数。
- */
-class IOParameter
-{
-	/* Functions */
-public:
-	/* Constructors */
-	IOParameter();
-	/* Destructors */
-	~IOParameter();
-	
-	/* Members */
-public:
-	u8* m_Base;	/* 当前读、写用户目标区域的首地址 */
-	s32 m_Offset;	/* 当前读、写文件的字节偏移量 */
-	s32 m_Count;	/* 当前还剩余的读、写字节数量 */
-	s32 isUserP;	/* 首地址是否隶属于用户空间 */
 };
 
 #endif // __FILEOPERATIONS_HH__
