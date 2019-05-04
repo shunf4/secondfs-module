@@ -48,7 +48,7 @@ SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(DirectoryEntry)
 // 在本工程中不用, 交由系统管理
 #ifndef __cplusplus
 // 此处由于和 SuperBlock 双向依赖, 添加一个类型声明
-typedef struct _SuperBlock SuperBlock;
+struct _SuperBlock;
 typedef struct Inode
 {
 	u32 i_flag;	/* 状态的标志位，定义见enum INodeFlag */
@@ -57,7 +57,7 @@ typedef struct Inode
 	s32		i_count;		/* 引用计数 */
 	s32		i_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
 	
-	SuperBlock*	i_ssb;			/* 外存inode所在 SuperBlock */
+	_SuperBlock*	i_ssb;			/* 外存inode所在 SuperBlock */
 	s32		i_number;		/* 外存inode区中的编号 */
 	
 	u16		i_uid;			/* 文件所有者的用户标识数 */
