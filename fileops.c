@@ -7,8 +7,10 @@ ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
 	struct inode *inode = filp->f_path.dentry->d_inode;
 	Inode *si = SECONDFS_INODE(inode);
 	ssize_t ret;
+	u32 pos_u32;
 	
-	ret = FileManager_Read(secondfs_filemanagerp, buf, len, ppos, si);
+	ret = FileManager_Read(secondfs_filemanagerp, buf, len, &pos_u32, si);
+	*ppos = pos_u32;
 	return ret;
 }
 
@@ -19,8 +21,10 @@ ssize_t secondfs_file_write(struct file *filp, char __user *buf, size_t len,
 	struct inode *inode = filp->f_path.dentry->d_inode;
 	Inode *si = SECONDFS_INODE(inode);
 	ssize_t ret;
+	u32 pos_u32;
 	
-	ret = FileManager_Write(secondfs_filemanagerp, buf, len, ppos, si);
+	ret = FileManager_Write(secondfs_filemanagerp, buf, len, &pos_u32, si);
+	*ppos = pos_u32;
 	secondfs_conform_s2v(inode, si);
 	mark_inode_dirty_sync(inode);
 	return ret;
@@ -50,12 +54,14 @@ int secondfs_add_link(struct dentry *dentry, struct inode *inode)
 	u32 dummy_ino;
 	int ret;
 	DirectoryEntry de;
+	int i;
+	u32 minlen;
 
 	// 首先需要在父目录项中定位可放入目录项的空位
 	// 我们调用 DELocate, 它是 NameI 功能的一部分,
 	// 可以在父目录项中定位
 
-	ret = FileManager_DELocate(secondfs_filemanagerp, dir, name, dentry->d_name.len,
+	ret = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(dir), name, dentry->d_name.len,
 			SECONDFS_CREATE, &io_param, &dummy_ino);
 	if (ret != 0) {
 		return ret;
@@ -70,7 +76,8 @@ int secondfs_add_link(struct dentry *dentry, struct inode *inode)
 	// 在 DirectoryEntry 中填入新项目的信息
 	de.m_ino = cpu_to_le32(inode->i_ino);
 	memset(de.m_name, 0, sizeof(de.m_name));
-	for (int i = 0; i < min(SECONDFS_DIRSIZ, dentry->d_name.len); i++) {
+	minlen = SECONDFS_DIRSIZ < dentry->d_name.len ? SECONDFS_DIRSIZ : dentry->d_name.len;
+	for (i = 0; i < minlen; i++) {
 		de.m_name[i] = dentry->d_name.name[i];
 	}
 
