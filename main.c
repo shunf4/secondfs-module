@@ -33,9 +33,10 @@ MODULE_PARM_DESC(username, "The user's name to display a hello world message in 
 struct kmem_cache *secondfs_diskinode_cachep;
 struct kmem_cache *secondfs_icachep;
 
-// 一次性的对象声明
+// 一次性的对象定义
 BufferManager *secondfs_buffermanagerp;
 FileSystem *secondfs_filesystemp;
+FileManager *secondfs_filemanagerp;
 // Inode 表
 
 
