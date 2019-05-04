@@ -786,6 +786,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 	Buf* pBuf = NULL;
 	int freeEntryOffset;	/* 以创建文件模式搜索目录时，记录空闲目录项的偏移量 */
 	DirectoryEntry dent;
+	int ret;
 
 	bool (*dir_emit)(void *ctx, const char * name, int namelen, u64 ino, unsigned int type);
 	void *ctx;
