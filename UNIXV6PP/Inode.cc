@@ -1,11 +1,11 @@
 /* UNIXV6PP 文件系统(主要是Inode操作)代码裁剪. */
-#include "Inode.hh"
-#include "FileOperations.hh"
 #include "Common.hh"
-#include <FileSystem_c_wrapper.h>
 #include "../secondfs.h"
 #include "../c_helper_for_cc.h"
 #include <memory.h>
+
+#include "Inode.hh"
+#include "FileSystem_c_wrapper.h"
 
 // @Feng Shun: 以下为 C++ 部分
 
