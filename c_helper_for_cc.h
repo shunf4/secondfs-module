@@ -1,6 +1,7 @@
 #ifndef __C_HELPER_FOR_CC_H__
 #define __C_HELPER_FOR_CC_H__
 
+#include "common_c_cpp_types.h"
 #include <stddef.h>
 
 #ifdef __cplusplus
