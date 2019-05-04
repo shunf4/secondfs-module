@@ -294,7 +294,7 @@ void secondfs_put_super(struct super_block *sb)
 struct dentry *secondfs_mount(struct file_system_type *fs_type,
 				int flags, const char *devname,
 				void *data) {
-	return mount_bdev(fs_type, flags, dev_name, data, secondfs_fill_super);
+	return mount_bdev(fs_type, flags, devname, data, secondfs_fill_super);
 }
 
 #endif
