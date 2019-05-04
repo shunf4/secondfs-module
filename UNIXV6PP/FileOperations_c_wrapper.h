@@ -7,9 +7,9 @@
 #include "Inode_c_wrapper.h"
 
 #ifndef __cplusplus
-#include <cstddef>
-#else // __cplusplus
 
+#else // __cplusplus
+#include <cstddef>
 #endif // __cplusplus
 
 #ifdef __cplusplus

@@ -5,7 +5,7 @@
 #include <memory.h>
 
 #include "Inode.hh"
-#include "FileSystem_c_wrapper.h"
+#include "FileSystem.hh"
 
 // @Feng Shun: 以下为 C++ 部分
 
