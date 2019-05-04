@@ -15,7 +15,6 @@
 struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 {
 	struct inode *inode;
-	int err;
 	Inode *si;
 	BufferManager *bm = secondfs_buffermanagerp;
 	Buf* pBuf;
@@ -149,7 +148,6 @@ void secondfs_destroy_inode(struct inode *inode)
 int secondfs_sync_fs(struct super_block *sb, int wait)
 {
 	SuperBlock *secsb = SECONDFS_SB(sb);
-	int err;
 
 	if (!wait) {
 		return 0;
@@ -201,10 +199,8 @@ static void secondfs_write_super(struct super_block *sb)
 
 int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 {
-	struct inode *i_root;
 	SuperBlock *secsb;
 	Devtab *devtab;
-	Buf *bp;
 	struct inode *root_inode;
 	int err = 0;
 

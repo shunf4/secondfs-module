@@ -1,8 +1,8 @@
 #include "secondfs.h"
 
-/* secondfs_conform_v2s : 使 Inode 与 struct inode 一致
+/* secondfs_inode_conform_v2s : 使 Inode 与 struct inode 一致
  */
-void secondfs_conform_v2s(Inode *si, struct inode *inode)
+void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 {
 	// TODO: 是否能假设 Inode 一定是 IALLOC 的?
 	si->i_mode &= ~SECONDFS_IFMT;
@@ -64,17 +64,17 @@ void secondfs_conform_v2s(Inode *si, struct inode *inode)
 	} */
 }
 
-/* secondfs_conform_s2v : 使 struct inode 与 Inode 一致
+/* secondfs_inode_conform_s2v : 使 struct inode 与 Inode 一致
  */
-void secondfs_conform_s2v(struct inode *inode, Inode *si)
+void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 {
 	//inode->i_mode = si->i_mode;
 	inode->i_mode &= ~S_IFMT;
-	if (si->i_mode & SECONDFS_IFMT == SECONDFS_IFDIR) {
+	if ((si->i_mode & SECONDFS_IFMT) == SECONDFS_IFDIR) {
 		inode->i_mode |= S_IFDIR;
-	} else if (si->i_mode & SECONDFS_IFMT == SECONDFS_IFCHR) {
+	} else if ((si->i_mode & SECONDFS_IFMT) == SECONDFS_IFCHR) {
 		inode->i_mode |= S_IFCHR;
-	} else if (si->i_mode & SECONDFS_IFMT == SECONDFS_IFBLK) {
+	} else if ((si->i_mode & SECONDFS_IFMT) == SECONDFS_IFBLK) {
 		inode->i_mode |= S_IFBLK;
 	}
 
@@ -140,10 +140,11 @@ int secondfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 	si->i_flag |= SECONDFS_IUPD;
 
 	// 在此之前: 将 VFS Inode 的状态同步回 Inode
-	secondfs_conform_v2s(si, inode);
+	secondfs_inode_conform_v2s(si, inode);
 
 	// IUpdate 已经修改, 不会更新时间
 	Inode_IUpdate(si, ktime_get_real_seconds());
+	return 0;
 }
 
 /* secondfs_evict_inode : 当 Inode 丧失最后一个引用计数时,
@@ -158,7 +159,7 @@ void secondfs_evict_inode(struct inode *inode)
 	int want_delete = 0;
 
 	// 先让 Inode 与 VFS Inode 同步
-	secondfs_conform_v2s(pNode, inode);
+	secondfs_inode_conform_v2s(pNode, inode);
 	// 把与这个 VFS Inode 关联的文件页全部释放 ?
 	// 由于我们不使用 address_space 和页缓存机制,
 	// 这里没有必要
@@ -205,8 +206,6 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	struct inode *inode;
 	Inode *si;
 	SuperBlock *secsb;
-	DirectoryEntry de;
-	IOParameter io_param;
 
 	secsb = SECONDFS_SB(sb);
 	
@@ -216,12 +215,12 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 		return ERR_PTR(-ENOMEM);	// TODO: 更严谨的错误号
 
 	inode = &si->vfs_inode;
-	secondfs_conform_s2v(inode, si);
+	secondfs_inode_conform_s2v(inode, si);
 
 	inode->i_mtime = inode->i_atime = inode->i_ctime = current_time(inode);
 	inode_init_owner(inode, dir, mode);
 	mark_inode_dirty(inode);
-	secondfs_conform_v2s(si, inode);
+	secondfs_inode_conform_v2s(si, inode);
 	
 	return inode;
 }

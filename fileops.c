@@ -26,7 +26,7 @@ ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t le
 	
 	ret = FileManager_Write(secondfs_filemanagerp, buf, len, &pos_u32, si);
 	*ppos = pos_u32;
-	secondfs_conform_s2v(inode, si);
+	secondfs_inode_conform_s2v(inode, si);
 	mark_inode_dirty_sync(inode);
 	return ret;
 }
@@ -89,7 +89,7 @@ int secondfs_add_link(struct dentry *dentry, struct inode *inode)
 	Inode_WriteI(SECONDFS_INODE(dir), &io_param);
 
 	//conform
-	secondfs_conform_s2v(dir, SECONDFS_INODE(dir));
+	secondfs_inode_conform_s2v(dir, SECONDFS_INODE(dir));
 
 	// TODO: 错误处理
 	return 0;
@@ -118,7 +118,6 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 {
 	// 要求在 dir 下为新创建文件(而不是文件夹)
 	struct inode *inode;
-	int err;
 
 	// 先为文件分配新 inode (内存中 & 文件系统中)
 	inode = secondfs_new_inode(dir, mode, &dentry->d_name);
@@ -234,12 +233,12 @@ static int secondfs_unlink(struct inode *dir, struct dentry *dentry)
 	iop.m_Count = sizeof(de);
 	Inode_WriteI(SECONDFS_INODE(dir), &iop);
 
-	secondfs_conform_s2v(dir, SECONDFS_INODE(dir));
+	secondfs_inode_conform_s2v(dir, SECONDFS_INODE(dir));
 	// TODO: 错误处理
 	
 	inode->i_ctime = dir->i_ctime;
 	inode_dec_link_count(inode);
-	secondfs_conform_v2s(SECONDFS_INODE(dir), dir);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(dir), dir);
 out:
 	return err;
 }
@@ -270,7 +269,7 @@ static int secondfs_add_dots(struct inode *inode, struct inode *parent)
 	iop.m_Offset += sizeof(de);
 
 	Inode_WriteI(SECONDFS_INODE(inode), &iop);
-	secondfs_conform_s2v(inode, SECONDFS_INODE(inode));
+	secondfs_inode_conform_s2v(inode, SECONDFS_INODE(inode));
 	return 0;
 }
 
@@ -365,7 +364,7 @@ static int secondfs_rmdir(struct inode *dir, struct dentry *dentry)
 		if (SECONDFS_SB(dir->i_sb)->s_has_dots) {
 			inode_dec_link_count(dir);
 		}
-		secondfs_conform_v2s(SECONDFS_INODE(inode), inode);
+		secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
 	}
 
 	// 不空则返回默认错误号
@@ -393,7 +392,7 @@ static void secondfs_set_link(struct inode *dir, IOParameter *iopp,
 	if (update_times)
 		SECONDFS_INODE(dir)->i_mtime = ktime_get_real_seconds();
 
-	secondfs_conform_s2v(dir, SECONDFS_INODE(dir));
+	secondfs_inode_conform_s2v(dir, SECONDFS_INODE(dir));
 }
 
 static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
@@ -503,10 +502,10 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	old_inode->i_ctime = current_time(old_inode);
 	mark_inode_dirty(old_inode);
 
-	secondfs_conform_v2s(SECONDFS_INODE(new_dir), new_dir);
-	secondfs_conform_v2s(SECONDFS_INODE(new_inode), new_inode);
-	secondfs_conform_v2s(SECONDFS_INODE(old_dir), old_dir);
-	secondfs_conform_v2s(SECONDFS_INODE(old_inode), old_inode);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(new_dir), new_dir);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(new_inode), new_inode);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(old_dir), old_dir);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(old_inode), old_inode);
 
 	// 现在可以移除源文件了. 源文件在父目录项中的位置还记在 iop 里面.
 	// 参考自 FileManager::Unlink
@@ -515,7 +514,7 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	iop.m_Count = sizeof(de);
 	Inode_WriteI(SECONDFS_INODE(old_dir), &iop);
 
-	secondfs_conform_s2v(old_dir, SECONDFS_INODE(old_dir));
+	secondfs_inode_conform_s2v(old_dir, SECONDFS_INODE(old_dir));
 	// TODO: 错误处理
 	
 	// 如果我们是搬动目录的话, 最后还要重新链接源目录的 ".."
@@ -559,7 +558,6 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 
 	loff_t pos = ctx->pos;	// 这个 pos 我不知道是什么, 姑且当作在目录文件里的偏移好了
 	struct inode *inode = file_inode(file);
-	struct super_block *sb = inode->i_sb;
 	IOParameter iop;
 	unsigned int type = DT_UNKNOWN;
 	void *params[4] = {

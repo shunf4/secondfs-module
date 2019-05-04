@@ -527,7 +527,6 @@ extern "C" void Inode_IUpdate(Inode *i, int time) { i->IUpdate(time); }
 void Inode::IUpdate(int time)
 {
 	Buf* pBuf;
-	FileSystem* filesys = secondfs_filesystemp;
 	BufferManager* bufMgr = secondfs_buffermanagerp;
 
 	/* 当IUPD和IACC标志之一被设置，才需要更新相应DiskInode

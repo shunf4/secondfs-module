@@ -48,7 +48,7 @@ u32 FileManager_Read(FileManager *fm, u8
 __user
 #endif
  *buf, size_t len, u32 *ppos, Inode *inode);
-u32 FileManager_Write(FileManager *fm, u8
+u32 FileManager_Write(FileManager *fm, const u8
 #ifndef __cplusplus
 __user
 #endif

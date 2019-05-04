@@ -55,8 +55,8 @@ static inline SuperBlock *SECONDFS_SB(struct super_block *sb)
 	return (SuperBlock *)sb->s_fs_info;
 }
 
-extern void secondfs_conform_v2s(Inode *si, struct inode *inode);
-extern void secondfs_conform_s2v(struct inode *inode, Inode *si);
+extern void secondfs_inode_conform_v2s(Inode *si, struct inode *inode);
+extern void secondfs_inode_conform_s2v(struct inode *inode, Inode *si);
 
 extern void secondfs_dirty_inode(struct inode *inode, int flags);
 extern struct inode *secondfs_iget(struct super_block *sb, unsigned long ino);

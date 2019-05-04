@@ -98,7 +98,6 @@ SuperBlock* FileSystem::GetFS(short dev)
 extern "C" void FileSystem_Update(FileSystem *fs, SuperBlock *secsb) { fs->Update(secsb); }
 void FileSystem::Update(SuperBlock *secsb)
 {
-	int i;
 	SuperBlock* sb = secsb;
 	Buf* pBuf;
 

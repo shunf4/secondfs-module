@@ -94,7 +94,7 @@ public:
 	/* 
 	 * @comment Write()系统调用处理过程
 	 */
-	u32 Write(u8 *buf, size_t len, u32 *ppos, Inode *inode);
+	u32 Write(const u8 *buf, size_t len, u32 *ppos, Inode *inode);
 
 	/* 
 	 * @comment 读写系统调用公共部分代码

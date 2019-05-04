@@ -321,17 +321,17 @@ u32 FileManager::Read(u8 *buf, size_t len, u32 *ppos, Inode *inode)
 	return this->Rdwr(buf, len, ppos, &io_param, inode, SECONDFS_FREAD);
 }
 
-extern "C" u32 FileManager_Write(FileManager *fm, u8 *buf, size_t len, u32 *ppos, Inode *inode)
+extern "C" u32 FileManager_Write(FileManager *fm, const u8 *buf, size_t len, u32 *ppos, Inode *inode)
 { return fm->Write(buf, len, ppos, inode); }
-u32 FileManager::Write(u8 *buf, size_t len, u32 *ppos, Inode *inode)
+u32 FileManager::Write(const u8 *buf, size_t len, u32 *ppos, Inode *inode)
 {
 	IOParameter io_param;
 	/* 直接调用Rdwr()函数即可 */
-	return this->Rdwr(buf, len, ppos, &io_param, inode, SECONDFS_FWRITE);
+	return this->Rdwr((u8 *)buf, len, ppos, &io_param, inode, SECONDFS_FWRITE);
 }
 
 extern "C" u32 FileManager_Rdwr(FileManager *fm, u8 *buf, size_t len, u32 *ppos, IOParameter *io_paramp, Inode *inode, u32 mode)
-{ fm->Rdwr(buf, len, ppos, io_paramp, inode, mode); }
+{ return fm->Rdwr(buf, len, ppos, io_paramp, inode, mode); }
 
 u32 FileManager::Rdwr(u8 *buf, size_t len, u32 *ppos, IOParameter *io_paramp, Inode *inode, u32 mode)
 {
@@ -783,9 +783,8 @@ extern "C" int FileManager_DELocate(FileManager *fm, Inode *dir, const char *nam
 int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, IOParameter *out_iop, u32 *inop)
 {
 	Inode* pInode;
-	Buf* pBuf;
+	Buf* pBuf = NULL;
 	int freeEntryOffset;	/* 以创建文件模式搜索目录时，记录空闲目录项的偏移量 */
-	int ret;
 	DirectoryEntry dent;
 
 	bool (*dir_emit)(void *ctx, const char * name, int namelen, u64 ino, unsigned int type);
@@ -910,7 +909,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			// 我们在这里忽略 "." 和 ".."
 			// 留给上层去主动回调 "." 和 ".." 目录项
 			if (SECONDFS_OPEN_NOT_IGNORE_DOTS != mode)
-				if (dent.m_name[0] == '.' && (dent.m_name[1] == '.' && dent.m_name[2] == '\0'
+				if (dent.m_name[0] == '.' && ((dent.m_name[1] == '.' && dent.m_name[2] == '\0')
 							|| dent.m_name[1] == '\0')) {
 					continue;
 				}
