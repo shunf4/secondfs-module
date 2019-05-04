@@ -110,6 +110,7 @@ err:
 	inode_dec_link_count(inode);
 	// discard_new_inode(inode);
 	unlock_new_inode(inode);
+	iput(inode);
 	return err;
 }
 
@@ -192,7 +193,9 @@ static int secondfs_link(struct dentry *old_dentry, struct inode *dir,
 
 err:
 	inode_dec_link_count(inode);
-	discard_new_inode(inode);
+	//discard_new_inode(inode);
+	unlock_new_inode(inode);
+	iput(inode);
 	return err;
 }
 
@@ -330,7 +333,9 @@ out:
 
 out_fail:
 	inode_dec_link_count(inode);
-	discard_new_inode(inode);
+	//discard_new_inode(inode);
+	unlock_new_inode(inode);
+	iput(inode);
 	goto out;
 }
 
