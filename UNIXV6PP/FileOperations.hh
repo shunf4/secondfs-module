@@ -125,7 +125,7 @@ public:
 	/* 
 	 * @comment 仅在某一目录下搜索, 节选了 NameI 函数
 	 */
-	int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, IOParameter *out_iop, u32 *inop);
+	int DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, IOParameter *out_iop, u32 *inop);
 
 	/* 
 	 * @comment 获取路径中的下一个字符

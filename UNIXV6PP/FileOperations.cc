@@ -5,6 +5,7 @@
 
 #include "Common.hh"
 #include "Inode.hh"
+#include "FileSystem.hh"
 #include "FileOperations.hh"
 
 // @Feng Shun: 以下为 C++ 部分
@@ -311,7 +312,8 @@ void FileManager::Stat1(Inode* pInode, unsigned long statBuf)
 }
 #endif
 
-extern "C" u32 FileManager_Read(FileManager *fm, u8 *buf, size_t len, u32 *ppos, Inode *inode) { fm->Read(buf, len, ppos, inode); }
+extern "C" u32 FileManager_Read(FileManager *fm, u8 *buf, size_t len, u32 *ppos, Inode *inode)
+{ return fm->Read(buf, len, ppos, inode); }
 u32 FileManager::Read(u8 *buf, size_t len, u32 *ppos, Inode *inode)
 {
 	IOParameter io_param;
@@ -319,7 +321,8 @@ u32 FileManager::Read(u8 *buf, size_t len, u32 *ppos, Inode *inode)
 	return this->Rdwr(buf, len, ppos, &io_param, inode, SECONDFS_FREAD);
 }
 
-extern "C" u32 FileManager_Write(FileManager *fm, u8 *buf, size_t len, u32 *ppos, Inode *inode) { fm->Write(buf, len, ppos, inode); }
+extern "C" u32 FileManager_Write(FileManager *fm, u8 *buf, size_t len, u32 *ppos, Inode *inode)
+{ return fm->Write(buf, len, ppos, inode); }
 u32 FileManager::Write(u8 *buf, size_t len, u32 *ppos, Inode *inode)
 {
 	IOParameter io_param;
