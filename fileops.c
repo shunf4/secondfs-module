@@ -83,7 +83,7 @@ int secondfs_add_link(struct dentry *dentry, struct inode *inode)
 
 	// 刚才的定位信息已经写进 io_param 了, 我们只要设定写数据
 	// 地址和写长度就可以把项目写进目录项了
-	io_param.m_Base = &de;
+	io_param.m_Base = (u8 *)&de;
 	io_param.m_Count = sizeof(de);
 	Inode_WriteI(SECONDFS_INODE(dir), &io_param);
 
