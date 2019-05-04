@@ -47,6 +47,8 @@ SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(DirectoryEntry)
 // 注: i_flag 的 ILOCK, i_count 等锁机制和引用计数机制
 // 在本工程中不用, 交由系统管理
 #ifndef __cplusplus
+// 此处由于和 SuperBlock 双向依赖, 添加一个类型声明
+typedef struct _SuperBlock SuperBlock;
 typedef struct Inode
 {
 	u32 i_flag;	/* 状态的标志位，定义见enum INodeFlag */
