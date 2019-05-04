@@ -1,4 +1,5 @@
 #include "secondfs.h"
+#include <linux/fs.h>
 
 ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
 				loff_t *ppos)
@@ -107,7 +108,8 @@ static inline int secondfs_add_nondir(struct dentry *dentry, struct inode *inode
 
 err:
 	inode_dec_link_count(inode);
-	discard_new_inode(inode);
+	// discard_new_inode(inode);
+	unlock_new_inode(inode);
 	return err;
 }
 
@@ -128,7 +130,7 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 
 	inode->i_op = &secondfs_file_inode_operations;
 	inode->i_fop = &secondfs_file_operations;
-	make_inode_dirty(inode);
+	mark_inode_dirty(inode);
 
 	// 具体在 dentry 里建立与 inode 的链接, 并把
 	// 该文件登记到父目录项中
@@ -225,7 +227,7 @@ static int secondfs_unlink(struct inode *dir, struct dentry *dentry)
 
 	// 参考自 FileManager::Unlink
 	de.m_ino = 0;
-	iop.m_Base = &de;
+	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
 	Inode_WriteI(SECONDFS_INODE(dir), &iop);
 
@@ -253,7 +255,7 @@ static int secondfs_add_dots(struct inode *inode, struct inode *parent)
 	de.m_name[0] = '.';
 
 	iop.isUserP = 0;
-	iop.m_Base = &de;
+	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
 	iop.m_Offset = 0;
 
@@ -377,7 +379,7 @@ static void secondfs_set_link(struct inode *dir, IOParameter *iopp,
 
 	// 我们只需要修改目录项的前四个字节(ino 号)就可以了
 	de.m_ino = cpu_to_le32(inode->i_ino);
-	iopp->m_Base = &de;
+	iopp->m_Base = (u8 *)&de;
 	iopp->m_Count = sizeof(de.m_ino);
 	iopp->isUserP = 0;
 
@@ -504,7 +506,7 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	// 现在可以移除源文件了. 源文件在父目录项中的位置还记在 iop 里面.
 	// 参考自 FileManager::Unlink
 	de.m_ino = 0;
-	iop.m_Base = &de;
+	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
 	Inode_WriteI(SECONDFS_INODE(old_dir), &iop);
 
