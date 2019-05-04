@@ -105,7 +105,7 @@ extern "C" {
 // Unix V6++ 超块, 而 Inode 包含了 struct inode
 static inline SuperBlock *SECONDFS_SB(struct super_block *sb)
 {
-	return sb->s_fs_info;
+	return (SuperBlock *)sb->s_fs_info;
 }
 
 
