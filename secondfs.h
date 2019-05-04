@@ -4,8 +4,8 @@
 /* 声明 SecondFS 文件系统使用的函数原型, 变量, 宏等 */
 /* Declare or define self-owned functions, variables and macros of SecondFS. */
 
-#include "UNIXV6PP/Inode_c_wrapper.h"
 #include "UNIXV6PP/BufferManager_c_wrapper.h"
+#include "UNIXV6PP/Inode_c_wrapper.h"
 #include "UNIXV6PP/FileSystem_c_wrapper.h"
 #include "UNIXV6PP/FileOperations_c_wrapper.h"
 

@@ -4,6 +4,8 @@
 #include "../common_c_cpp_types.h"
 #include "Common.hh"
 
+#include "BufferManager_c_wrapper.h"
+
 #ifndef __cplusplus
 #include <linux/fs.h>
 #endif // __cplusplus
