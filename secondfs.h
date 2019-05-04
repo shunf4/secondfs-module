@@ -86,7 +86,7 @@ static inline Inode *SECONDFS_INODE(struct inode *inode)
 {
 	return ({
 		void *__mptr = (void *)(inode);
-		((Inode *)(__mptr - offsetof(Inode, vfs_inode)));
+		((Inode *)((char *)__mptr - offsetof(Inode, vfs_inode)));
 	});
 }
 
