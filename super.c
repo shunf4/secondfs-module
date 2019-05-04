@@ -18,6 +18,7 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 	int err;
 	Inode *si;
 	BufferManager *bm = secondfs_buffermanagerp;
+	Buf* pBuf;
 
 	// 这个 Inode 是否在系统高速缓存? 是, 增加其引用计数,
 	// 直接返回;
@@ -47,7 +48,7 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 
 	
 	/* 将该外存Inode读入缓冲区 */
-	Buf* pBuf = BufferManager_Bread(bm, SECONDFS_SB(sb)->s_dev, SECONDFS_INODE_ZONE_START_SECTOR + ino / SECONDFS_INODE_NUMBER_PER_SECTOR );
+	pBuf = BufferManager_Bread(bm, SECONDFS_SB(sb)->s_dev, SECONDFS_INODE_ZONE_START_SECTOR + ino / SECONDFS_INODE_NUMBER_PER_SECTOR );
 
 	/* 如果发生I/O错误 */
 	if(pBuf->b_flags & SECONDFS_B_ERROR)
@@ -246,13 +247,13 @@ int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 	// 用根目录的 Inode 建立根目录的 dentry
 	sb->s_root = d_make_root(root_inode);
 	if (!sb->s_root) {
-		ps_err("failed making root dentry.");
+		pr_err("failed making root dentry.");
 		err = -ENOMEM;
 		goto out_free;
 	}
 	secsb->s_inodep = container_of(root_inode, Inode, vfs_inode);
 
-	inode_init_owner(root_inode, sb->s_root, root_inode->i_mode);
+	inode_init_owner(root_inode, NULL, root_inode->i_mode);
 	secondfs_write_super(sb);
 	goto out;
 

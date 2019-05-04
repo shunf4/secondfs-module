@@ -13,7 +13,7 @@ extern "C" {
 // Superblock 类的 C 包装
 
 #ifndef __cplusplus
-typedef struct
+typedef struct _SuperBlock
 {
 	s32	s_isize;		/* 外存Inode区占用的盘块数 */
 	s32	s_fsize;		/* 盘块总数 */
