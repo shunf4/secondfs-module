@@ -50,7 +50,7 @@ struct file_system_type secondfs_fs_type = {
 
 
 // 要注册的超块操作函数表
-const struct super_operations secondfs_sb_ops = {
+struct super_operations secondfs_sb_ops = {
 	.alloc_inode	= secondfs_alloc_inode,
 	.destroy_inode	= secondfs_destroy_inode,
 	.write_inode	= secondfs_write_inode,
