@@ -15,7 +15,7 @@ ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
 	return ret;
 }
 
-ssize_t secondfs_file_write(struct file *filp, char __user *buf, size_t len,
+ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t len,
 				loff_t *ppos)
 {
 	// filp->f_inode 是缓存数据, 实时数据在 path 结构里面
@@ -157,7 +157,7 @@ static struct dentry *secondfs_lookup(struct inode *dir, struct dentry *dentry, 
 				dentry->d_name.name, dentry->d_name.len, 
 				SECONDFS_OPEN, &iop, &ino);
 	if (ret != 0)
-		return ret;
+		return ERR_PTR(ret);
 
 	// 通过 ino 获取这个 inode
 	inode = secondfs_iget(dir->i_sb, ino);
@@ -590,7 +590,7 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 	
 }
 
-struct file_operations secondfs_file_inode_operations = {
+struct inode_operations secondfs_file_inode_operations = {
 };
 
 struct file_operations secondfs_dir_operations = {
