@@ -4,9 +4,8 @@
 
 #include <cstdint>
 #include <cstddef>
-#include "Common.hh"
-#include "../common_c_cpp_types.h"
-#include "../c_helper_for_cc.h"
+#include "../common.h"
+
 #include "Inode.hh"
 #include "BufferManager.hh"
 
@@ -45,6 +44,8 @@ public:
 	
 	//s32	s_flock_obsolete;	/* 封锁空闲盘块索引表标志 */
 	s32	s_has_dots;		/* 我们用两个 lock 弃置后的空间来表示 "文件系统是否有 . 和 .. 目录项"吧. */
+	/* 这个项只有为全满(0xffffffff)时才表示"有目录项"! */
+
 	s32	s_ilock_obsolete;	/* 封锁空闲Inode表标志 */
 	
 	s32	s_fmod;			/* 内存中super block副本被修改标志，意味着需要更新外存对应的Super Block */

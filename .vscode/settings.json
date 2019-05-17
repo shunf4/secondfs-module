@@ -20,7 +20,8 @@
         "kernel.h": "c",
         "inode.hh": "c",
         "filesystem.hh": "c",
-        "fileoperations_c_wrapper.h": "c"
+        "fileoperations_c_wrapper.h": "c",
+        "common.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

@@ -1,8 +1,7 @@
 #ifndef __FILEOPERATIONS_C_WRAPPER_H__
 #define __FILEOPERATIONS_C_WRAPPER_H__
 
-#include "Common.hh"
-#include "../common_c_cpp_types.h"
+#include "../common.h"
 
 #include "Inode_c_wrapper.h"
 

@@ -1,7 +1,6 @@
 /* UNIXV6PP 文件系统(主要是Inode操作)代码裁剪. */
-#include "Common.hh"
+#include "../common.h"
 #include "../secondfs.h"
-#include "../c_helper_for_cc.h"
 #include <memory.h>
 
 #include "Inode.hh"

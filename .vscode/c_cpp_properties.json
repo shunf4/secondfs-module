@@ -11,7 +11,9 @@
             "defines": [
                 "CONFIG_BLOCK",
                 "__KERNEL__",
-                "__IN_VSCODE__"
+                "__IN_VSCODE__",
+                "CONFIG_PAGE_OFFSETUL=0xc0000000",
+                "KBUILD_MODNAME=\"secondfs\""
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",

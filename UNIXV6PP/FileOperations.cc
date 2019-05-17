@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <memory.h>
 
-#include "Common.hh"
+#include "../common.h"
 #include "Inode.hh"
 #include "FileSystem.hh"
 #include "FileOperations.hh"

@@ -2,6 +2,16 @@
 #include "UNIXV6PP/FileSystem_c_wrapper.h"
 
 #if 1
+/* secondfs_iget : 
+ * Similar to kernel iget_locked(): *Get* an (vfs) inode
+ * by (vfs) super_block and inode number (when cannot find
+ * in memory, an inode and a UnixV6++ Inode are allocated, 
+ * filled and they bidirectionally linked)
+ *      sb : pointer to current VFS super_block
+ *      ino : Inode number
+ *
+ * Written with reference to InodeTable::IGet()
+*/
 
 /* secondfs_iget : 根据 Inode 编号获取 VFS Inode 顺带 UnixV6++ Inode.
  *      sb : 系统传过来的 (VFS) 超块指针
@@ -19,6 +29,7 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 	BufferManager *bm = secondfs_buffermanagerp;
 	Buf* pBuf;
 
+	// (The effects of iget_locked)
 	// 这个 Inode 是否在系统高速缓存? 是, 增加其引用计数,
 	// 直接返回;
 	// 否, iget_locked 会调用 alloc_inode 分配一个.

@@ -1,6 +1,6 @@
 /* UNIXV6PP 文件系统(主要是Buffer管理)代码裁剪. */
 #include "../secondfs.h"
-#include "Common.hh"
+#include "../common.h"
 #include "BufferManager.hh"
 
 // @Feng Shun: 以下为 C++ 部分

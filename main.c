@@ -4,6 +4,22 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
+/* Guidelines:
+ *   * Close to kernel coding style
+ *   * Make best use of UnixV6++ codes
+ *   * Simplify everything
+ *   * Unix V6++ Filesystem(Second Filesystem) uses *Little Endian*.
+ *     Thus some structures related to the filesystem might have
+ *     different endian to the system. Here's the rules of endian:
+ * 
+ *     SuperBlock, DirectoryEntry & DiskInode struct remains little
+ *     endian, while other struct is converted to current CPU endian.
+ * 
+ *   * C-style cast is used in casting unsigned int to signed int.
+ *     (Though it is implementation-defined) Please do not bother,
+ *     language lawyers!
+ */
+
 /* 本软件撰写方针:
  *   * 贴合内核
  *   * 尽量重用 UnixV6++ 的 C++ 代码
@@ -22,7 +38,7 @@
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("shunf4");
-MODULE_DESCRIPTION("A simple Linux Filesystem based on UNIXV6++.");
+MODULE_DESCRIPTION("UNIXV6++ filesystem. (https://gitee.com/solym/UNIX_V6PP)");
 MODULE_VERSION("0.1");
 
 static char *username = "user";
@@ -30,17 +46,20 @@ module_param(username, charp, S_IRUGO);
 MODULE_PARM_DESC(username, "The user's name to display a hello world message in /var/log/kern.log");
 
 // 内核高速缓存 kmem_cache, 用来暂时存放 SecondFS 的各数据结构
+// Kernel cache (slab) descriptor for frequently allocated
+// & disposed structs for secondfs
 struct kmem_cache *secondfs_diskinode_cachep;
 struct kmem_cache *secondfs_icachep;
 
 // 一次性的对象定义
+// Some one-time objects
 BufferManager *secondfs_buffermanagerp;
 FileSystem *secondfs_filesystemp;
 FileManager *secondfs_filemanagerp;
-// Inode 表
 
 
 // 要注册的文件系统结构
+// File system structure to register to system
 struct file_system_type secondfs_fs_type = {
 	.owner = THIS_MODULE,
 	.name = "secondfs",
@@ -51,6 +70,7 @@ struct file_system_type secondfs_fs_type = {
 
 
 // 要注册的超块操作函数表
+// Superblock manipulation functions to register to system
 struct super_operations secondfs_sb_ops = {
 	.alloc_inode	= secondfs_alloc_inode,
 	.destroy_inode	= secondfs_destroy_inode,

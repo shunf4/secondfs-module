@@ -1,8 +1,7 @@
 #ifndef __INODE_C_WRAPPER_H__
 #define __INODE_C_WRAPPER_H__
 
-#include "../common_c_cpp_types.h"
-#include "Common.hh"
+#include "../common.h"
 
 #include "BufferManager_c_wrapper.h"
 

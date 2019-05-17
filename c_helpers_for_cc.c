@@ -14,15 +14,12 @@
 #include <linux/cpufreq.h>
 #include <linux/slub_def.h>
 
+#include <stdarg.h>
+
 #include "secondfs.h"
+#include "common.h"
 
-#undef __cplusplus
-#include "c_helper_for_cc.h"
-
-
-#define DO_MEMDBG
-
-#ifdef DO_MEMDBG
+#ifdef SECONDFS_DEBUG
 static unsigned int malloc_num;
 static unsigned int free_num;
 static unsigned int kmem_cache_malloc_num;
@@ -45,9 +42,9 @@ void *secondfs_c_helper_malloc(size_t size)
 	BUG();
 #endif // SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
 
-#ifdef DO_MEMDBG
+#ifdef SECONDFS_DEBUG
 	malloc_num++;
-#endif // DO_MEMDBG
+#endif // SECONDFS_DEBUG
 
 	p = kmalloc(size, GFP_KERNEL);
 	printk(KERN_DEBUG "secondfs: Start mallocing, kmalloc size=%lu pointer=%p", size, p);
@@ -69,24 +66,24 @@ void secondfs_c_helper_free(void *pointer)
 
 	printk(KERN_DEBUG "secondfs: Start freeing, kfree pointer=%p", pointer);
 
-#ifdef DO_MEMDBG
+#ifdef SECONDFS_DEBUG
 	free_num++;
-#endif // DO_MEMDBG
+#endif // SECONDFS_DEBUG
 	kfree(pointer);
 }
 
 void secondfs_c_helper_mdebug(void)
 {
-#ifdef DO_MEMDBG
+#ifdef SECONDFS_DEBUG
 	printk(KERN_DEBUG "secondfs: malloc_num is %u", malloc_num);
 	printk(KERN_DEBUG "secondfs: free_num is %u", free_num);
-#endif // DO_MEMDBG
+#endif // SECONDFS_DEBUG
 }
 
 // 以下为 C 对实现 C++ 的 new/delete 操作符提供的助手函数
 // 使用 kmem_cache 实现:
 
-#ifdef DO_MEMDBG
+#ifdef SECONDFS_DEBUG
 
 #define SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(class_name, kmem_cachep) \
 void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size)\
@@ -106,7 +103,7 @@ void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer)\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
-#else // DO_MEMDBG
+#else // SECONDFS_DEBUG
 
 #define SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(class_name, kmem_cachep) \
 void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size)\
@@ -128,24 +125,19 @@ void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer)\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
-#endif // DO_MEMDBG
+#endif // SECONDFS_DEBUG
 
 void secondfs_c_helper_kmem_cache_mdebug(void)
 {
-#ifdef DO_MEMDBG
+#ifdef SECONDFS_DEBUG
 	printk(KERN_DEBUG "secondfs: kmem_cache_malloc_num is %u", kmem_cache_malloc_num);
 	printk(KERN_DEBUG "secondfs: kmem_cache_free_num is %u", kmem_cache_free_num);
-#endif // DO_MEMDBG
+#endif // SECONDFS_DEBUG
 }
 
 SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(DiskInode, secondfs_diskinode_cachep)
 
 // 以下为 C 为 C++ 提供的 Linux 内核服务
-
-int secondfs_c_helper_printk(const char *s)
-{
-	return printk(s);
-}
 
 unsigned long secondfs_c_helper_ktime_get_real_seconds()
 {
@@ -266,4 +258,14 @@ u16 secondfs_c_helper_le16_to_cpu(u16 x)
 void secondfs_c_helper_set_loff_t(void *x, u32 val)
 {
 	*(loff_t *)x = val;
+}
+
+int secondfs_c_helper_printk(const char *s, ...)
+{
+	int res;
+	va_list args;
+	va_start(args, s);
+	res = vprintk(s, args);
+	va_end(args);
+	return res;
 }

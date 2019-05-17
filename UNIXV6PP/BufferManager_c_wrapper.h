@@ -1,8 +1,7 @@
 #ifndef __BUFFERMANAGER_C_WRAPPER_H__
 #define __BUFFERMANAGER_C_WRAPPER_H__
 
-#include "Common.hh"
-#include "../common_c_cpp_types.h"
+#include "../common.h"
 
 #ifndef __cplusplus
 #include <linux/blkdev.h>

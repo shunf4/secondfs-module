@@ -1,8 +1,7 @@
 /* UNIXV6PP 文件系统(主要是超块操作)代码裁剪. */
 #include <cstring>
-#include "Common.hh"
+#include "../common.h"
 #include "../secondfs.h"
-#include "../c_helper_for_cc.h"
 
 #include "BufferManager.hh"
 #include "Inode.hh"
