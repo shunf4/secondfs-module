@@ -15,8 +15,14 @@
  * 	op : bio 内要执行的操作.
  * 	op_flags : 操作所需附加的标志位.
  */
+#ifdef SECONDFS_KERNEL_BEFORE_4_8
+static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
+			void *buf, int rw)
+
+#else
 static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 			void *buf, int op, int op_flags)
+#endif
 {
 	struct bio *bio;
 	u64 io_size;
@@ -24,8 +30,17 @@ static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 
 	bio = bio_alloc(GFP_NOIO, 1);
 	bio->bi_iter.bi_sector = sector;
+#ifdef SECONDFS_KERNEL_BEFORE_4_14
+	bio->bi_bdev = bdev;
+#else
 	bio_set_dev(bio, bdev);
+#endif
+
+#ifdef SECONDFS_KERNEL_BEFORE_4_8
+	bio->bi_rw = rw;
+#else
 	bio->bi_opf = op | op_flags;
+#endif
 
 	io_size = SECONDFS_BLOCK_SIZE;
 	// bio 的目标区域, 必须以页为单位.
@@ -46,7 +61,11 @@ static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 	}
 
 	// 提交这个同步 bio 请求, 等待执行完毕
+#ifdef SECONDFS_KERNEL_BEFORE_4_8
+	ret = submit_bio_wait(rw, bio);
+#else
 	ret = submit_bio_wait(bio);
+#endif
 
 out:
 	bio_put(bio);
@@ -55,10 +74,18 @@ out:
 
 int secondfs_submit_bio_sync_read(void * /* struct block_device * */ bdev, u32 sector,
 			void *buf) {
+#ifdef SECONDFS_KERNEL_BEFORE_4_8
+	return secondfs_submit_bio(bdev, sector, buf, READ);
+#else
 	return secondfs_submit_bio(bdev, sector, buf, REQ_OP_READ, 0);
+#endif
 }
 
 int secondfs_submit_bio_sync_write(void * /* struct block_device * */ bdev, u32 sector,
 			void *buf) {
+#ifdef SECONDFS_KERNEL_BEFORE_4_8
+	return secondfs_submit_bio(bdev, sector, buf, WRITE_SYNC);
+#else
 	return secondfs_submit_bio(bdev, sector, buf, REQ_OP_WRITE, REQ_SYNC);
+#endif
 }

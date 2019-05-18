@@ -188,9 +188,15 @@ int secondfs_sync_fs(struct super_block *sb, int wait)
  */
 static void secondfs_write_super(struct super_block *sb)
 {
+#ifdef SECONDFS_KERNEL_BEFORE_4_14
+	if (!(sb->s_flags & MS_RDONLY))
+		// 即有等待地同步超块
+		secondfs_sync_fs(sb, 1);
+#else
 	if (!sb_rdonly(sb))
 		// 即有等待地同步超块
 		secondfs_sync_fs(sb, 1);
+#endif
 }
 
 /* secondfs_fill_super
@@ -236,7 +242,12 @@ int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	if (le32_to_cpu(secsb->s_ronly)) {
 		pr_warn("this SecondFS volume is read-only.");
+#ifdef SECONDFS_KERNEL_BEFORE_4_14
+		sb->s_flags |= MS_RDONLY;
+#else
 		sb->s_flags |= SB_RDONLY;
+#endif
+		
 	}
 
 	// 读入根目录的 Inode
@@ -283,9 +294,15 @@ void secondfs_put_super(struct super_block *sb)
 {
 	SuperBlock *secsb = SECONDFS_SB(sb);
 
-	if (!sb_rdonly(sb)) {
+#ifdef SECONDFS_KERNEL_BEFORE_4_14
+	if (!(sb->s_flags & MS_RDONLY))
+		// 即有等待地同步超块
 		secondfs_sync_fs(sb, 1);
-	}
+#else
+	if (!sb_rdonly(sb))
+		// 即有等待地同步超块
+		secondfs_sync_fs(sb, 1);
+#endif
 
 	deleteDevtab(secsb->s_dev);
 	deleteSuperBlock(secsb);

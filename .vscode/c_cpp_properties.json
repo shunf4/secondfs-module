@@ -4,9 +4,9 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/src/linux-headers-4.15.0-47-generic/include",
-                "/usr/src/linux-headers-4.15.0-47-generic/arch/x86/include",
-                "/usr/src/linux-headers-4.15.0-47-generic/arch/x86/include/generated"
+                "/usr/src/linux-headers-4.4.0-146-generic/include",
+                "/usr/src/linux-headers-4.4.0-146-generic/arch/x86/include",
+                "/usr/src/linux-headers-4.4.0-146-generic/arch/x86/include/generated"
             ],
             "defines": [
                 "CONFIG_BLOCK",

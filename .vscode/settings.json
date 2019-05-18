@@ -21,7 +21,10 @@
         "inode.hh": "c",
         "filesystem.hh": "c",
         "fileoperations_c_wrapper.h": "c",
-        "common.h": "c"
+        "common.h": "c",
+        "modversions.h": "c",
+        "utsrelease.h": "c",
+        "version.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

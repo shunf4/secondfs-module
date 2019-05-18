@@ -1,6 +1,20 @@
 #ifndef __SECONDFS_H__
 #define __SECONDFS_H__
 
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
+#define SECONDFS_KERNEL_BEFORE_4_14
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,9,0)
+#define SECONDFS_KERNEL_BEFORE_4_9
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+#define SECONDFS_KERNEL_BEFORE_4_8
+#endif
+
 /* Declare or define self-owned functions, variables and macros of SecondFS. */
 /* 声明 SecondFS 文件系统使用的函数原型, 变量, 宏等 */
 

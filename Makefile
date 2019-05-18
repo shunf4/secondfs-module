@@ -39,6 +39,7 @@ std_module/hello.ko :
 set_and_print_cxxflags : std_module/hello.ko
 	$(eval CXXMACROS := $(shell bash make-utils/read_sizes_from_hello_ko.sh))
 	$(eval CXXFLAGS := $(shell cat cxxflags.tmp) -I/usr/src/linux-headers-$(shell uname -r)/include $(CXXMACROS))
+	$(eval CXXFLAGS := $(CXXFLAGS) -std=c++14)
 	$(Q)echo CXXFLAGS = $(CXXFLAGS)
 
 # Entry for the kernel module

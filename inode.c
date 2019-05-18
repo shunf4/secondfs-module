@@ -217,7 +217,12 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	inode = &si->vfs_inode;
 	secondfs_inode_conform_s2v(inode, si);
 
+#ifdef SECONDFS_KERNEL_BEFORE_4_9
+	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME_SEC;
+#else
 	inode->i_mtime = inode->i_atime = inode->i_ctime = current_time(inode);
+#endif
+	
 	inode_init_owner(inode, dir, mode);
 	mark_inode_dirty(inode);
 	secondfs_inode_conform_v2s(si, inode);

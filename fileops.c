@@ -177,7 +177,11 @@ static int secondfs_link(struct dentry *old_dentry, struct inode *dir,
 	struct inode *inode = d_inode(old_dentry);
 	int err;
 
+#ifdef SECONDFS_KERNEL_BEFORE_4_9
+	inode->i_ctime = CURRENT_TIME_SEC;
+#else
 	inode->i_ctime = current_time(inode);
+#endif
 	// 修改链接数和引用数, 加一
 	inode_inc_link_count(inode);
 	ihold(inode);
@@ -395,9 +399,14 @@ static void secondfs_set_link(struct inode *dir, IOParameter *iopp,
 	secondfs_inode_conform_s2v(dir, SECONDFS_INODE(dir));
 }
 
+#ifdef SECONDFS_KERNEL_BEFORE_4_9
+static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
+			struct inode * new_dir,	struct dentry * new_dentry)
+#else
 static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 			struct inode * new_dir,	struct dentry * new_dentry,
 			unsigned int flags)
+#endif
 {
 	// rename 的实质是搬动文件的位置.
 
@@ -416,8 +425,12 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	int ret_dot;
 	
 	// 标志位不能有其他标志
+#ifndef SECONDFS_KERNEL_BEFORE_4_9
 	if (flags & ~RENAME_NOREPLACE)
 		return -EINVAL;
+#endif
+
+	
 
 	// 先找源
 	err = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(old_dir),
@@ -499,7 +512,13 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 		}
 	}
 	
+#ifdef SECONDFS_KERNEL_BEFORE_4_9
+	old_inode->i_ctime = CURRENT_TIME_SEC;
+#else
 	old_inode->i_ctime = current_time(old_inode);
+#endif
+
+	
 	mark_inode_dirty(old_inode);
 
 	secondfs_inode_conform_v2s(SECONDFS_INODE(new_dir), new_dir);
@@ -600,7 +619,7 @@ struct file_operations secondfs_dir_operations = {
 	.llseek = generic_file_llseek,
 
 	.read = generic_read_dir,	// 这个函数会直接返回错误, 因为不能直接读取目录
-	.iterate_shared = secondfs_readdir,	// 遍历目录
+	.iterate = secondfs_readdir,	// 遍历目录
 	.fsync = secondfs_fsync
 };
 
