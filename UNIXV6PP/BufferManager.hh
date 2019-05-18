@@ -9,6 +9,7 @@
 
 class Buf;
 
+/* Device (Tab) Devtab definition */
 /* 块设备表devtab定义 */
 class Devtab
 {
@@ -28,6 +29,9 @@ public:
 };
 
 /*
+ * Buffer control block Buf definition
+ */
+/*
  * 缓存控制块buf定义
  * 记录了相应缓存的使用情况等信息；
  * 同时兼任I/O请求块，记录该缓存
@@ -42,26 +46,34 @@ public:
 		B_READ	= 0x2,		/* 读操作。从盘读取信息到缓存中 */
 		B_DONE	= 0x4,		/* I/O操作结束 */
 		B_ERROR	= 0x8,		/* I/O因出错而终止 */
-		B_BUSY	= 0x10,		/* 相应缓存正在使用中 */
-		B_WANTED = 0x20,	/* 有进程正在等待使用该buf管理的资源，清B_BUSY标志时，要唤醒这种进程 */
+		B_BUSY	= 0x10,		/* 相应缓存正在使用中; Not used, replaced by lock mechanism */
+		B_WANTED = 0x20,	/* 有进程正在等待使用该buf管理的资源，清B_BUSY标志时，要唤醒这种进程; Not used, replaced by lock mechanism */
 		B_ASYNC	= 0x40,		/* 异步I/O，不需要等待其结束 */
-		B_DELWRI = 0x80		/* 延迟写，在相应缓存要移做他用时，再将其内容写到相应块设备上 */
+		B_DELWRI = 0x80		/* 延迟写，在相应缓存要移做他用时，再将其内容写到相应块设备上(Dirty flag) */
 	};
 	
 public:
-	unsigned int b_flags;	/* 缓存控制块标志位 */
+	u32 b_flags;	/* 缓存控制块标志位 */
 	
-	int		padding;		/* 4字节填充，使得b_forw和b_back在Buf类中与Devtab类
+	// 4 byte padding, so that a Buf * can be converted from/to Devtab *
+	u32		padding;		/* 4字节填充，使得b_forw和b_back在Buf类中与Devtab类
 							 * 中的字段顺序能够一致，否则强制转换会出错。 */
 	/* 缓存控制块队列勾连指针 */
 
 	/* @Feng Shun: 
+	 * Till av_back, Buf and Devtab have the same structure - 2 pairs of pointers.
+	 * Thus they can be cast to each other.
 	 * 从整个 struct 开始, 直到勾连指针的部分, Buf 和 Devtab 的结构都是一样的.
 	 * 因此, 可以将 Buf * 和 Devtab 相互强制转换, 以进行前面部分的读取和写入.
 	 * 
+	 * For Devtab, b_forw & b_back link Bufs to form device queue;
+	 * d_actf and d_actl to form I/O queue(not being used in this module);
 	 * 对于 Devtab 来说, 这四个(两对)指针的前一对串联起该设备对应指针;
 	 * 后一对串联起该设备的 I/O 请求队列 (在本项目中不用).
 	 * 
+	 * For bFreeList (a special Buf in BufferManager), b_forw & b_back link
+	 * Bufs to from NODEV device queue(not used in this module);
+	 * av_forw & av_back forms the free buffers list.
 	 * 对于 bFreeList 来说, 前一对串联起 NODEV 设备对应指针 (本项目中不用到 NODEV);
 	 * 后一对串联起自由缓存队列.
 	 */
@@ -70,12 +82,14 @@ public:
 	Buf*	av_forw;
 	Buf*	av_back;
 	
-	Devtab*		b_dev;			/* 所属的设备 */
+	Devtab*		b_dev;			/* 所属的设备 Associated Devtab; Others are not used */
 	s32		b_wcount;		/* 需传送的字节数 */
 	u8* 		b_addr;			/* 指向该缓存控制块所管理的缓冲区的首地址 */
 	s32		b_blkno;		/* 磁盘逻辑块号 */
 	s32		b_error;		/* I/O出错时信息 */
 	s32		b_resid;		/* I/O出错时尚未传送的剩余字节数 */
+
+	s32		b_index;		/* For debug - the index in BufferManager */
 
 	struct {u8 data[SECONDFS_MUTEX_SIZE];}	b_modify_lock;
 	struct {u8 data[SECONDFS_MUTEX_SIZE];}	b_wait_free_lock;
@@ -118,21 +132,21 @@ public:
 	Buf& GetSwapBuf();			/* 获取进程图像传送请求块Buf对象引用 */
 	Buf& GetBFreeList();			/* 获取自由缓存队列控制块Buf对象引用 */
 
-public:
 	void GetError(Buf* bp);			/* 获取I/O操作中发生的错误信息 */
-	void NotAvail(Buf* bp, u32 lockFirst);	/* 从自由队列中摘下指定的缓存控制块buf */
-	Buf* InCore(Devtab *adev, int blkno);	/* 检查指定字符块是否已在缓存中 */
+	void NotAvail(Buf* bp, u32 lockFirst);	/* 从自由队列中摘下指定的缓存控制块buf Make bp not available by picking it out the freeBuf queue */
+	Buf* InCore(Devtab *adev, int blkno);	/* 检查指定字符块是否已在缓存中 Is Buf(dev/blkno) in memory? */
+
+	void Print(Devtab *dev);
 	
-public:
 	Buf bFreeList;					/* 自由缓存队列控制块 */
 	Buf SwBuf;					/* 进程图像传送请求块 */
-	Buf m_Buf[SECONDFS_NBUF];			/* 缓存控制块数组 */
-	u8 Buffer[SECONDFS_NBUF][SECONDFS_BUFFER_SIZE];	/* 缓冲区数组 */
+	Buf m_Buf[SECONDFS_NBUF];			/* 缓存控制块数组 All Buf's (Buf actually serves as descriptor) (statistically allocated in BufferManager) */
+	u8 Buffer[SECONDFS_NBUF][SECONDFS_BUFFER_SIZE];	/* 缓冲区数组 All space of buffers */
 	
 	//DeviceManager* m_DeviceManager;		/* 指向设备管理模块全局对象 */
 
-	struct {u8 data[SECONDFS_SPINLOCK_T_SIZE];}	b_queue_lock;		// 保护整个缓存块队列的自旋锁
-	struct {u8 data[SECONDFS_SEMAPHORE_SIZE];}	b_bFreeList_lock;	// 表征是否有自由缓存的信号量
+	struct {u8 data[SECONDFS_SPINLOCK_T_SIZE];}	b_queue_lock;		// 保护整个缓存块队列的自旋锁 Spin lock to guard the two queues
+	struct {u8 data[SECONDFS_SEMAPHORE_SIZE];}	b_bFreeList_lock;	// 表征是否有自由缓存的信号量 Semaphore to indicate the number of free buffers
 };
 
 #endif // __BUFFERMANAGER_HH__

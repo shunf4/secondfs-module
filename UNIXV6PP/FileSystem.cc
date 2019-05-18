@@ -41,10 +41,10 @@ void FileSystem::Initialize()
 	//this->updlock = 0;
 }
 
-extern "C" void FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb) { fs->LoadSuperBlock(secsb); }
+extern "C" int FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb) { return fs->LoadSuperBlock(secsb); }
 // 注: 只是把裸数据从外存获取到 SuperBlock 结构, 并未做任何
 // Endian 的转换! Unix V6++ 卷的所有多字节数据都以小端序存放
-void FileSystem::LoadSuperBlock(SuperBlock *secsb)
+int FileSystem::LoadSuperBlock(SuperBlock *secsb)
 {
 	BufferManager& bufMgr = *this->m_BufferManager;
 	Buf* pBuf;

@@ -221,6 +221,7 @@ int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 	struct inode *root_inode;
 	int err = 0;
 
+	secondfs_dbg(SB_FILL, "newing SuperBlock & Devtab...");
 	secsb = newSuperBlock();
 	devtab = newDevtab();
 

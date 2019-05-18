@@ -85,7 +85,7 @@ SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(Devtab)
 // BufferManager 类的 C 包装
 
 // 总共可以分配多少个缓冲块
-#define SECONDFS_NBUF 60
+#define SECONDFS_NBUF 10
 // 缓冲块的大小, 应该等于扇区大小
 #define SECONDFS_BUFFER_SIZE 512
 
@@ -120,6 +120,7 @@ Buf* BufferManager_InCore(BufferManager *bm, Devtab *adev, int blkno);
 void BufferManager_ClrBuf(BufferManager *bm, Buf *bp);
 void BufferManager_Bdwrite(BufferManager *bm, Buf *bp);
 void BufferManager_Bflush(BufferManager *bm, Devtab *dev);
+void BufferManager_Print(BufferManager *bm, Devtab *dev);
 
 #ifdef __cplusplus
 }

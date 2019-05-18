@@ -13,6 +13,8 @@
 
 #ifdef __cplusplus
 #include <cstdint>
+#include <asm-generic/errno-base.h>
+#include <new>
 typedef uint32_t u32;
 typedef int32_t s32;
 typedef int16_t s16;
@@ -38,10 +40,14 @@ typedef uint64_t u64;
 #define SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(classname) \
 const u32 SECONDFS_SIZEOF_##classname = sizeof(classname);\
 classname *new##classname() {\
-	return new classname();\
+	return new(std::nothrow) classname();\
 }\
 void delete##classname(classname *p) {\
-	delete p;\
+	try {\
+		delete p;\
+	} catch (...) {\
+		secondfs_warning("deleteing a " #classname " %p: error!", p);\
+	}\
 }
 
 #define SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(classname)\
@@ -118,22 +124,44 @@ int secondfs_c_helper_printk(const char *s, ...);
 
 // Debug flags and macros
 
-#define SECONDFS_DEBUG (1)
+#define SFDBG_SB_SIZECONSISTENCY 0x00000001
+#define SFDBG_SB_FILL 0x00000002
+#define SFDBG_BUFFER 0x00000004
+#define SFDBG_BUFFERQ 0x00000008
+
+#define SFDBG_MASK 0xFFFFFFFF
 // #define SECONDFS_DEBUG (0)
 
-#if (SECONDFS_DEBUG)
+#define SFDBG_ENA(flg) (SFDBG_##flg & SFDBG_MASK)
 
 #ifdef __cplusplus
 #include <linux/kern_levels.h>
-#define secondfs_dbg(fmt, ...) secondfs_c_helper_printk(KERN_DEBUG fmt, ##__VA_ARGS__);
+#define secondfs_dbg(flg, fmt, ...)\
+do {\
+	if (SFDBG_##flg & SFDBG_MASK)\
+		secondfs_c_helper_printk(KERN_DEBUG "secondfs: " fmt, ##__VA_ARGS__);\
+} while (0)
+#define secondfs_info(fmt, ...) secondfs_c_helper_printk(KERN_INFO "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_notice(fmt, ...) secondfs_c_helper_printk(KERN_NOTICE "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_warning(fmt, ...) secondfs_c_helper_printk(KERN_WARNING "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_err(fmt, ...) secondfs_c_helper_printk(KERN_ERR "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_crit(fmt, ...) secondfs_c_helper_printk(KERN_CRIT "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_alert(fmt, ...) secondfs_c_helper_printk(KERN_ALERT "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_emerg(fmt, ...) secondfs_c_helper_printk(KERN_EMERG "secondfs: " fmt, ##__VA_ARGS__);
 #else // __cplusplus
-#define secondfs_dbg(fmt, ...) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_dbg(flg, fmt, ...)\
+do {\
+	if (SFDBG_##flg & SFDBG_MASK)\
+		printk(KERN_DEBUG "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);\
+} while (0)
+#define secondfs_info(fmt, ...) printk(KERN_INFO "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_notice(fmt, ...) printk(KERN_NOTICE "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_warning(fmt, ...) printk(KERN_WARNING "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_err(fmt, ...) printk(KERN_ERR "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_crit(fmt, ...) printk(KERN_CRIT "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_alert(fmt, ...) printk(KERN_ALERT "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_emerg(fmt, ...) printk(KERN_EMERG "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
 #endif // __cplusplus
 
-#else // SECONDFS_DEBUG
-
-#define secondfs_dbg(fmt, ...)
-
-#endif // SECONDFS_DEBUG
 
 #endif // __COMMON_H__

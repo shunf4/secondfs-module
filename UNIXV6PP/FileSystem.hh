@@ -94,10 +94,13 @@ public:
 
 	/* 
 	* @comment 从磁盘读入SuperBlock.
-	* 不读入 s_inodep 成员和 s_dev成员.
+	* 不读入 s_inodep 成员和 s_dev 成员.
 	* 不进行端序的转换.
+	* Load SuperBlock from the Disk.
+	* However, s_inodep and s_dev member are later filled.
+	* Keep little-endian.
 	*/
-	void LoadSuperBlock(SuperBlock *secsb);
+	int LoadSuperBlock(SuperBlock *secsb);
 
 
 	/* 

@@ -1,9 +1,5 @@
 #include "secondfs.h"
 
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
-
 /* Guidelines:
  *   * Close to kernel coding style
  *   * Make best use of UnixV6++ codes
@@ -68,7 +64,6 @@ struct file_system_type secondfs_fs_type = {
 	.fs_flags = FS_REQUIRES_DEV
 };
 
-
 // 要注册的超块操作函数表
 // Superblock manipulation functions to register to system
 struct super_operations secondfs_sb_ops = {
@@ -79,20 +74,25 @@ struct super_operations secondfs_sb_ops = {
 	.put_super	= secondfs_put_super,
 	.sync_fs	= secondfs_sync_fs,
 	.dirty_inode	= secondfs_dirty_inode,
-	//.statfs	= secondfs_statfs,
+	//.statfs		= secondfs_statfs,
 	//.remount_fs	= secondfs_remount,
 	//.show_options	= secondfs_show_options,
 };
 
-static int __init secondfs_init(void) {
+static int __init init_secondfs(void) {
 	int ret = 0;
 
-	// 为所有数据结构 (具有恒定大小的内存空间表示) 创建一套 kmem_cache, 用来快速动态分配
+	// Create kernel cache descriptor for frequently allocated datastruct.
+	// 为频繁创建的数据结构 (具有恒定大小的内存空间表示) 创建一套 kmem_cache, 用来快速动态分配
 	secondfs_diskinode_cachep = kmem_cache_create("secondfs_diskinode_cache",
 		sizeof(DiskInode),
 		sizeof(DiskInode), 
 		(SLAB_RECLAIM_ACCOUNT| SLAB_MEM_SPREAD),
 		NULL);
+
+	if (!secondfs_diskinode_cachep) {
+		return -ENOMEM;
+	}
 	
 	secondfs_icachep = kmem_cache_create("secondfs_icache",
 		sizeof(Inode),
@@ -100,52 +100,75 @@ static int __init secondfs_init(void) {
 		(SLAB_RECLAIM_ACCOUNT| SLAB_MEM_SPREAD | SLAB_HWCACHE_ALIGN),
 		NULL);
 
-	printk(KERN_INFO "secondfs: Buf size : %u %lu\n", SECONDFS_SIZEOF_Buf, sizeof(Buf));
-	printk(KERN_INFO "secondfs: BufferManager size : %u %lu\n", SECONDFS_SIZEOF_BufferManager, sizeof(BufferManager));
-	printk(KERN_INFO "secondfs: Devtab size : %u %lu\n", SECONDFS_SIZEOF_Devtab, sizeof(Devtab));
-	printk(KERN_INFO "secondfs: DiskInode size : %u %lu\n", SECONDFS_SIZEOF_DiskInode, sizeof(DiskInode));
-	printk(KERN_INFO "secondfs: FileSystem size : %u %lu\n", SECONDFS_SIZEOF_FileSystem, sizeof(FileSystem));
-	printk(KERN_INFO "secondfs: Inode size : %u %lu\n", SECONDFS_SIZEOF_Inode, sizeof(Inode));
-	printk(KERN_INFO "secondfs: SuperBlock size : %u %lu\n", SECONDFS_SIZEOF_SuperBlock, sizeof(SuperBlock));
-	printk(KERN_INFO "secondfs: FileManager size : %u %lu\n", SECONDFS_SIZEOF_FileManager, sizeof(FileManager));
-	printk(KERN_INFO "secondfs: DirectoryEntry size : %u %lu\n", SECONDFS_SIZEOF_DirectoryEntry, sizeof(DirectoryEntry));
-
-	// 初始化一次性的对象
-	secondfs_buffermanagerp = newBufferManager();
-	BufferManager_Initialize(secondfs_buffermanagerp);
-
-	secondfs_filesystemp = newFileSystem();
-	FileSystem_Initialize(secondfs_filesystemp);
-	secondfs_filesystemp->m_BufferManager = secondfs_buffermanagerp;
-
-	secondfs_filemanagerp = newFileManager();
-
-	if (	0
-		|| !secondfs_diskinode_cachep
-		|| !secondfs_icachep
-	) {
-		// IMPROVE: 释放已成功申请的 kmem_cache
+	if (!secondfs_icachep) {
+		kmem_cache_destroy(secondfs_diskinode_cachep);
 		return -ENOMEM;
 	}
 
+	// Check consistency of sizeof() various datastructs from C part and C++ part.
+	secondfs_dbg(SB_SIZECONSISTENCY, "Buf size : %u %lu\n", SECONDFS_SIZEOF_Buf, sizeof(Buf));
+	secondfs_dbg(SB_SIZECONSISTENCY, "BufferManager size : %u %lu\n", SECONDFS_SIZEOF_BufferManager, sizeof(BufferManager));
+	secondfs_dbg(SB_SIZECONSISTENCY, "Devtab size : %u %lu\n", SECONDFS_SIZEOF_Devtab, sizeof(Devtab));
+	secondfs_dbg(SB_SIZECONSISTENCY, "DiskInode size : %u %lu\n", SECONDFS_SIZEOF_DiskInode, sizeof(DiskInode));
+	secondfs_dbg(SB_SIZECONSISTENCY, "FileSystem size : %u %lu\n", SECONDFS_SIZEOF_FileSystem, sizeof(FileSystem));
+	secondfs_dbg(SB_SIZECONSISTENCY, "Inode size : %u %lu\n", SECONDFS_SIZEOF_Inode, sizeof(Inode));
+	secondfs_dbg(SB_SIZECONSISTENCY, "SuperBlock size : %u %lu\n", SECONDFS_SIZEOF_SuperBlock, sizeof(SuperBlock));
+	secondfs_dbg(SB_SIZECONSISTENCY, "FileManager size : %u %lu\n", SECONDFS_SIZEOF_FileManager, sizeof(FileManager));
+	secondfs_dbg(SB_SIZECONSISTENCY, "DirectoryEntry size : %u %lu\n", SECONDFS_SIZEOF_DirectoryEntry, sizeof(DirectoryEntry));
+
+	if (		SECONDFS_SIZEOF_Buf		!= sizeof(Buf)
+		||	SECONDFS_SIZEOF_BufferManager	!= sizeof(BufferManager)
+		||	SECONDFS_SIZEOF_Devtab		!= sizeof(Devtab)
+		||	SECONDFS_SIZEOF_DiskInode	!= sizeof(DiskInode)
+		||	SECONDFS_SIZEOF_FileSystem	!= sizeof(FileSystem)
+		||	SECONDFS_SIZEOF_Inode		!= sizeof(Inode)
+		||	SECONDFS_SIZEOF_SuperBlock	!= sizeof(SuperBlock)
+		||	SECONDFS_SIZEOF_FileManager	!= sizeof(FileManager)
+		||	SECONDFS_SIZEOF_DirectoryEntry	!= sizeof(DirectoryEntry)
+	) {
+		// Sizes match error
+		secondfs_err("sizeof() does not match! secondfs refuses to load.");
+		return -EPERM;
+	}
+
+	// Initialize one-time objects
+	// 初始化一次性的对象
+	secondfs_buffermanagerp = newBufferManager();
+	secondfs_filesystemp = newFileSystem();
+	secondfs_filemanagerp = newFileManager();
+
+	if (!secondfs_buffermanagerp || !secondfs_filesystemp || !secondfs_filemanagerp) {
+		if (secondfs_buffermanagerp)
+			deleteBufferManager(secondfs_buffermanagerp);
+		if (secondfs_filesystemp)
+			deleteBufferManager(secondfs_filesystemp);
+		if (secondfs_filemanagerp)
+			deleteBufferManager(secondfs_filemanagerp);
+		return -ENOMEM;
+	}
+
+	BufferManager_Initialize(secondfs_buffermanagerp);
+	FileSystem_Initialize(secondfs_filesystemp);
+	secondfs_filesystemp->m_BufferManager = secondfs_buffermanagerp;
+
 	// 注册文件系统
-	//ret = register_filesystem(&secondfs_fs_type);
+	ret = register_filesystem(&secondfs_fs_type);
 
 	if (likely(ret == 0)) {
 		// 打印“Hello world”信息
-		printk(KERN_INFO "secondfs: Hello %s from the FS' SecondFS module!\n", username);
+		secondfs_info("Hello %s!", username);
 	} else {
-		printk(KERN_ERR "secondfs: %s, Unfortunately there is something wrong registering secondfs. Error code is %d\n", username, ret);
+		secondfs_warning("%s, Unfortunately there is something wrong registering secondfs. Error code is %d\n", username, ret);
 	}
 
 	return ret;
 }
 
-static void __exit secondfs_exit(void) {
+static void __exit exit_secondfs(void) {
 	int ret = 0;
 
 	// 反注册文件系统
-	//ret = unregister_filesystem(&secondfs_fs_type);
+	ret = unregister_filesystem(&secondfs_fs_type);
 
 	// 析构一次性的对象
 	deleteBufferManager(secondfs_buffermanagerp);
@@ -157,11 +180,11 @@ static void __exit secondfs_exit(void) {
 	kmem_cache_destroy(secondfs_icachep);
 
 	if (likely(ret == 0)) {
-		printk(KERN_INFO "secondfs: Goodbye %s!\n", username);
+		secondfs_info("Goodbye %s!", username);
 	} else {
-		printk(KERN_ERR "secondfs: %s, Unfortunately there is something wrong unregistering secondfs. Error code is %d\n", username, ret);
+		printk(KERN_ERR "%s, Unfortunately there is something wrong unregistering secondfs. Error code is %d\n", username, ret);
 	}
 }
 
-module_init(secondfs_init);
-module_exit(secondfs_exit);
+module_init(init_secondfs);
+module_exit(exit_secondfs);

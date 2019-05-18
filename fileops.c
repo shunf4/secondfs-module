@@ -295,8 +295,8 @@ static int secondfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	// 链接计数是 1.
 	//
 	// 我们通过 SuperBlock::s_has_dots 来指定是否有 "." "..".
-	//  - 若有 : 按 ext2 来设计链接计数
-	//  - 若没有 : 按原 Unix V6++ 来设计链接计数
+	//  - 若有(0xFFFFFFFF) : 按 ext2 来设计链接计数
+	//  - 若没有(其他, 一般为 0x00000000) : 按原 Unix V6++ 来设计链接计数
 
 	if (SECONDFS_SB(dir->i_sb)->s_has_dots) {
 		inode_inc_link_count(dir);

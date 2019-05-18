@@ -75,7 +75,7 @@ extern const s32
 SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(FileSystem)
 
 void FileSystem_Initialize(FileSystem *fs);
-void FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb);
+int FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb);
 void FileSystem_Update(FileSystem *fs, SuperBlock *secsb);
 void FileSystem_IFree(FileSystem *fs, SuperBlock *secsb, int number);
 void FileSystem_Alloc(FileSystem *fs, SuperBlock *secsb);

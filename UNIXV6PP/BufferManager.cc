@@ -2,7 +2,7 @@
 #include "../secondfs.h"
 #include "../common.h"
 #include "BufferManager.hh"
-
+#include <stdio.h>
 // @Feng Shun: 以下为 C++ 部分
 
 /*======================class Devtab======================*/
@@ -27,7 +27,7 @@ Devtab::~Devtab()
 BufferManager::BufferManager()
 {
 	secondfs_c_helper_spin_lock_init(&this->b_queue_lock);
-	secondfs_c_helper_sema_init(&this->b_bFreeList_lock, 1);
+	secondfs_c_helper_sema_init(&this->b_bFreeList_lock, 0);
 	//nothing to do here
 }
 
@@ -48,20 +48,26 @@ void BufferManager::Initialize()
 	for(i = 0; i < SECONDFS_NBUF; i++)
 	{
 		bp = &(this->m_Buf[i]);
+		bp->b_index = i;
+		// Initially all Buf belongs to NODEV(NULL)
 		// 最开始, 所有 Buf 的设备都是 NODEV (NULL)
 		bp->b_dev = NULL;
 		bp->b_addr = this->Buffer[i];
+		/* Link them all into NODEV(bFreeList) */
 		/* 初始化NODEV队列 */
 		bp->b_back = &(this->bFreeList);
 		bp->b_forw = this->bFreeList.b_forw;
 		this->bFreeList.b_forw->b_back = bp;
 		this->bFreeList.b_forw = bp;
+		/* TODO: remove B_BUSY init? */
 		/* 初始化自由队列 */
 		bp->b_flags = Buf::B_BUSY;
+		/* Initialize the MUTEXs */
 		/* 初始化每 Buf 的两个 MUTEX */
 		secondfs_c_helper_mutex_init(&bp->b_modify_lock);
 		secondfs_c_helper_mutex_init(&bp->b_wait_free_lock);
 
+		/* clear B_BUSY and other flags and put into bFreeList */
 		Brelse(bp);
 	}
 	//this->m_DeviceManager = &Kernel::Instance().GetDeviceManager();
@@ -74,64 +80,89 @@ Buf* BufferManager::GetBlk(Devtab *dev, int blkno)
 	Buf* bp;
 
 loop:
+	secondfs_dbg(BUFFER, "searching Buf that matches dev %p and blkno %d", dev, blkno);
+	/* Search block cache that match blkno in dev queue */
 	/* 首先在该设备队列中搜索是否有相应的缓存 */
+
+	// CLI/SLI in original UnixV6++ is changed to per Buf mutex here
+	// Because in linux, kernel code is pre-emptive, we must lock the
+	// whole queue first
+	// 将这里的 CLI/SLI 改造成每 Buf 的 MUTEX
+	secondfs_c_helper_mutex_lock(&bp->b_modify_lock);	// 这个是快锁
 	for(bp = dev->b_forw; bp != (Buf *)dev; bp = bp->b_forw)
 	{
+		/* Not that one */
 		/* 不是要找的缓存，则继续 */
 		if(bp->b_blkno != blkno || bp->b_dev != dev)
 			continue;
 
-		/* 
-		* 临界区之所以要从这里开始，而不是从上面的for循环开始。
-		* 主要是因为，中断服务程序并不会去修改块设备表中的
-		* 设备buf队列(b_forw)，所以不会引起冲突。
-		*/
-
-		// 将这里的 CLI/SLI 改造成每 Buf 的 MUTEX
-		secondfs_c_helper_mutex_lock(&bp->b_modify_lock);	// 这个是快锁
-		if(bp->b_flags & Buf::B_BUSY)
+		// If the Buf is used for now, we must wait for it be freed
+		// 我们在这里锁 wait_free_lock, 是为了等待其他正在
+		// 使用该 Buf 的进程使用完毕.
+		if(secondfs_c_helper_mutex_is_locked(&bp->b_wait_free_lock))
 		{
-			bp->b_flags |= Buf::B_WANTED;
+			secondfs_dbg(BUFFER, "searching Buf(%p/%d): found buf free-locked; wait", dev, blkno);
+			// bp->b_flags |= Buf::B_WANTED;
 			secondfs_c_helper_mutex_unlock(&bp->b_modify_lock);
-			// 我们在这里锁 wait_free_lock, 是为了等待其他正在
-			// 使用该 Buf 的进程使用完毕.
-			// wait_free_lock 和 Buf::B_BUSY 的置位应差不多同步.
 
 			secondfs_c_helper_mutex_lock(&bp->b_wait_free_lock);	// 这个是慢锁
 			// goto loop;
+
+			// When we finally get the lock, blkno or dev of
+			// this Buf may change. (Other free Buf may be used
+			// for current blkno)
+			// One more verification needed.
 			// 拿到锁之后, 有可能这个 Buf 所属的设备和盘块都已发生变化.
 			// 此时要加一次检测
+
+			secondfs_dbg(BUFFER, "searching Buf(%p/%d): get lock after wait", dev, blkno);
+
 			if (bp->b_blkno != blkno || bp->b_dev != dev || (bp->b_flags & Buf::B_BUSY)) {
+				secondfs_dbg(BUFFER, "searching Buf(%p/%d): blkno/dev not matching anymore; loop", dev, blkno);
 				secondfs_c_helper_mutex_unlock(&bp->b_wait_free_lock);
 				goto loop;
 			}
 		}
+		/* Pull out from freeList */
 		/* 从自由队列中抽取出来 */
 		this->NotAvail(bp, 1);
+
+		if (SFDBG_ENA(BUFFERQ)) {
+			Print(dev);
+		}
+
 		secondfs_c_helper_mutex_unlock(&bp->b_modify_lock);
 		
 		return bp;
 	}
 
-	// 用 bFreeList 的 lock 替代 CLI/STI
-	secondfs_c_helper_mutex_lock(&this->bFreeList.b_modify_lock);
+	secondfs_dbg(BUFFER, "searching Buf(%p/%d): not found", dev, blkno);
+	secondfs_c_helper_mutex_unlock(&this->bFreeList.b_modify_lock);
+
 	/* 如果自由队列为空 */
 	if(this->bFreeList.av_forw == &this->bFreeList)
 	{
-		this->bFreeList.b_flags |= Buf::B_WANTED;
+		//this->bFreeList.b_flags |= Buf::B_WANTED;
+
+		// Take the freeList semaphore
 		secondfs_c_helper_down(&this->b_bFreeList_lock);
 
+		// When successfully down the semaphore, a Buf must
+		// be freed somewhere. Up it and Re-search.
+		// Unlock (up) is not needed; b_bFreeList_lock
+		// need to keep 0.
 		// 拿到锁之后, bFreeList 的 av_forw, 以及各设备的 Buf 队列仍可能发生变化.
-		// 要解锁并回到 loop 重新搜索设备缓存
-		secondfs_c_helper_up(&this->b_bFreeList_lock);
+		// 要回到 loop 重新搜索设备缓存
 		goto loop;
 	}
-	secondfs_c_helper_mutex_unlock(&this->bFreeList.b_modify_lock);
+	
 
+	/* Fetch the first free Buf */
 	/* 取自由队列第一个空闲块 */
 	bp = this->bFreeList.av_forw;
 	this->NotAvail(bp, 1);
 
+	/* Write it to disk if it was dirty */
 	/* 如果该字符块是延迟写，将其异步写到磁盘上 */
 	// 改: 同步写到磁盘上
 	if(bp->b_flags & Buf::B_DELWRI)
@@ -143,7 +174,7 @@ loop:
 		goto loop;
 	}
 
-	// @Feng Shun : 我认为这里也是临界区, 需要保护
+	// @Feng Shun : Linux 中这里也是临界区, 需要保护
 	secondfs_c_helper_spin_lock(&this->b_queue_lock);
 
 	/* 注意: 这里清除了所有其他位，只设了B_BUSY */
@@ -521,6 +552,7 @@ void BufferManager::NotAvail(Buf *bp, u32 lockFirst)
 	/* 设置B_BUSY标志 */
 	bp->b_flags |= Buf::B_BUSY;
 	secondfs_c_helper_spin_unlock(&this->b_queue_lock);
+
 	return;
 }
 
@@ -537,6 +569,41 @@ Buf* BufferManager::InCore(Devtab *adev, int blkno)
 	}
 	return NULL;
 }
+
+extern "C" void BufferManager_Print(BufferManager *bm, Devtab *dev) { bm->Print(dev); }
+void BufferManager::Print(Devtab *dev)
+{
+	const int buflen = 1000;
+	char buf[buflen];
+
+	int length = 0;
+
+	length += sprintf(buf + length, "bFreeList NODEV:");
+	Buf *bp = bFreeList.b_forw;
+	do {
+		length += sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
+		bp = bp->b_forw;
+	} while (bp != &bFreeList);
+	length += sprintf(buf + length, "\n");
+
+	length += sprintf(buf + length, "bFreeList FREE:");
+	bp = bFreeList.av_forw;
+	do {
+		length += sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
+		bp = bp->av_forw;
+	} while (bp != &bFreeList);
+	length += sprintf(buf + length, "\n");
+
+	length += sprintf(buf + length, "Devtab %p DEVBUFS:", dev);
+	bp = dev->b_forw;
+	do {
+		length += sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
+		bp = bp->av_forw;
+	} while (bp != (Buf *)dev);
+
+	secondfs_dbg(BUFFERQ, "%s", buf);
+}
+
 
 #if false
 Buf& BufferManager::GetSwapBuf()

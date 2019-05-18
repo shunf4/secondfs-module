@@ -41,6 +41,7 @@
 #include <linux/limits.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
+#include <linux/statfs.h>
 
 #define SECONDFS_BITS_PER_BYTE CHAR_BIT
 

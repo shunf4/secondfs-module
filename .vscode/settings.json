@@ -24,7 +24,9 @@
         "common.h": "c",
         "modversions.h": "c",
         "utsrelease.h": "c",
-        "version.h": "c"
+        "version.h": "c",
+        "kern_levels.h": "c",
+        "slub_def.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false

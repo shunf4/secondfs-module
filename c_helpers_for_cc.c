@@ -19,7 +19,7 @@
 #include "secondfs.h"
 #include "common.h"
 
-#ifdef SECONDFS_DEBUG
+#ifdef SECONDFS_DEBUG_ON_MEMORY
 static unsigned int malloc_num;
 static unsigned int free_num;
 static unsigned int kmem_cache_malloc_num;
@@ -42,9 +42,9 @@ void *secondfs_c_helper_malloc(size_t size)
 	BUG();
 #endif // SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
 
-#ifdef SECONDFS_DEBUG
+#ifdef SECONDFS_DEBUG_ON_MEMORY
 	malloc_num++;
-#endif // SECONDFS_DEBUG
+#endif // SECONDFS_DEBUG_ON_MEMORY
 
 	p = kmalloc(size, GFP_KERNEL);
 	printk(KERN_DEBUG "secondfs: Start mallocing, kmalloc size=%lu pointer=%p", size, p);
@@ -66,24 +66,24 @@ void secondfs_c_helper_free(void *pointer)
 
 	printk(KERN_DEBUG "secondfs: Start freeing, kfree pointer=%p", pointer);
 
-#ifdef SECONDFS_DEBUG
+#ifdef SECONDFS_DEBUG_ON_MEMORY
 	free_num++;
-#endif // SECONDFS_DEBUG
+#endif // SECONDFS_DEBUG_ON_MEMORY
 	kfree(pointer);
 }
 
 void secondfs_c_helper_mdebug(void)
 {
-#ifdef SECONDFS_DEBUG
+#ifdef SECONDFS_DEBUG_ON_MEMORY
 	printk(KERN_DEBUG "secondfs: malloc_num is %u", malloc_num);
 	printk(KERN_DEBUG "secondfs: free_num is %u", free_num);
-#endif // SECONDFS_DEBUG
+#endif // SECONDFS_DEBUG_ON_MEMORY
 }
 
 // 以下为 C 对实现 C++ 的 new/delete 操作符提供的助手函数
 // 使用 kmem_cache 实现:
 
-#ifdef SECONDFS_DEBUG
+#ifndef SECONDFS_DEBUG_ON_MEMORY
 
 #define SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(class_name, kmem_cachep) \
 void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size)\
@@ -103,7 +103,7 @@ void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer)\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
-#else // SECONDFS_DEBUG
+#else // SECONDFS_DEBUG_ON_MEMORY
 
 #define SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(class_name, kmem_cachep) \
 void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size)\
@@ -125,14 +125,14 @@ void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer)\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
-#endif // SECONDFS_DEBUG
+#endif // SECONDFS_DEBUG_ON_MEMORY
 
 void secondfs_c_helper_kmem_cache_mdebug(void)
 {
-#ifdef SECONDFS_DEBUG
+#ifdef SECONDFS_DEBUG_ON_MEMORY
 	printk(KERN_DEBUG "secondfs: kmem_cache_malloc_num is %u", kmem_cache_malloc_num);
 	printk(KERN_DEBUG "secondfs: kmem_cache_free_num is %u", kmem_cache_free_num);
-#endif // SECONDFS_DEBUG
+#endif // SECONDFS_DEBUG_ON_MEMORY
 }
 
 SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(DiskInode, secondfs_diskinode_cachep)
