@@ -1,5 +1,6 @@
 #include "secondfs.h"
 #include "UNIXV6PP/FileSystem_c_wrapper.h"
+#include <stdint.h>
 
 #if 1
 /* secondfs_iget : 

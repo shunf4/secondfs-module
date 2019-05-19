@@ -1,4 +1,5 @@
 #include "secondfs.h"
+#include <stdint.h>
 
 /* secondfs_inode_conform_v2s : 使 Inode 与 vfs inode 一致 (vfs->secondfs)
  */
