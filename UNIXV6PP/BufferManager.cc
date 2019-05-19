@@ -692,6 +692,10 @@ void BufferManager::Print(Devtab *dev)
 	length += secondfs_c_helper_sprintf(buf + length, "bFreeList NODEV:");
 	Buf *bp = bFreeList.b_forw;
 	do {
+		if (!bp) {
+			length += secondfs_c_helper_sprintf(buf + length, "(NULL)");
+			break;
+		}
 		length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
 		bp = bp->b_forw;
 	} while (bp != &bFreeList);
@@ -700,6 +704,10 @@ void BufferManager::Print(Devtab *dev)
 	length += secondfs_c_helper_sprintf(buf + length, "bFreeList FREE:");
 	bp = bFreeList.av_forw;
 	do {
+		if (!bp) {
+			length += secondfs_c_helper_sprintf(buf + length, "(NULL)");
+			break;
+		}
 		length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
 		bp = bp->av_forw;
 	} while (bp != &bFreeList);
@@ -709,11 +717,15 @@ void BufferManager::Print(Devtab *dev)
 	if (dev) {
 		bp = dev->b_forw;
 		do {
+			if (!bp) {
+				length += secondfs_c_helper_sprintf(buf + length, "(NULL)");
+				break;
+			}
 			length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
 			bp = bp->av_forw;
 		} while (bp != (Buf *)dev);
 	}
-	
+
 	secondfs_dbg(BUFFERQ, "%s", buf);
 }
 

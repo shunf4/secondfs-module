@@ -11,3 +11,4 @@
 /.vscode/ipch
 **/*.o.ur-safe
 /*.img
+/test/**
