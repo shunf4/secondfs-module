@@ -20,6 +20,7 @@ extern "C" {
 #ifndef __cplusplus
 typedef struct _FileManager
 {
+	s32 dummy;
 } FileManager;
 #else // __cplusplus
 class FileManager;

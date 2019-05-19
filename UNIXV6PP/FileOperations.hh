@@ -29,6 +29,8 @@ public:
 		OPEN_NOT_IGNORE_DOTS = 5	/* 以打开文件方式搜索目录, 不要跳过 "." 和 ".." */
 	};
 
+	s32 dummy;
+
 	/* Functions */
 public:
 	/* Constructors */
