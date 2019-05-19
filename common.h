@@ -40,14 +40,10 @@ typedef uint64_t u64;
 #define SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(classname) \
 const u32 SECONDFS_SIZEOF_##classname = sizeof(classname);\
 classname *new##classname() {\
-	return new(std::nothrow) classname();\
+	return new classname();\
 }\
 void delete##classname(classname *p) {\
-	try {\
-		delete p;\
-	} catch (...) {\
-		secondfs_warn("deleteing a " #classname " %p: error!", p);\
-	}\
+	delete p;\
 }
 
 #define SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE_DECLARATION(class_name) \

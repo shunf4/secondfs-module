@@ -132,7 +132,7 @@ public:
 	/* Destructors */
 	~Inode();
 
-	void *operator new(size_t size, std::nothrow_t const&) {
+	void *operator new(size_t size) {
 		void *p = secondfs_c_helper_kmem_cache_alloc_Inode(size);
 		return p;
 	}
@@ -257,7 +257,7 @@ public:
 	/* Destructors */
 	~DiskInode();
 
-	void *operator new(size_t size, std::nothrow_t const&) {
+	void *operator new(size_t size) {
 		void *p = secondfs_c_helper_kmem_cache_alloc_DiskInode(size);
 		return p;
 	}
