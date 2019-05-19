@@ -722,7 +722,7 @@ void BufferManager::Print(Devtab *dev)
 				break;
 			}
 			length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
-			bp = bp->av_forw;
+			bp = bp->b_forw;
 		} while (bp != (Buf *)dev);
 	}
 
