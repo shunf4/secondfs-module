@@ -1,6 +1,9 @@
 #include "secondfs.h"
 #include "UNIXV6PP/FileSystem_c_wrapper.h"
-#include <stdint.h>
+// Linux requires sizeof(pointer) == sizeof(long). See:
+// https://lkml.org/lkml/2009/10/13/122
+// https://yarchive.net/comp/linux/int_types.html
+typedef long intptr_t;
 
 #if 1
 /* secondfs_iget : 

@@ -1,5 +1,8 @@
 #include "secondfs.h"
-#include <stdint.h>
+// Linux requires sizeof(pointer) == sizeof(long). See:
+// https://lkml.org/lkml/2009/10/13/122
+// https://yarchive.net/comp/linux/int_types.html
+typedef long intptr_t;
 
 /* secondfs_inode_conform_v2s : 使 Inode 与 vfs inode 一致 (vfs->secondfs)
  */
