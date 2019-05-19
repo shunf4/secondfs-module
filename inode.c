@@ -87,7 +87,7 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 	si->i_mtime = inode->i_mtime.tv_sec;
 	length += sprintf(buf + length, ", mtime:%d", si->i_mtime);
 
-	secondfs_dbg(SB_FILL, "%s", buf);
+	secondfs_dbg(INODE, "%s", buf);
 
 	// 在 dirty_inode 里做过了
 	/* if (is_inode_dirty) {
@@ -181,7 +181,7 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 		mark_inode_dirty_sync(inode);
 	}
 
-	secondfs_dbg(SB_FILL, "%s", buf);
+	secondfs_dbg(INODE, "%s", buf);
 }
 
 /* secondfs_write_inode : 写回 Inode.

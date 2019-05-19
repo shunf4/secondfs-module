@@ -142,6 +142,7 @@ void FileSystem::Update(SuperBlock *secsb)
 	// @Feng Shun: 注: 这里从 Univ V6++ 的每文件系统锁改为了每 SuperBlock 的锁
 	if (!secondfs_c_helper_mutex_trylock(&secsb->s_update_lock))
 	{
+		secondfs_dbg(GENERAL, "FileSystem::Update: SB locked.");
 		return;
 	}
 
@@ -149,6 +150,7 @@ void FileSystem::Update(SuperBlock *secsb)
 	/* 如果该SuperBlock内存副本没有被修改，直接管理inode和空闲盘块被上锁或该文件系统是只读文件系统 */
 	if(le32_to_cpu(sb->s_fmod) == 0 || secondfs_c_helper_mutex_is_locked(&sb->s_ilock) || secondfs_c_helper_mutex_is_locked(&sb->s_flock) || le32_to_cpu(sb->s_ronly) != 0)
 	{
+		secondfs_dbg(GENERAL, "FileSystem::Update: SB not modified.");
 		return;
 	}
 

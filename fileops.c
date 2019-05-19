@@ -122,7 +122,8 @@ static inline int secondfs_add_nondir(struct dentry *dentry, struct inode *inode
 	if (err)
 		goto err;
 	// 创建 Inode 时, 都要用这个函数初始化 dentry
-	d_instantiate_new(dentry, inode);
+	unlock_new_inode(inode);
+	d_instantiate(dentry, inode);
 	return 0;
 
 err:
@@ -394,7 +395,8 @@ static int secondfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	}
 
 	// 初始化 dentry
-	d_instantiate_new(dentry, inode);
+	unlock_new_inode(inode);
+	d_instantiate(dentry, inode);
 
 out:
 	return err;
