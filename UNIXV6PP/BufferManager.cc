@@ -236,7 +236,7 @@ loop:
 }
 
 extern "C" void BufferManager_Brelse(BufferManager *bm, Buf* bp) { bm->Brelse(bp, 1); }
-void BufferManager::Brelse(Buf* bp, int print = 1)
+void BufferManager::Brelse(Buf* bp, int print)
 {
 	/* 临界资源，比如：在同步读末期会调用这个函数，
 	 * 此时很有可能会产生磁盘中断，同样会调用这个函数。
