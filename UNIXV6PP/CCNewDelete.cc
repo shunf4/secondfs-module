@@ -3,7 +3,7 @@ int __gxx_personality_v0;
 int _Unwind_Resume;
 
 
-void *operator new(unsigned long x) {
+void *operator new(unsigned long x, std::nothrow_t const&) {
 	return(secondfs_c_helper_malloc(x));
 }
 
