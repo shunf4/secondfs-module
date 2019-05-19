@@ -5,13 +5,19 @@ ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
 				loff_t *ppos)
 {
 	// filp->f_inode 是缓存数据, 实时数据在 path 结构里面
+	// We use filp->f_path.dentry->d_inode to get the inode
+	// rather than the cached filp->f_inode
 	struct inode *inode = filp->f_path.dentry->d_inode;
 	Inode *si = SECONDFS_INODE(inode);
 	ssize_t ret;
-	u32 pos_u32;
+	u32 pos_u32 = *ppos;
+
+	secondfs_dbg(FILE, "file_read(%p,%p,%lu)", filp, buf, len);
 	
 	ret = FileManager_Read(secondfs_filemanagerp, buf, len, &pos_u32, si);
 	*ppos = pos_u32;
+	secondfs_inode_conform_s2v(inode, si);
+	mark_inode_dirty_sync(inode);
 	return ret;
 }
 
@@ -22,7 +28,9 @@ ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t le
 	struct inode *inode = filp->f_path.dentry->d_inode;
 	Inode *si = SECONDFS_INODE(inode);
 	ssize_t ret;
-	u32 pos_u32;
+	u32 pos_u32 = *ppos;
+
+	secondfs_dbg(FILE, "file_write(%p,%p,%lu)", filp, buf, len);
 	
 	ret = FileManager_Write(secondfs_filemanagerp, buf, len, &pos_u32, si);
 	*ppos = pos_u32;
@@ -35,6 +43,8 @@ int secondfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
 {
 	// 要求将文件同步到磁盘上
 	// 我们就简单地整设备同步即可
+	secondfs_dbg(FILE, "fsync(%p)", file);
+
 	BufferManager_Bflush(secondfs_buffermanagerp, SECONDFS_INODE(file->f_path.dentry->d_inode)->i_ssb->s_dev);
 	return 0;
 }
@@ -62,15 +72,18 @@ int secondfs_add_link(struct dentry *dentry, struct inode *inode)
 	// 我们调用 DELocate, 它是 NameI 功能的一部分,
 	// 可以在父目录项中定位
 
+	secondfs_dbg(FILE, "add_link(): DELocate %.32s...", name);
+
 	ret = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(dir), name, dentry->d_name.len,
 			SECONDFS_CREATE, &io_param, &dummy_ino);
 	if (ret != 0) {
+		secondfs_dbg(FILE, "add_link(): DELocate failed (%d)", ret);
 		return ret;
 	}
 	
 	// 此处参考 FileManager::MakNode
 	si->i_flag |= (SECONDFS_IACC | SECONDFS_IUPD);
-	si->i_nlink = 1;	// TODO: 这句是不是不太好? 不过无所谓, inode_init_always 也是这么干的
+	//si->i_nlink = 1;	// TODO: 这句是不是不太好? 不过无所谓, inode_init_always 也是这么干的
 
 	// 此处参考 FileManager::WriteDir
 
@@ -86,20 +99,26 @@ int secondfs_add_link(struct dentry *dentry, struct inode *inode)
 	// 地址和写长度就可以把项目写进目录项了
 	io_param.m_Base = (u8 *)&de;
 	io_param.m_Count = sizeof(de);
+	secondfs_dbg(FILE, "add_link(): WriteI()");
 	Inode_WriteI(SECONDFS_INODE(dir), &io_param);
 
+	if (io_param.err != 0) {
+		secondfs_err("add_link(): WriteI() failed (%d)", io_param.err);
+		return io_param.err;
+	}
 	//conform
 	secondfs_inode_conform_s2v(dir, SECONDFS_INODE(dir));
 
-	// TODO: 错误处理
 	return 0;
 }
 
 static inline int secondfs_add_nondir(struct dentry *dentry, struct inode *inode)
 {
 	// 要求将本文件 dentry 以及 inode 登记到父目录项
-
 	int err = secondfs_add_link(dentry, inode);
+
+	secondfs_dbg(FILE, "add_nondir(): before add_link");
+
 	if (err)
 		goto err;
 	// 创建 Inode 时, 都要用这个函数初始化 dentry
@@ -107,6 +126,7 @@ static inline int secondfs_add_nondir(struct dentry *dentry, struct inode *inode
 	return 0;
 
 err:
+	secondfs_err("add_nondir(): add_link() failed!");
 	inode_dec_link_count(inode);
 	// discard_new_inode(inode);
 	unlock_new_inode(inode);
@@ -120,13 +140,18 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 	struct inode *inode;
 
 	// 先为文件分配新 inode (内存中 & 文件系统中)
+	secondfs_dbg(FILE, "create(): before new_inode");
 	inode = secondfs_new_inode(dir, mode, &dentry->d_name);
 
-	if (IS_ERR(inode))
+	if (IS_ERR(inode)) {
+		secondfs_err("create(): inode is ERR (%ld)", PTR_ERR(inode));
 		return PTR_ERR(inode);
+	}
 
-	if (inode == NULL)
+	if (inode == NULL) {
+		secondfs_err("create(): inode is NULL");
 		return -ENOSPC;
+	}
 
 	inode->i_op = &secondfs_file_inode_operations;
 	inode->i_fop = &secondfs_file_operations;
@@ -149,19 +174,26 @@ static struct dentry *secondfs_lookup(struct inode *dir, struct dentry *dentry, 
 		.isUserP = 0
 	};
 
-	if (dentry->d_name.len > SECONDFS_DIRSIZ)
+	if (dentry->d_name.len > SECONDFS_DIRSIZ) {
+		secondfs_err("lookup(): -ENAMETOOLONG");
 		return ERR_PTR(-ENAMETOOLONG);
+	}
 
 	// 定位, 找到这个文件的 inode 存入 ino
+	secondfs_dbg(FILE, "lookup(): DELocate %.32s", dentry->d_name.name);
 	ret = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(dir),
 				dentry->d_name.name, dentry->d_name.len, 
 				SECONDFS_OPEN, &iop, &ino);
-	if (ret != 0)
+	if (ret != 0) {
+		secondfs_err("lookup(): DELocate failed (%d)", ret);
 		return ERR_PTR(ret);
+	}
 
 	// 通过 ino 获取这个 inode
+	secondfs_dbg(FILE, "lookup(): secondfs_iget(%d)", ino);
 	inode = secondfs_iget(dir->i_sb, ino);
 	if (IS_ERR(inode)) {
+		secondfs_err("lookup(): secondfs_iget failed (%ld)", PTR_ERR(inode));
 		return ERR_PTR(-EIO);
 	}
 
@@ -182,6 +214,9 @@ static int secondfs_link(struct dentry *old_dentry, struct inode *dir,
 #else
 	inode->i_ctime = current_time(inode);
 #endif
+
+	secondfs_dbg(FILE, "link()...");
+
 	// 修改链接数和引用数, 加一
 	inode_inc_link_count(inode);
 	ihold(inode);
@@ -195,6 +230,7 @@ static int secondfs_link(struct dentry *old_dentry, struct inode *dir,
 	return 0;
 
 err:
+	secondfs_err("link(): add_link() failed!");
 	inode_dec_link_count(inode);
 	//discard_new_inode(inode);
 	unlock_new_inode(inode);
@@ -217,16 +253,20 @@ static int secondfs_unlink(struct inode *dir, struct dentry *dentry)
 	};
 	DirectoryEntry de;
 
+	secondfs_dbg(FILE, "unlink(): DELocate()...");
+
 	// 首先定位到这个文件
 	err = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(dir),
 			dentry->d_name.name, dentry->d_name.len, SECONDFS_DELETE,
 			&iop, &ino);
 	if (err) {
+		secondfs_err("unlink(): DELocate() failed");
 		goto out;
 	}
 
 	// 可以多加一个检测
 	if (ino != d_inode(dentry)->i_ino) {
+		secondfs_err("unlink(): ino != d_inode(dentry)->i_ino");
 		err = -EINVAL;
 		goto out;
 	}
@@ -235,10 +275,16 @@ static int secondfs_unlink(struct inode *dir, struct dentry *dentry)
 	de.m_ino = 0;
 	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
+	secondfs_dbg(FILE, "unlink(): WriteI()...");
 	Inode_WriteI(SECONDFS_INODE(dir), &iop);
 
+	if (iop.err != 0) {
+		secondfs_err("unlink(): WriteI() failed (%d)", iop.err);
+		err = iop.err;
+		goto out;
+	}
+
 	secondfs_inode_conform_s2v(dir, SECONDFS_INODE(dir));
-	// TODO: 错误处理
 	
 	inode->i_ctime = dir->i_ctime;
 	inode_dec_link_count(inode);
@@ -253,7 +299,7 @@ static int secondfs_add_dots(struct inode *inode, struct inode *parent)
 	IOParameter iop;
 	DirectoryEntry de;
 
-	if (SECONDFS_SB(inode->i_sb)->s_has_dots == 0)
+	if (SECONDFS_SB(inode->i_sb)->s_has_dots != 0xffffffff)
 		return 0;
 
 	de.m_ino = cpu_to_le32(inode->i_ino);
@@ -265,14 +311,25 @@ static int secondfs_add_dots(struct inode *inode, struct inode *parent)
 	iop.m_Count = sizeof(de);
 	iop.m_Offset = 0;
 
+	secondfs_dbg(FILE, "add_dots(): first WriteI()...");
 	Inode_WriteI(SECONDFS_INODE(inode), &iop);
+	if (iop.err != 0) {
+		secondfs_err("add_dots(): WriteI() failed (%d)", iop.err);
+		return iop.err;
+	}
 
 	de.m_ino = cpu_to_le32(parent->i_ino);
 	de.m_name[1] = '.';
+	iop.m_Base = (u8 *)&de;
+	iop.m_Count = sizeof(de);
+	iop.m_Offset = sizeof(de);
 
-	iop.m_Offset += sizeof(de);
-
+	secondfs_dbg(FILE, "add_dots(): second WriteI()...");
 	Inode_WriteI(SECONDFS_INODE(inode), &iop);
+	if (iop.err != 0) {
+		secondfs_err("add_dots(): WriteI() failed (%d)", iop.err);
+		return iop.err;
+	}
 	secondfs_inode_conform_s2v(inode, SECONDFS_INODE(inode));
 	return 0;
 }
@@ -298,16 +355,18 @@ static int secondfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	//  - 若有(0xFFFFFFFF) : 按 ext2 来设计链接计数
 	//  - 若没有(其他, 一般为 0x00000000) : 按原 Unix V6++ 来设计链接计数
 
-	if (SECONDFS_SB(dir->i_sb)->s_has_dots) {
+	if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xFFFFFFFF) {
 		inode_inc_link_count(dir);
 	}
 
 	// 创建一个新 Inode, 注意 mode 附上 IFDIR
+	secondfs_dbg(FILE, "mkdir(): secondfs_new_inode()...");
 	inode = secondfs_new_inode(dir, mode | S_IFDIR, &dentry->d_name);
 	err = PTR_ERR(inode);
 	if (IS_ERR(inode)) {
-		if (SECONDFS_SB(dir->i_sb)->s_has_dots)
+		if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xffffffff)
 			inode_dec_link_count(dir);
+		secondfs_err("mkdir(): secondfs_new_inode() failed!");
 		goto out;
 	}
 
@@ -315,18 +374,24 @@ static int secondfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	inode->i_op = &secondfs_dir_inode_operations;
 	inode->i_fop = &secondfs_dir_operations;
 
-	if (SECONDFS_SB(dir->i_sb)->s_has_dots) {
+	if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xffffffff) {
 		inode_inc_link_count(inode);
 	}
 
+	secondfs_dbg(FILE, "mkdir(): secondfs_add_dots()...");
 	err = secondfs_add_dots(inode, dir);
-	if (err)
+	if (err) {
+		secondfs_err("mkdir(): secondfs_add_dots() failed!");
 		goto out_fail;
+	}
 
 	// 在父目录项登记
+	secondfs_dbg(FILE, "mkdir(): secondfs_add_link()...");
 	err = secondfs_add_link(dentry, inode);
-	if (err)
+	if (err) {
+		secondfs_err("mkdir(): secondfs_add_link() failed!");
 		goto out_fail;
+	}
 
 	// 初始化 dentry
 	d_instantiate_new(dentry, inode);
@@ -353,19 +418,24 @@ static int secondfs_rmdir(struct inode *dir, struct dentry *dentry)
 
 	// 现在要判断目录是否为空
 	// 函数的输出放在 iop.m_Offset
+	secondfs_dbg(FILE, "rmdir(): DELocate()...");
 	ret = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(dir),
 				dentry->d_name.name, dentry->d_name.len, 
 				SECONDFS_CHECKEMPTY, &iop, &dummy_ino);
 
 	// 空则 unlink
+	secondfs_dbg(FILE, "rmdir(): DELocate() empty? %d", iop.m_Offset);
 	if (iop.m_Offset /* Empty */) {
+		secondfs_dbg(FILE, "rmdir(): unlink()...");
 		err = secondfs_unlink(dir, dentry);
-		if (err)
+		if (err) {
+			secondfs_err("rmdir(): unlink() failed!");
 			goto out;
+		}
 
 		inode->i_size = 0;
 		inode_dec_link_count(inode);
-		if (SECONDFS_SB(dir->i_sb)->s_has_dots) {
+		if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xffffffff) {
 			inode_dec_link_count(dir);
 		}
 		secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
@@ -391,7 +461,11 @@ static void secondfs_set_link(struct inode *dir, IOParameter *iopp,
 	iopp->m_Count = sizeof(de.m_ino);
 	iopp->isUserP = 0;
 
+	secondfs_dbg(FILE, "set_link(): WriteI()");
 	Inode_WriteI(SECONDFS_INODE(dir), iopp);
+	if (iopp->err) {
+		secondfs_err("set_link(): WriteI() failed! (%d)", iopp->err);
+	}
 
 	if (update_times)
 		SECONDFS_INODE(dir)->i_mtime = ktime_get_real_seconds();
@@ -433,28 +507,35 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	
 
 	// 先找源
+	secondfs_dbg(FILE, "rename(): DELocate()...");
 	err = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(old_dir),
 			old_dentry->d_name.name, old_dentry->d_name.len, SECONDFS_DELETE,
 			&iop, &dummy_ino);
 	if (err) {
+		secondfs_err("rename(): DELocate() failed (%d)", err);
 		err = -ENOENT;
 		goto out;
 	}
 
 	// 如果源文件是个目录, 它是否有 "." ".." 目录项?
 	// 因为源目录移动, 肯定是要动它的 ".." 文件的链接位置的.
-	if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots) {
+	if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
+		secondfs_dbg(FILE, "rename(): DELocate() the source's '..'...");
 		ret_dot = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(old_inode),
 							"..", 2, 
 							SECONDFS_OPEN_NOT_IGNORE_DOTS, &iop_dot, &dummy_ino);
-		if (ret_dot != 0)
+		if (ret_dot != 0) {
+			secondfs_err("rename(): DELocate() failed (%d)", ret_dot);
 			goto out_old;
+		}
 	}
 
 	// ext2 文件系统允许 mv 目录覆盖目标空目录.
 	// 但目标目录非空或目标文件不是目录时, 会失败.
 	if (new_inode) {
 		IOParameter iop3;
+
+		secondfs_dbg(FILE, "rename(): new_inode exists");
 
 		// 如果目的文件已经存在:
 		//	首先看看源文件是否目录
@@ -464,6 +545,7 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 			int ret2;
 
 			if (!S_ISDIR(new_inode->i_mode)) {
+				secondfs_err("rename(): mv target is not dir");
 				err = -EPERM;
 				goto out_dir;
 			}
@@ -471,13 +553,20 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 			// 现在要判断目录是否为空
 			// 函数的输出放在 iop.m_Offset
 			// new_dentry->d_name 的那两条没实际作用
+			secondfs_dbg(FILE, "rename(): DELocate() to tell target is empty directory...");
 			ret2 = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(new_inode),
 						new_dentry->d_name.name, new_dentry->d_name.len, 
 						SECONDFS_CHECKEMPTY, &iop2, &dummy_ino);
 
+			if (ret2 != 0) {
+				secondfs_err("rename(): DELocate() failed (%d)", ret2);
+				goto out_old;
+			}
+
 			// 空则对
-			if (!iop.m_Offset /* !Empty */) {
+			if (!iop.m_Offset /* not Empty */) {
 				err = -ENOTEMPTY;
+				secondfs_err("rename(): mv target is not empty");
 				goto out_dir;
 			}
 		}
@@ -485,29 +574,38 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 		// 为保证文件系统一致性, 这里要搜一下新 dentry 的父
 		// 看是否有新 dentry 的目录项
 		iop3.isUserP = 0;
+		secondfs_dbg(FILE, "rename(): DELocate() to ensure new_dentry is in new_dir...");
 		err = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(new_dir),
 			new_dentry->d_name.name, new_dentry->d_name.len, SECONDFS_OPEN,
 			&iop3, &dummy_ino);
 		if (err) {
+			secondfs_err("rename(): new_dentry is not in new_dir");
 			goto out_dir;
 		}
 
 		// 现在可以把新文件链接到旧文件了
+		secondfs_dbg(FILE, "rename(): secondfs_set_link()...");
 		secondfs_set_link(new_dir, &iop, old_inode, 1);
 
 		// 对于被替换的文件 Inode, 要递减它的链接计数
-		if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots) {
+		if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
+			secondfs_dbg(FILE, "rename(): drop_nlink()...");
 			drop_nlink(new_inode);
 		}
 		inode_dec_link_count(new_inode);
 	} else {
 		// 当目标不存在时
+		secondfs_dbg(FILE, "rename(): new_inode does not exist");
+
+		secondfs_dbg(FILE, "rename(): secondfs_add_link()...");
 		err = secondfs_add_link(new_dentry, old_inode);
-		if (err)
+		if (err) {
+			secondfs_err("rename(): secondfs_add_link() failed");
 			goto out_dir;
+		}
 		
 		// 对于目标文件的父 Inode, 由于多了一个子目录, 要递增链接计数.
-		if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots) {
+		if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
 			inode_inc_link_count(new_dir);
 		}
 	}
@@ -521,9 +619,13 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	
 	mark_inode_dirty(old_inode);
 
+	secondfs_dbg(FILE, "rename(): conforming new_dir...");
 	secondfs_inode_conform_v2s(SECONDFS_INODE(new_dir), new_dir);
+	secondfs_dbg(FILE, "rename(): conforming new_inode...");
 	secondfs_inode_conform_v2s(SECONDFS_INODE(new_inode), new_inode);
+	secondfs_dbg(FILE, "rename(): conforming old_dir...");
 	secondfs_inode_conform_v2s(SECONDFS_INODE(old_dir), old_dir);
+	secondfs_dbg(FILE, "rename(): conforming old_inode...");
 	secondfs_inode_conform_v2s(SECONDFS_INODE(old_inode), old_inode);
 
 	// 现在可以移除源文件了. 源文件在父目录项中的位置还记在 iop 里面.
@@ -531,21 +633,28 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	de.m_ino = 0;
 	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
+	secondfs_dbg(FILE, "rename(): WriteI() (remove source)...");
 	Inode_WriteI(SECONDFS_INODE(old_dir), &iop);
+	if (iop.err) {
+		secondfs_err("rename(): WriteI() (remove source) failed!");
+		err = iop.err;
+		goto out_eio;
+	}
 
 	secondfs_inode_conform_s2v(old_dir, SECONDFS_INODE(old_dir));
-	// TODO: 错误处理
 	
 	// 如果我们是搬动目录的话, 最后还要重新链接源目录的 ".."
-	if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots) {
+	if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
 		if (old_dir != new_dir)
 		{
+			secondfs_dbg(FILE, "rename(): secondfs_set_link() (.. -> new_dir)...");
 			secondfs_set_link(old_inode, &iop_dot, new_dir, 0);
 		}
 		inode_dec_link_count(old_dir);
 	}
 	return 0;
 out_dir:
+out_eio:
 out_old:
 out:
 	return err;
@@ -586,8 +695,19 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 		&ctx->pos
 	};
 	
-	if (pos > inode->i_size - sizeof(DirectoryEntry))
-		return 0;
+	secondfs_dbg(FILE, "readdir()...");
+
+	if (SECONDFS_SB(inode->i_sb)->s_has_dots == 0xffffffff) {
+		if (pos > inode->i_size + 2 * sizeof(DirectoryEntry) - sizeof(DirectoryEntry)) {
+			secondfs_err("readdir(): pos > inode->i_size + sizeof(DirectoryEntry)");
+			return 0;
+		}
+	} else {
+		if (pos > inode->i_size - sizeof(DirectoryEntry)) {
+			secondfs_err("readdir(): pos > inode->i_size - sizeof(DirectoryEntry)");
+			return 0;
+		}
+	}
 
 	iop.isUserP = 0;
 	iop.m_Base = NULL;
@@ -602,10 +722,11 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 	iop.m_Offset = pos;
 
 	// 然后若 s_has_dots 置位, 不管; 否则, m_Offset 要减掉 2 位.
-	if (!SECONDFS_SB(inode->i_sb)->s_has_dots) {
+	if (SECONDFS_SB(inode->i_sb)->s_has_dots != 0xffffffff) {
 		iop.m_Offset -= 2 * sizeof(DirectoryEntry);
 	}
 
+	secondfs_dbg(FILE, "readdir(): DELocate()");
 	FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(inode), "", 0,
 			SECONDFS_LIST, &iop, (u32 *)params);
 	return 0;

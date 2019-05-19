@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <new>
 #include "../common.h"
 #include "BufferManager.hh"
 
@@ -30,6 +31,7 @@ public:
 	s32 m_Offset;	/* 当前读、写文件的字节偏移量 */
 	s32 m_Count;	/* 当前还剩余的读、写字节数量 */
 	s32 isUserP;	/* 首地址是否隶属于用户空间 */
+	s32 err;
 };
 
 /*
@@ -73,6 +75,9 @@ public:
  * 
  * 注: i_flag 的 ILOCK, i_count 等锁机制和引用计数机制
  * 在本工程中不用, 交由系统管理
+ * 
+ * Note: ILOCK, i_count is not used in this module.
+ * The lock and refcount mechanism is handled by the system.
 */
 class Inode
 {
@@ -126,6 +131,15 @@ public:
 	Inode();
 	/* Destructors */
 	~Inode();
+
+	void *operator new(size_t size, std::nothrow_t) {
+		void *p = secondfs_c_helper_kmem_cache_alloc_Inode(size);
+		return p;
+	}
+
+	void operator delete(void *p) {
+		secondfs_c_helper_kmem_cache_free_Inode(p);
+	}
 	
 	/* 
 	 * @comment 根据Inode对象中的物理磁盘块索引表，读取相应
@@ -157,11 +171,11 @@ public:
 	 * @comment 更新/写回外存Inode的最后的访问时间、修改时间
 	 * 检查 IUPD 或 IACC 是否置位, 置为才更新并且写回
 	 */
-	void IUpdate(int time);
+	int IUpdate(int time);
 	/* 
 	 * @comment 释放Inode对应文件占用的磁盘块
 	 */
-	void ITrunc();
+	int ITrunc();
 
 	/* 
 	 * @comment 对Pipe或者Inode解锁，并且唤醒因等待锁而睡眠的进程
@@ -194,12 +208,14 @@ public:
 	 */
 	void ICopy(Buf* bp, int inumber);
 
+	void Print();
+
 	/* Members */
 public:
 	u32 i_flag;	/* 状态的标志位，定义见enum INodeFlag */
 	u32 i_mode;	/* 文件工作方式信息 */
 	
-	s32		i_count;		/* 引用计数 */
+	s32		i_count;		/* 引用计数 not used */
 	s32		i_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
 	
 	SuperBlock*	i_ssb;			/* 外存inode所在 SuperBlock */
@@ -240,6 +256,15 @@ public:
 	DiskInode();
 	/* Destructors */
 	~DiskInode();
+
+	void *operator new(size_t size, std::nothrow_t) {
+		void *p = secondfs_c_helper_kmem_cache_alloc_DiskInode(size);
+		return p;
+	}
+
+	void operator delete(void *p) {
+		secondfs_c_helper_kmem_cache_free_DiskInode(p);
+	}
 
 	/* Members */
 public:

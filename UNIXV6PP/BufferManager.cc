@@ -27,7 +27,7 @@ Devtab::~Devtab()
 BufferManager::BufferManager()
 {
 	secondfs_c_helper_spin_lock_init(&this->b_queue_lock);
-	secondfs_c_helper_sema_init(&this->b_bFreeList_lock, 0);
+	secondfs_c_helper_sema_init(&this->b_bFreeList_lock, 1);
 	//nothing to do here
 }
 
@@ -78,6 +78,7 @@ extern "C" Buf* BufferManager_GetBlk(BufferManager *bm, Devtab *dev, int blkno) 
 Buf* BufferManager::GetBlk(Devtab *dev, int blkno)
 {
 	Buf* bp;
+	int ret;
 
 loop:
 	secondfs_dbg(BUFFER, "searching Buf that matches dev %p and blkno %d", dev, blkno);
@@ -88,7 +89,7 @@ loop:
 	// Because in linux, kernel code is pre-emptive, we must lock the
 	// whole queue first
 	// 将这里的 CLI/SLI 改造成每 Buf 的 MUTEX
-	secondfs_c_helper_mutex_lock(&bp->b_modify_lock);	// 这个是快锁
+	
 	for(bp = dev->b_forw; bp != (Buf *)dev; bp = bp->b_forw)
 	{
 		/* Not that one */
@@ -96,11 +97,14 @@ loop:
 		if(bp->b_blkno != blkno || bp->b_dev != dev)
 			continue;
 
+		secondfs_c_helper_mutex_lock(&bp->b_modify_lock);	// 这个是快锁
 		// If the Buf is used for now, we must wait for it be freed
 		// 我们在这里锁 wait_free_lock, 是为了等待其他正在
 		// 使用该 Buf 的进程使用完毕.
-		if(secondfs_c_helper_mutex_is_locked(&bp->b_wait_free_lock))
+		
+		if(!secondfs_c_helper_mutex_trylock(&bp->b_wait_free_lock))
 		{
+			// If locked now
 			secondfs_dbg(BUFFER, "searching Buf(%p/%d): found buf free-locked; wait", dev, blkno);
 			// bp->b_flags |= Buf::B_WANTED;
 			secondfs_c_helper_mutex_unlock(&bp->b_modify_lock);
@@ -122,6 +126,9 @@ loop:
 				secondfs_c_helper_mutex_unlock(&bp->b_wait_free_lock);
 				goto loop;
 			}
+		} else {
+			secondfs_dbg(BUFFER, "searching Buf(%p/%d): found buf free(not locked); acquired", dev, blkno);
+			// The Buf has been locked successfully
 		}
 		/* Pull out from freeList */
 		/* 从自由队列中抽取出来 */
@@ -142,9 +149,23 @@ loop:
 	/* 如果自由队列为空 */
 	if(this->bFreeList.av_forw == &this->bFreeList)
 	{
+		secondfs_dbg(BUFFER, "allocating Buf(%p/%d): down() the semaphore", dev, blkno);
 		//this->bFreeList.b_flags |= Buf::B_WANTED;
 
 		// Take the freeList semaphore
+		// Note: down_trylock returns 0 if succeed;
+		// But mutex_trylock returns non-zero in the same case!
+
+		// The semaphore has value 1 when there are freeBuf(s).
+		// When the execution comes here, there is no freeBuf now;
+		// thus trydown(assign it 0 if it is 1) then down(wait for
+		// another process to wake).
+		// In Brelse(), the semaphore is trydown(assign it 0 if 1)
+		// then up(so that the value will not be greater than 1).
+		// This will wake up processes waiting. If any, the down()
+		// of that process will instantly decrease it to 0; If none,
+		// the semaphore remains to be 1.
+		secondfs_c_helper_down_trylock(&this->b_bFreeList_lock);
 		secondfs_c_helper_down(&this->b_bFreeList_lock);
 
 		// When successfully down the semaphore, a Buf must
@@ -153,6 +174,7 @@ loop:
 		// need to keep 0.
 		// 拿到锁之后, bFreeList 的 av_forw, 以及各设备的 Buf 队列仍可能发生变化.
 		// 要回到 loop 重新搜索设备缓存
+		secondfs_dbg(BUFFER, "allocating Buf(%p/%d): after down(), go loop", dev, blkno);
 		goto loop;
 	}
 	
@@ -161,16 +183,26 @@ loop:
 	/* 取自由队列第一个空闲块 */
 	bp = this->bFreeList.av_forw;
 	this->NotAvail(bp, 1);
+	secondfs_dbg(BUFFER, "allocating Buf(%p/%d): NotAvail() Buf[%d]", dev, blkno, bp->b_index);
+
+	if (SFDBG_ENA(BUFFERQ)) {
+		Print(dev);
+	}
 
 	/* Write it to disk if it was dirty */
 	/* 如果该字符块是延迟写，将其异步写到磁盘上 */
 	// 改: 同步写到磁盘上
 	if(bp->b_flags & Buf::B_DELWRI)
 	{
+		secondfs_dbg(BUFFER, "allocating Buf(%p/%d): Buf[%d] Busy", dev, blkno, bp->b_index);
 		// bp->b_flags |= Buf::B_ASYNC;
-		this->Bwrite(bp);
+		ret = this->Bwrite(bp);
+		if (ret < 0) {
+			secondfs_err("writing dirty Buf[%d/%p/%d] failed! errno: %d", bp->b_index, bp->b_dev, bp->b_blkno, ret);
+		}
 		// 由于是同步写, 这里还要加一个释放缓存块的操作
 		this->Brelse(bp);
+		secondfs_dbg(BUFFER, "allocating Buf(%p/%d): Buf[%d] Busy -> loop", dev, blkno, bp->b_index);
 		goto loop;
 	}
 
@@ -178,7 +210,8 @@ loop:
 	secondfs_c_helper_spin_lock(&this->b_queue_lock);
 
 	/* 注意: 这里清除了所有其他位，只设了B_BUSY */
-	bp->b_flags = Buf::B_BUSY;
+	//bp->b_flags = Buf::B_BUSY;
+	bp->b_flags = 0;
 
 	/* 从原设备队列中抽出 */
 	bp->b_back->b_forw = bp->b_forw;
@@ -194,6 +227,11 @@ loop:
 
 	secondfs_c_helper_spin_unlock(&this->b_queue_lock);
 
+	if (SFDBG_ENA(BUFFERQ)) {
+		secondfs_dbg(BUFFERQ, "allocating Buf(%p/%d/[%d]): queue changed", dev, blkno, bp->b_index);
+		Print(dev);
+	}
+
 	return bp;
 }
 
@@ -204,6 +242,7 @@ void BufferManager::Brelse(Buf* bp)
 	 * 此时很有可能会产生磁盘中断，同样会调用这个函数。
 	 */
 
+	// Spinlock for substitution of CLI/SLI
 	// 替代 CLI/SLI 的方式 : BufferManager 内的自旋锁, 当然这不是等价的.
 	secondfs_c_helper_spin_lock(&secondfs_buffermanagerp->b_queue_lock);
 
@@ -219,12 +258,17 @@ void BufferManager::Brelse(Buf* bp)
 	
 	secondfs_c_helper_spin_unlock(&secondfs_buffermanagerp->b_queue_lock);
 
+	secondfs_dbg(BUFFER, "Brelse Buf[%d/%p/%d]", bp->b_index, bp->b_dev, bp->b_blkno);
+	if (SFDBG_ENA(BUFFERQ)) {
+		Print(bp->b_dev);
+	}
+	// Wake up all processes waiting this Buf to be free
 	// 唤醒等待该缓存块的进程
 	if (secondfs_c_helper_mutex_is_locked(&bp->b_wait_free_lock)) {
 		secondfs_c_helper_mutex_unlock(&bp->b_wait_free_lock);
 	}
 
-	//TODOTODO
+	// Wake up processes those are waiting for freeBuf
 	// 唤醒等待空闲缓存块的进程
 	// 尝试 P, 再 V : 结果就是, 若信号量非正, 递增信号量; 否则不递增.
 	secondfs_c_helper_down_trylock(&this->b_bFreeList_lock);
@@ -264,18 +308,24 @@ void BufferManager::IODone(Buf* bp)
 	{
 		/* 如果是异步操作,立即释放缓存块 */
 		// 不会被执行到, 这里没有异步操作
+		// There is no asynchronized operations here
+		// This branch will never be reached
 		this->Brelse(bp);
 	}
 	else
 	{
 		/* 清除B_WANTED标志位 */
-		bp->b_flags &= (~Buf::B_WANTED);
+		// bp->b_flags &= (~Buf::B_WANTED);
+
+		// No need to wake; IODone is called by current process
+		// rather than DiskHandler.
 		// 原 UNIXV6PP 中, IODone 由磁盘中断处理函数调用,
 		// 会唤醒所有等待该 Buf I/O 完成的进程.
 		// 本模块中, IODone 在每个 bio 请求后由进程调用,
 		// 所以无需唤醒.
 		// Kernel::Instance().GetProcessManager().WakeUpAll((unsigned long)bp);
 	}
+	secondfs_dbg(BUFFER, "IODone Buf[%d/%p/%d]", bp->b_index, bp->b_dev, bp->b_blkno);
 	return;
 }
 
@@ -283,13 +333,22 @@ extern "C" Buf* BufferManager_Bread(BufferManager *bm, Devtab *dev, int blkno) {
 Buf* BufferManager::Bread(Devtab *dev, int blkno)
 {
 	Buf* bp;
+	int ret;
+
+	secondfs_dbg(BUFFER, "Bread Buf: %p/%d", dev, blkno);
+
+	// Search for Buf in memory or allocate Buf in memory
 	/* 根据设备号，字符块号申请缓存 */
 	bp = this->GetBlk(dev, blkno);
+
+	// Read done before
 	/* 如果在设备队列中找到所需缓存，即B_DONE已设置，就不需进行I/O操作 */
 	if(bp->b_flags & Buf::B_DONE)
 	{
 		return bp;
 	}
+
+	// Not found/Not read before; submit BIO
 	/* 没有找到相应缓存，构成I/O读请求块 */
 	bp->b_flags |= Buf::B_READ;
 	bp->b_wcount = SECONDFS_BUFFER_SIZE;
@@ -297,9 +356,32 @@ Buf* BufferManager::Bread(Devtab *dev, int blkno)
 	/* 
 	 * 同步执行该 I/O 请求
 	 */
-	bp->b_error = secondfs_submit_bio_sync_read(dev->d_bdev, bp->b_blkno, bp->b_addr);
+	secondfs_dbg(BUFFER, "Bread Buf: %p/%d: submit bio", dev, blkno);
+
+	ret = secondfs_submit_bio_sync_read(dev->d_bdev, bp->b_blkno, bp->b_addr);
+
+	secondfs_dbg(BUFFER, "Bread Buf: %p/%d: after bio, ret=%d,"
+	 	" content: %02x%02x%02x%02x%02x%02x%02x%02x...", dev, blkno, ret,
+		bp->b_addr[0],
+		bp->b_addr[1],
+		bp->b_addr[2],
+		bp->b_addr[3],
+		bp->b_addr[4],
+		bp->b_addr[5],
+		bp->b_addr[6],
+		bp->b_addr[7]
+	);
+
 	this->IODone(bp);
-	return bp;
+
+	if (ret != 0) {
+		// Returns the errno cast to a pointer
+		// ERR_PTR(ret)
+		Brelse(bp);
+		return (Buf *)(intptr_t)ret;
+	} else {
+		return bp;
+	}
 }
 
 #if false
@@ -385,28 +467,37 @@ Buf* BufferManager::Breada(short adev, int blkno, int rablkno)
 }
 #endif
 
-extern "C" void BufferManager_Bwrite(BufferManager *bm, Buf *bp) { bm->Bwrite(bp); }
-void BufferManager::Bwrite(Buf *bp)
+extern "C" int BufferManager_Bwrite(BufferManager *bm, Buf *bp) { return bm->Bwrite(bp); }
+int BufferManager::Bwrite(Buf *bp)
 {
 	unsigned int flags;
+	int ret;
 
 	flags = bp->b_flags;
 	bp->b_flags &= ~(Buf::B_READ | Buf::B_DONE | Buf::B_ERROR | Buf::B_DELWRI);
 	bp->b_wcount = SECONDFS_BUFFER_SIZE;		/* 512字节 */
 
+	// Sync write
 	// 同步写
-	bp->b_error = secondfs_submit_bio_sync_write(bp->b_dev->d_bdev, bp->b_blkno, bp->b_addr);
+
+	secondfs_dbg(BUFFER, "Bwrite Buf[%d/%p/%d]: submit bio", bp->b_index, bp->b_dev, bp->b_blkno);
+
+	ret = secondfs_submit_bio_sync_write(bp->b_dev->d_bdev, bp->b_blkno, bp->b_addr);
+
+	secondfs_dbg(BUFFER, "Bwrite Buf[%d/%p/%d]: after bio, ret=%d", bp->b_index, bp->b_dev, bp->b_blkno, ret);
+
 	this->IODone(bp);
 
 	if( (flags & Buf::B_ASYNC) == 0 )
 	{
-		/* 同步写，需要等待I/O操作结束 */
-		// 不可能执行
-		// this->IOWait(bp);
+		// After synchronized writing, 
+		// the Buf is released.
 		this->Brelse(bp);
 	}
 	else if( (flags & Buf::B_DELWRI) == 0)
 	{
+		// We do not check error here.
+		// Instead we return the errno.
 	/* 
 	 * 如果不是延迟写，则检查错误；否则不检查。
 	 * 这是因为如果延迟写，则很有可能当前进程不是
@@ -416,13 +507,15 @@ void BufferManager::Bwrite(Buf *bp)
 	// 为简化, 这里不再置错误标志
 		// this->GetError(bp);
 	}
-	return;
+
+	return ret;
 }
 
 extern "C" void BufferManager_Bdwrite(BufferManager *bm, Buf *bp) { bm->Bdwrite(bp); }
 void BufferManager::Bdwrite(Buf *bp)
 {
 	/* 置上B_DONE允许其它进程使用该磁盘块内容 */
+	secondfs_dbg(BUFFER, "Bdwrite Buf[%d/%p/%d]", bp->b_index, bp->b_dev, bp->b_blkno);
 	bp->b_flags |= (Buf::B_DELWRI | Buf::B_DONE);
 	this->Brelse(bp);
 	return;
@@ -462,22 +555,35 @@ void BufferManager::Bflush(Devtab *dev)
 	 * 如果这里继续往下搜索，而不是重新开始搜索那么很可能在
 	 * 操作bfreelist队列的时候出现错误。
 	 */
+	int ret;
 loop:
 	// 替代 CLI/SLI 的方式 : BufferManager 内的自旋锁, 当然这不是等价的.
 	secondfs_c_helper_spin_lock(&secondfs_buffermanagerp->b_queue_lock);
+	secondfs_dbg(BUFFER, "BufferManager::Bflush: finding dirty Buf...");
 	for(bp = this->bFreeList.av_forw; bp != &(this->bFreeList); bp = bp->av_forw)
 	{
+		/* Find all dirty buffers */
 		/* 找出自由队列中所有延迟写的块 */
 		if( (bp->b_flags & Buf::B_DELWRI) && (dev == 0 || dev == bp->b_dev) )
 		{
+			secondfs_dbg(BUFFER, "writing dirty Buf[%d/%p/%d|%X]...", bp->b_index, bp->b_dev, bp->b_blkno, bp->b_flags);
+			/* Sync write them to disk
+			 */
 			/* @Feng Shun: 在原 Unix V6++ 中, 对于所有脏块,
 			 * 采取的操作仅为"异步写"
 			 * 此处改为 "同步写"
 			 */
 			// bp->b_flags |= Buf::B_ASYNC;
+
+			// NotAvail will unlock queue lock
 			// 在 NotAvail 中会把自旋锁解锁
 			this->NotAvail(bp, 0);
-			this->Bwrite(bp);
+			ret = this->Bwrite(bp);
+
+			if (ret < 0) {
+				secondfs_err("writing dirty Buf[%d/%p/%d] failed! errno: %d", bp->b_index, bp->b_dev, bp->b_blkno, ret);
+			}
+
 			goto loop;
 		}
 	}
@@ -551,7 +657,7 @@ void BufferManager::NotAvail(Buf *bp, u32 lockFirst)
 	bp->av_back->av_forw = bp->av_forw;
 	bp->av_forw->av_back = bp->av_back;
 	/* 设置B_BUSY标志 */
-	bp->b_flags |= Buf::B_BUSY;
+	//bp->b_flags |= Buf::B_BUSY;
 	secondfs_c_helper_spin_unlock(&this->b_queue_lock);
 
 	return;
@@ -561,7 +667,11 @@ extern "C" Buf* BufferManager_InCore(BufferManager *bm, Devtab *adev, int blkno)
 Buf* BufferManager::InCore(Devtab *adev, int blkno)
 {
 	Buf* bp;
-	Devtab* dp = adev;
+	Devtab* dp;
+	if (adev)
+		dp = adev;
+	else
+		dp = (Devtab *)&this->bFreeList;
 
 	for(bp = dp->b_forw; bp != (Buf *)dp; bp = bp->b_forw)
 	{
@@ -626,10 +736,10 @@ extern "C" {
 		SECONDFS_B_READ = Buf::BufFlag::B_READ,		/* 读操作。从盘读取信息到缓存中 */
 		SECONDFS_B_DONE = Buf::BufFlag::B_DONE,		/* I/O操作结束 */
 		SECONDFS_B_ERROR = Buf::BufFlag::B_ERROR,	/* I/O因出错而终止 */
-		SECONDFS_B_BUSY = Buf::BufFlag::B_BUSY,		/* 相应缓存正在使用中 */
+		SECONDFS_B_BUSY = Buf::BufFlag::B_BUSY,		/* 相应缓存正在使用中 Not used */
 		SECONDFS_B_WANTED = Buf::BufFlag::B_WANTED,	/* 有进程正在等待使用该buf管理的资源，清B_BUSY标志SECONDFS_时，要唤醒这种进程 */
-		SECONDFS_B_ASYNC = Buf::BufFlag::B_ASYNC,	/* 异步I/O，不需要等待其结束 */
-		SECONDFS_B_DELWRI = Buf::BufFlag::B_DELWRI	/* 延迟写，在相应缓存要移做他用时，再将其内容写到相应块设备上 */
+		SECONDFS_B_ASYNC = Buf::BufFlag::B_ASYNC,	/* 异步I/O，不需要等待其结束 Not used */
+		SECONDFS_B_DELWRI = Buf::BufFlag::B_DELWRI	/* 延迟写，在相应缓存要移做他用时，再将其内容写到相应块设备上 Dirty */
 	;
 
 	SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(Buf);

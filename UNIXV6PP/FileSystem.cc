@@ -1,5 +1,6 @@
 /* UNIXV6PP 文件系统(主要是超块操作)代码裁剪. */
 #include <cstring>
+#include <cstdio>
 #include "../common.h"
 #include "../secondfs.h"
 
@@ -55,6 +56,12 @@ int FileSystem::LoadSuperBlock(SuperBlock *secsb)
 
 		pBuf = bufMgr.Bread(secsb->s_dev, FileSystem::SUPER_BLOCK_SECTOR_NUMBER + i);
 
+		// We just hard-code IS_ERR() macro here
+		if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {
+			secondfs_err("reading Buf: %p/%d failed! errno: %d", secsb->s_dev, FileSystem::SUPER_BLOCK_SECTOR_NUMBER + i, (int)(intptr_t)pBuf);
+			return (int)(intptr_t)pBuf;
+		}
+
 		memcpy(p, pBuf->b_addr, SECONDFS_BLOCK_SIZE);
 
 		bufMgr.Brelse(pBuf);
@@ -64,8 +71,37 @@ int FileSystem::LoadSuperBlock(SuperBlock *secsb)
 	//secsb->s_ilock = 0;
 	secsb->s_ronly = 0;
 
-	// TODO: 应在该卷不是只读的时候才更新 s_time
 	secsb->s_time = cpu_to_le32(secondfs_c_helper_ktime_get_real_seconds());
+	return 0;
+}
+
+extern "C" void FileSystem_PrintSuperBlock(FileSystem *fs, SuperBlock *secsb) { fs->PrintSuperBlock(secsb); }
+void FileSystem::PrintSuperBlock(SuperBlock *secsb)
+{
+	const int buflen = 1000;
+	char buf[buflen];
+
+	int length = 0;
+
+	length += sprintf(buf + length, "SuperBlock %p:\n", secsb);
+
+	length += sprintf(buf + length, "s_isize(Inode area blocks): %d\n", secsb->s_isize);
+	length += sprintf(buf + length, "s_fsize(Data area blocks): %d\n", secsb->s_fsize);
+	length += sprintf(buf + length, "s_nfree(Freeblock stack height): %d\n", secsb->s_nfree);
+	length += sprintf(buf + length, "s_ninode(Freeinode stack height): %d\n", secsb->s_ninode);
+
+	length += sprintf(buf + length, "s_has_dots(This fs has . & ..?): 0x%X\n", secsb->s_has_dots);
+
+	length += sprintf(buf + length, "s_fmod(SuperBlock modified): %d\n", secsb->s_fmod);
+
+	length += sprintf(buf + length, "s_ronly(SuperBlock read-only): %d\n", secsb->s_ronly);
+	length += sprintf(buf + length, "s_time(Last update): %d\n", secsb->s_time);
+
+	length += sprintf(buf + length, "Root Inode: %p\n", secsb->s_inodep);
+	length += sprintf(buf + length, "Devtab: %p\n", secsb->s_dev);
+	length += sprintf(buf + length, "VFS super_block: %p\n", secsb->s_vsb);
+
+	secondfs_dbg(SB_FILL, "%s", buf);
 }
 
 #if false
@@ -99,6 +135,7 @@ void FileSystem::Update(SuperBlock *secsb)
 {
 	SuperBlock* sb = secsb;
 	Buf* pBuf;
+	int ret;
 
 	/* 设置Update()函数的互斥锁，防止其它进程重入 */
 	/* 另一进程正在进行同步，则直接返回 */
@@ -115,16 +152,20 @@ void FileSystem::Update(SuperBlock *secsb)
 		return;
 	}
 
+	/* Clear modify flag */
 	/* 清SuperBlock修改标志 */
 	sb->s_fmod = 0;
+	/* Update last access time */
 	/* 写入SuperBlock最后存访时间 */
 	sb->s_time = cpu_to_le32(secondfs_c_helper_ktime_get_real_seconds());
 
 	/* 
-		* 为将要写回到磁盘上去的SuperBlock申请一块缓存，由于缓存块大小为512字节，
-		* SuperBlock大小为1024字节，占据2个连续的扇区，所以需要2次写入操作。
-		*/
-	for(int j = 0; j < 2; j++)
+	* 为将要写回到磁盘上去的SuperBlock申请一块缓存，由于缓存块大小为512字节，
+	* SuperBlock大小为1024字节，占据2个连续的扇区，所以需要2次写入操作。
+	*/
+
+	// Sync 1024 bytes(2 blocks) back to disk
+	for(int j = 0; j < SECONDFS_SUPER_BLOCK_DISK_SIZE / SECONDFS_BLOCK_SIZE; j++)
 	{
 		/* 第一次p指向SuperBlock的第0字节，第二次p指向第512字节 */
 		u8* p = (u8 *)sb + j * SECONDFS_BLOCK_SIZE;
@@ -136,16 +177,27 @@ void FileSystem::Update(SuperBlock *secsb)
 		memcpy(p, pBuf->b_addr, SECONDFS_BLOCK_SIZE);
 
 		/* 将缓冲区中的数据写到磁盘上 */
-		this->m_BufferManager->Bwrite(pBuf);
+		ret = this->m_BufferManager->Bwrite(pBuf);
+
+		// After every (sync) write, the Buf will be released.
+
+		if (ret != 0) {
+			secondfs_err("FileSystem::Update: Bwrite() failed!");
+			goto out;
+		}
 	}
 	
+	// Synchronize all Inodes to disk (we won't do this)
 	/* 同步修改过的内存Inode到对应外存Inode */
 	// @Feng Shun: 我们不做这步了
 	//g_InodeTable.UpdateInodeTable();
 
-	/* 清除Update()函数锁 */
+	/* Unlock update lock */
+	/* 清除Update()函数锁 */	
+out:
 	secondfs_c_helper_mutex_unlock(&secsb->s_update_lock);
 
+	/* Flush the dirty buffers */
 	/* 将延迟写的缓存块写到磁盘上 */
 	this->m_BufferManager->Bflush(secsb->s_dev);
 }
@@ -161,6 +213,8 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 	/* 如果SuperBlock空闲Inode表被上锁，则睡眠等待至解锁 */
 	secondfs_c_helper_mutex_lock(&sb->s_ilock);
 
+	// When fast stack is empty, we have to start out
+	// searching free Inode in Inode area on disk.
 	/* 
 	 * SuperBlock直接管理的空闲Inode索引表已空，
 	 * 必须到磁盘上搜索空闲Inode。先对inode列表上锁，
@@ -196,6 +250,10 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 					continue;
 				}
 
+				secondfs_dbg(INODE, "IAlloc %p: found Inode %d free", secsb, ino);
+
+				// If we met a free inode, we should lookup if its
+				// inode number is being used by system now
 				/* 
 				 * 如果外存inode的i_mode==0，此时并不能确定
 				 * 该inode是空闲的，因为有可能是内存inode没有写到
@@ -203,15 +261,20 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 				 */
 				if( secondfs_c_helper_ilookup_without_iget(secsb->s_vsb, ino) == NULL )
 				{
+
 					/* 该外存Inode没有对应的内存拷贝，将其记入空闲Inode索引表 */
 					sb->s_inode[le32_to_cpu(sb->s_ninode)] = cpu_to_le32(ino);
+					secondfs_dbg(INODE, "IAlloc %p: s_inode[%d] = %d", le32_to_cpu(sb->s_ninode), ino);
 					sb->s_ninode = cpu_to_le32(le32_to_cpu(sb->s_ninode) + 1);
+
 
 					/* 如果空闲索引表已经装满，则不继续搜索 */
 					if(le32_to_cpu(sb->s_ninode) >= 100)
 					{
 						break;
 					}
+				} else {
+					secondfs_dbg(INODE, "IAlloc %p: though free Inode %d is being used in memory", secsb, ino);
 				}
 			}
 
@@ -230,13 +293,14 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 		/* 如果在磁盘上没有搜索到任何可用外存Inode，返回NULL */
 		if(le32_to_cpu(sb->s_ninode) <= 0)
 		{
-			//Diagnose::Write("No Space On %d !\n", dev);
-			//u.u_error = User::ENOSPC;
+			secondfs_err("IAlloc %p: No Inode left!!", secsb);
 			return NULL;
 		}
 	}
 	secondfs_c_helper_mutex_unlock(&sb->s_ilock);
 
+	// Above part ensured there is something in Inode fast stack.
+	// Now we just pick the top Inode of it.
 	/* 
 	 * 上面部分已经保证，除非系统中没有可用外存Inode，
 	 * 否则空闲Inode索引表中必定会记录可用外存Inode的编号。
@@ -246,6 +310,8 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 		/* 从索引表“栈顶”获取空闲外存Inode编号 */
 		sb->s_ninode = cpu_to_le32(le32_to_cpu(sb->s_ninode) - 1);
 		ino = le32_to_cpu(sb->s_inode[le32_to_cpu(sb->s_ninode)]);
+
+		secondfs_dbg(INODE, "IAlloc %p: got Inode %d", secsb, ino);
 
 		/* 将空闲Inode读入内存 */
 		//pNode = g_InodeTable.IGet(dev, ino);
@@ -259,9 +325,11 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 		/* 未能分配到内存inode */
 		if(NULL == pNode)
 		{
+			secondfs_err("IAlloc %p: failed igetting %d", secsb, ino);
 			return NULL;
 		}
 
+		/* If this Inode is free */
 		/* 如果该Inode空闲,清空Inode中的数据 */
 		if(0 == pNode->i_mode)
 		{
@@ -270,9 +338,11 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 			sb->s_fmod = cpu_to_le32(1);
 			return pNode;
 		}
-		else	/* 如果该Inode已被占用 */
-		{
+		else	/* 如果该Inode已被占用 of Occupied */
+		{	
+			secondfs_warn("IAlloc %p: occupied Inode %d ???", secsb, ino);
 			secondfs_c_helper_iput(&pNode->vfs_inode);
+			// Pick next from fast stack
 			continue;	/* while循环 */
 		}
 	}
@@ -283,6 +353,9 @@ extern "C" void FileSystem_IFree(FileSystem *fs, SuperBlock *secsb, int number) 
 void FileSystem::IFree(SuperBlock *secsb, int number)
 {
 	SuperBlock* sb = secsb;
+	
+	// If the time is not proper to write to fast stack,
+	// let the Inode rest in Inode area without record.
 	
 	/* 
 	 * 如果超级块直接管理的空闲Inode表上锁，
@@ -315,6 +388,8 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 	SuperBlock* sb = secsb;
 	Buf* pBuf;
 
+	secondfs_dbg(FILE, "FileSystem::Alloc(%p)...", secsb);
+
 	/* 
 	 * 如果空闲磁盘块索引表正在被上锁，表明有其它进程
 	 * 正在操作空闲磁盘块索引表，因而对其上锁。这通常
@@ -322,10 +397,12 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 	 */
 	secondfs_c_helper_mutex_lock(&sb->s_flock);
 
+	/* Pick a block at the top of fast stack */
 	/* 从索引表“栈顶”获取空闲磁盘块编号 */
 	sb->s_nfree = cpu_to_le32(le32_to_cpu(sb->s_nfree) - 1);
 	blkno = le32_to_cpu(sb->s_free[le32_to_cpu(sb->s_nfree)]);
-	
+
+	secondfs_dbg(FILE, "FileSystem::Alloc(%p): blkno = s_free[%d] == %d", secsb, le32_to_cpu(sb->s_nfree), blkno);
 
 	/* 
 	 * 若获取磁盘块编号为零，则表示已分配尽所有的空闲磁盘块。
@@ -334,10 +411,12 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 	 */
 	if(0 == blkno )
 	{
-		sb->s_nfree = cpu_to_le32(0);
+		secondfs_err("FileSystem::Alloc(%p): zero! No space left!", secsb);
+		sb->s_nfree = cpu_to_le32(1);
+
 		// Diagnose::Write("No Space On %d !\n", dev);
 		// u.u_error = User::ENOSPC;
-		secondfs_c_helper_bug();
+		// secondfs_c_helper_bug();
 		return NULL;
 	}
 	/* if( this->BadBlock(sb, dev, blkno) )
@@ -357,8 +436,17 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 		 */
 		// 上面已经加过锁了
 
+		secondfs_dbg(FILE, "FileSystem::Alloc(%p): s_nfree == %d; read next group of free data blocks", secsb, le32_to_cpu(sb->s_nfree));
+
 		/* 读入该空闲磁盘块 */
 		pBuf = this->m_BufferManager->Bread(sb->s_dev, blkno);
+		// We just hard-code IS_ERR() macro here
+		if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {
+			secondfs_err("FileSystem::Alloc(%p): reading %p/%d failed! errno: %d", secsb, sb->s_dev, blkno, (int)(intptr_t)pBuf);
+
+			secondfs_c_helper_mutex_lock(&sb->s_flock);
+			return NULL;
+		}
 
 		/* 从该磁盘块的0字节开始记录，共占据4(s_nfree)+400(s_free[100])个字节 */
 		s32* p = (s32 *)pBuf->b_addr;
@@ -368,6 +456,8 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 
 		/* 读取缓存中后续位置的数据，写入到SuperBlock空闲盘块索引表s_free[100]中 */
 		memcpy(sb->s_free, p, sizeof(sb->s_free));
+
+		secondfs_dbg(FILE, "FileSystem::Alloc(%p): s_nfree == %d, s_free[top] == %d", secsb, le32_to_cpu(sb->s_nfree), le32_to_cpu(sb->s_free[99]));
 
 		/* 缓存使用完毕，释放以便被其它进程使用 */
 		this->m_BufferManager->Brelse(pBuf);
@@ -385,11 +475,13 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 	return pBuf;
 }
 
-extern "C" void FileSystem_Free(FileSystem *fs, SuperBlock *secsb, int blkno) { fs->Free(secsb, blkno); }
-void FileSystem::Free(SuperBlock *secsb, int blkno)
+extern "C" int FileSystem_Free(FileSystem *fs, SuperBlock *secsb, int blkno) { return fs->Free(secsb, blkno); }
+int FileSystem::Free(SuperBlock *secsb, int blkno)
 {
+	// Release data block
 	SuperBlock* sb = secsb;
 	Buf* pBuf;
+	int ret = 0;
 
 	/* 
 	 * 尽早设置SuperBlock被修改标志，以防止在释放
@@ -408,18 +500,26 @@ void FileSystem::Free(SuperBlock *secsb, int blkno)
 	}*/
 
 	/* 
+	 * Releasing the first free block into fast stack
+	 * Note: this should be an abnormal state. When the
+	 * last data block is allocated, s_nfree == 1.
+	 */
+	/* 
 	 * 如果先前系统中已经没有空闲盘块，
 	 * 现在释放的是系统中第1块空闲盘块
 	 */
 	if((int) le32_to_cpu(sb->s_nfree) <= 0)
 	{
-		sb->s_nfree = cpu_to_le32(1);
+		secondfs_err("FileSystem::Free(%p,%d): abnormal situation.", secsb, blkno);
+		sb->s_nfree = (int) cpu_to_le32(1);
 		sb->s_free[0] = 0;	/* 使用0标记空闲盘块链结束标志 */
 	}
 
+	/* The fast stack in SuperBlock is full */
 	/* SuperBlock中直接管理空闲磁盘块号的栈已满 */
 	if((int) le32_to_cpu(sb->s_nfree) >= 100)
 	{
+		secondfs_dbg(DATABLK, "FileSystem::Free(%p,%d): fast stack full.", secsb, blkno);
 		/* 
 		 * 使用当前Free()函数正要释放的磁盘块，存放前一组100个空闲
 		 * 磁盘块的索引表
@@ -429,6 +529,10 @@ void FileSystem::Free(SuperBlock *secsb, int blkno)
 		/* 从该磁盘块的0字节开始记录，共占据4(s_nfree)+400(s_free[100])个字节 */
 		u32* p = (u32 *)pBuf->b_addr;
 		
+		/* This block is used to store n_free(most of the time 100/99) and 100 free
+		 * block numbers stored in fast stack. Then this block is sent to disk,
+		 * and fast stack cleared.
+		 */
 		/* 首先写入空闲盘块数，除了第一组为99块，后续每组都是100块 */
 		*p++ = sb->s_nfree;
 		/* 将SuperBlock的空闲盘块索引表s_free[100]写入缓存中后续位置 */
@@ -436,12 +540,21 @@ void FileSystem::Free(SuperBlock *secsb, int blkno)
 
 		sb->s_nfree = cpu_to_le32(0);
 		/* 将存放空闲盘块索引表的“当前释放盘块”写入磁盘，即实现了空闲盘块记录空闲盘块号的目标 */
-		this->m_BufferManager->Bwrite(pBuf);
+		ret = this->m_BufferManager->Bwrite(pBuf);
+		
+		if (ret < 0) {
+			secondfs_err("FileSystem::Free(%p,%d) write failed!", secsb, blkno);
+			goto out;
+		}
 	}
+out:
 	secondfs_c_helper_mutex_unlock(&sb->s_flock);
 	sb->s_free[le32_to_cpu(sb->s_nfree)] = cpu_to_le32(blkno);	/* SuperBlock中记录下当前释放盘块号 */
 	sb->s_nfree = cpu_to_le32(le32_to_cpu(sb->s_nfree) + 1);
 	sb->s_fmod = cpu_to_le32(1);
+	secondfs_dbg(DATABLK, "FileSystem::Free(%p,%d): sb->s_free[%d] = %d", secsb, blkno, le32_to_cpu(sb->s_nfree) - 1, sb->s_free[le32_to_cpu(sb->s_nfree) - 1]);
+
+	return ret;
 }
 
 #if false
@@ -476,6 +589,7 @@ extern "C" {
 	const s32
 		SECONDFS_NMOUNT = FileSystem::NMOUNT,			/* 系统中用于挂载子文件系统的装配块数量 */
 		SECONDFS_SUPER_BLOCK_SECTOR_NUMBER = FileSystem::SUPER_BLOCK_SECTOR_NUMBER,	/* 定义SuperBlock位于磁盘上的扇区号，占据200，201两个扇区。 */
+		SECONDFS_SUPER_BLOCK_DISK_SIZE = 1024,
 		SECONDFS_ROOTINO = FileSystem::ROOTINO,			/* 文件系统根目录外存Inode编号 */
 		SECONDFS_INODE_NUMBER_PER_SECTOR = FileSystem::INODE_NUMBER_PER_SECTOR,	/* 外存INode对象长度为64字节，每个磁盘块可以存放512/64 = 8个外存Inode */
 		SECONDFS_INODE_ZONE_START_SECTOR = FileSystem::INODE_ZONE_START_SECTOR,	/* 外存Inode区位于磁盘上的起始扇区号 */

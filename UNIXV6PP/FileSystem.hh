@@ -33,6 +33,7 @@ public:
 	
 	/* Members */
 public:
+	/* For English comments: head for ::PrintSuperBlock */
 	s32	s_isize;		/* 外存Inode区占用的盘块数 */
 	s32	s_fsize;		/* 盘块总数 */
 	
@@ -102,6 +103,8 @@ public:
 	*/
 	int LoadSuperBlock(SuperBlock *secsb);
 
+	void PrintSuperBlock(SuperBlock *secsb);
+
 
 	/* 
 	 * @comment 初始化成员变量
@@ -117,9 +120,12 @@ public:
 	SuperBlock* GetFS(short dev);
 #endif
 
+
 	/* 
 	 * @comment 将SuperBlock对象的内存副本更新到
 	 * 存储设备的SuperBlock中去
+	 * 
+	 * Flush the SuperBlock in the disk
 	 */
 	void Update(SuperBlock *secsb);
 
@@ -142,7 +148,7 @@ public:
 	/* 
 	 * @comment 释放secsb所在文件系统编号为blkno的磁盘块
 	 */
-	void Free(SuperBlock *secsb, int blkno);
+	int Free(SuperBlock *secsb, int blkno);
 #if false
 	/* 
 	 * @comment 查找文件系统装配表，搜索指定Inode对应的Mount装配块

@@ -312,22 +312,32 @@ void FileManager::Stat1(Inode* pInode, unsigned long statBuf)
 }
 #endif
 
-extern "C" u32 FileManager_Read(FileManager *fm, u8 *buf, size_t len, u32 *ppos, Inode *inode)
+extern "C" long FileManager_Read(FileManager *fm, u8 *buf, size_t len, u32 *ppos, Inode *inode)
 { return fm->Read(buf, len, ppos, inode); }
-u32 FileManager::Read(u8 *buf, size_t len, u32 *ppos, Inode *inode)
+long FileManager::Read(u8 *buf, size_t len, u32 *ppos, Inode *inode)
 {
 	IOParameter io_param;
+	long size;
 	/* 直接调用Rdwr()函数即可 */
-	return this->Rdwr(buf, len, ppos, &io_param, inode, SECONDFS_FREAD);
+	size = this->Rdwr(buf, len, ppos, &io_param, inode, SECONDFS_FREAD);
+	if (io_param.err != 0) {
+		return io_param.err;
+	}
+	return size;
 }
 
-extern "C" u32 FileManager_Write(FileManager *fm, const u8 *buf, size_t len, u32 *ppos, Inode *inode)
+extern "C" long FileManager_Write(FileManager *fm, const u8 *buf, size_t len, u32 *ppos, Inode *inode)
 { return fm->Write(buf, len, ppos, inode); }
-u32 FileManager::Write(const u8 *buf, size_t len, u32 *ppos, Inode *inode)
+long FileManager::Write(const u8 *buf, size_t len, u32 *ppos, Inode *inode)
 {
 	IOParameter io_param;
+	long size;
 	/* 直接调用Rdwr()函数即可 */
-	return this->Rdwr((u8 *)buf, len, ppos, &io_param, inode, SECONDFS_FWRITE);
+	size = this->Rdwr((u8 *)buf, len, ppos, &io_param, inode, SECONDFS_FWRITE);
+	if (io_param.err != 0) {
+		return io_param.err;
+	}
+	return size;
 }
 
 extern "C" u32 FileManager_Rdwr(FileManager *fm, u8 *buf, size_t len, u32 *ppos, IOParameter *io_paramp, Inode *inode, u32 mode)
@@ -337,7 +347,7 @@ u32 FileManager::Rdwr(u8 *buf, size_t len, u32 *ppos, IOParameter *io_paramp, In
 {
 	io_paramp->m_Base = buf;	/* 目标缓冲区首址 */
 	io_paramp->m_Count = len;	/* 要求读/写的字节数 */
-	io_paramp->isUserP = 1;
+	io_paramp->isUserP = 1;		// copy to/from user space
 
 	/* 普通文件读写 ，或读写特殊文件。对文件实施互斥访问，互斥的粒度：每次系统调用。
 	为此Inode类需要增加两个方法：NFlock()、NFrele()。
@@ -356,11 +366,13 @@ u32 FileManager::Rdwr(u8 *buf, size_t len, u32 *ppos, IOParameter *io_paramp, In
 		}
 
 		/* 根据读写字数，移动文件读写偏移指针 */
-		*ppos += (len - io_paramp->m_Count);
+		//*ppos += (len - io_paramp->m_Count);
+		*ppos = io_paramp->m_Offset;
 		inode->NFrele();
 	}
 
-	/* 返回实际读写的字节数，修改存放系统调用返回值的核心栈单元 */
+	/* 返回实际读写的字节数 */
+	secondfs_dbg(FILE, "FileManager::Rdwr(): return %u", len - io_paramp->m_Count);
 	return len - io_paramp->m_Count;
 }
 
@@ -756,6 +768,34 @@ out:
 }
 #endif
 
+/* DELocate: Locate DirectoryEntry in dir.
+ *    When mode == OPEN,DELETE : (they have no differences)
+ * 	search 'name' in Inode *dir; record the DE's offset in out_iop; write its Inode
+ * 	number to *inop
+ *    When mode == CREATE :
+ *	search free(available) DE slot in Inode *dir's DETable; record the DE's offset
+ *	in out_iop
+ *    When mode == CHECKEMPTY :
+ *	tell if dir is an empty directory. If it is, assian a non-zero value to
+ *	out_iop->m_Offset; otherwise 0
+ *    When mode == LIST :
+ * 	read out_iop->m_Offset as offset in DETable, scan the directory.
+ * 	(In this case, the 'out' in 'out_iop' is some kind of misname)
+ * 
+ *	inop = {dir_emit, ctx, type, ppos}
+ *	(bool (*)(void *ctx, const char * name, int namelen, u64 ino, unsigned int type))inop[0] -> dir_emit
+ *	(void * (Actually struct dir_context *))inop[1] -> ctx
+ *	(unsigned int *)inop[2] -> type, typically 0 (DT_UNKNOWN)
+ *	(void * (Actually loff_t *))inop[3] -> ppos, ppos is moved everytime out_iop->mOffset moves;
+ *		if s_has_dots != 0xffffffff, ppos is 2 DirectoryEntries beyond iop->m_Offset(as if the DETable
+ *		has '.' & '..' from the aspect of ppos).
+ *	
+ *	execute dir_emit for every DE.
+
+ *    When mode == OPEN_NOT_IGNORE_DOTS :
+ *	The same as OPEN, DELETE except for inclusion of "." ".." (and most probably name == '.' or  '..')
+ */
+
 /* 在 dir 内定位目录项.
  *    当 mode == OPEN,DELETE : (它们没有区别, 不再检查是否有打开/删除文件的资格, 不再有返回父/子目录的区别)
  *	在 dir 的目录项内查找 name, 并将目录项的偏移量写入 out_iop, 将 Inode 号写入 *inop
@@ -804,6 +844,8 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 
 	pInode = dir;
 
+	secondfs_dbg(FILE, "FileManager::DELocate()...type=%u", mode);
+
 	/* 检查该Inode是否正在被使用，以及保证在整个目录搜索过程中该Inode不被释放 */
 	// 不需要了, 我们不使用 UnixV6++ 对于 Inode 的锁机制
 	//this->m_InodeTable->IGet(pInode->i_dev, pInode->i_number);
@@ -816,20 +858,31 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 		if (SECONDFS_LIST == mode) {
 			// 向右对齐
 			out_iop->m_Offset = (out_iop->m_Offset + sizeof(DirectoryEntry) - 1) / sizeof(DirectoryEntry) * sizeof(DirectoryEntry);
-			out_iop->m_Count = pInode->i_size / (SECONDFS_DIRSIZ + 4) - out_iop->m_Offset / sizeof(DirectoryEntry);
+			out_iop->m_Count = pInode->i_size / sizeof(DirectoryEntry) - out_iop->m_Offset / sizeof(DirectoryEntry);
+
+			secondfs_dbg(FILE, "FileManager::DELocate(): mode == LIST; m_Offset=%d, m_Count=%d", out_iop->m_Offset, out_iop->m_Count);
 
 			if ( NULL != pBuf )
 			{
 				bufMgr.Brelse(pBuf);
 			}
 			/* 计算要读的物理盘块号 */
+			secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
 			int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
+			secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d) == ", out_iop->m_Offset / SECONDFS_BLOCK_SIZE, phyBlkno);
+
 			pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );
+			// We just hard-code IS_ERR() macro here
+			if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {
+				secondfs_err("FileManager::DELocate(): Bread() fail! (%d)", (int)(uintptr_t)(pBuf));
+				return (int)(uintptr_t)(pBuf);
+			}
 		} else {
 			out_iop->m_Offset = 0;
 
 			/* 设置为目录项个数 ，含空白的目录项*/
-			out_iop->m_Count = pInode->i_size / (SECONDFS_DIRSIZ + 4);
+			out_iop->m_Count = pInode->i_size / sizeof(DirectoryEntry);
+			secondfs_dbg(FILE, "FileManager::DELocate(): mode != LIST; m_Offset=%d, m_Count=%d", out_iop->m_Offset, out_iop->m_Count);
 		}
 		freeEntryOffset = 0;
 		pBuf = NULL;
@@ -839,6 +892,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			/* 对目录项已经搜索完毕 */
 			if ( 0 == out_iop->m_Count )
 			{
+				secondfs_dbg(FILE, "FileManager::DELocate(): m_Count == 0, DE search complete");
 				if ( NULL != pBuf )
 				{
 					bufMgr.Brelse(pBuf);
@@ -848,11 +902,13 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 				{
 					if ( freeEntryOffset )	/* 此变量存放了空闲目录项位于目录文件中的偏移量 */   /*问题：为何if分支没有置IUPD标志？  这是因为文件的长度没有变呀*/
 					{
-						/* 将空闲目录项偏移量存入u区中，写目录项WriteDir()会用到 */
+						/* 将空闲目录项偏移量保存，写目录项WriteDir()会用到 */
 						out_iop->m_Offset = freeEntryOffset - (SECONDFS_DIRSIZ + 4);
+						secondfs_dbg(FILE, "FileManager::DELocate(): mode == CREATE, found freeEntryOffset=%d", freeEntryOffset);
 					}
 					else /*目录项只能在末尾添加, Inode 长度更新*/
 					{
+						secondfs_dbg(FILE, "FileManager::DELocate(): mode == CREATE, not found free entry, add new DE at tail");
 						pInode->i_flag |= SECONDFS_IUPD;
 					}
 					/* 找到可以写入的空闲目录项位置，函数返回 */
@@ -863,10 +919,13 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 				/* 如果是判断目录是否非空 */
 				if ( SECONDFS_CHECKEMPTY == mode )
 				{
+					secondfs_dbg(FILE, "FileManager::DELocate(): mode == CHECKEMPTY, m_Offset=1");
 					out_iop->m_Offset = 1;
 					return 0;
 				}
 				
+				secondfs_dbg(FILE, "FileManager::DELocate(): ENOENT");
+
 				/* 目录项搜索完毕而没有找到匹配项，释放相关Inode资源，并推出 */
 				ret = -ENOENT;
 				if (SECONDFS_LIST != mode)
@@ -883,22 +942,30 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 				}
 				/* 计算要读的物理盘块号 */
 				int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
+				secondfs_dbg(FILE, "FileManager::DELocate(): finish current block; Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
 				pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );
+				// We just hard-code IS_ERR() macro here
+				if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {
+					secondfs_err("FileManager::DELocate(): Bread() fail! (%d)", (int)(uintptr_t)(pBuf));
+					return (int)(uintptr_t)(pBuf);
+				}
 			}
 
 			/* 没有读完当前目录项盘块，则读取下一目录项至u.u_dent */
+			secondfs_dbg(FILE, "FileManager::DELocate(): load next DE: m_Offset=", out_iop->m_Offset);
 			u8* src =(pBuf->b_addr + (out_iop->m_Offset % SECONDFS_BLOCK_SIZE));
 			memcpy(&dent, src, sizeof(DirectoryEntry));
 
 			out_iop->m_Offset += (SECONDFS_DIRSIZ + 4);
 			if (SECONDFS_LIST == mode) {
-				secondfs_c_helper_set_loff_t(ppos, has_dots ? out_iop->m_Offset : (out_iop->m_Offset + sizeof(DirectoryEntry) * 2));
+				secondfs_c_helper_set_loff_t(ppos, has_dots == 0xffffffff ? out_iop->m_Offset : (out_iop->m_Offset + sizeof(DirectoryEntry) * 2));
 			}
 			out_iop->m_Count--;
 
 			/* 如果是空闲目录项，记录该项位于目录文件中偏移量 */
 			if ( 0 == le32_to_cpu(dent.m_ino) )
 			{
+				secondfs_dbg(FILE, "FileManager::DELocate(): found empty DE slot");
 				if ( 0 == freeEntryOffset )
 				{
 					freeEntryOffset = out_iop->m_Offset;
@@ -912,6 +979,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			if (SECONDFS_OPEN_NOT_IGNORE_DOTS != mode)
 				if (dent.m_name[0] == '.' && ((dent.m_name[1] == '.' && dent.m_name[2] == '\0')
 							|| dent.m_name[1] == '\0')) {
+					secondfs_dbg(FILE, "FileManager::DELocate(): found empty DE slot");
 					continue;
 				}
 
@@ -919,6 +987,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			/* 如果是判断目录是否非空 */
 			if ( SECONDFS_CHECKEMPTY == mode )
 			{
+				secondfs_dbg(FILE, "FileManager::DELocate(): mode == CHECKEMPTY, return 0");
 				out_iop->m_Offset = 0;
 				return 0;
 			}
@@ -931,10 +1000,14 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 				while(*p && p - dent.m_name < sizeof(dent.m_name) / sizeof(*p)) {
 					p++;
 				}
+
+				secondfs_dbg(FILE, "FileManager::DELocate(): mode == LIST; currname=%0.32s, ino=%d", dent.m_name, le32_to_cpu(dent.m_ino));
+
 				// 从目录项看不出这个文件属于哪种类别, 所以只能 DT_UNKNOWN
 				result = dir_emit(ctx, (const char *)dent.m_name, p - dent.m_name, le32_to_cpu(dent.m_ino), *type);
 				if (!result) {
 					// 上层发出了停止信号
+					secondfs_dbg(FILE, "FileManager::DELocate(): mode == LIST; master interrupt");
 					break;
 				}
 				continue;
@@ -959,6 +1032,8 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 				}
 			}
 
+			secondfs_dbg(FILE, "FileManager::DELocate(): currname=%0.32s, matchSuc=%d", dent.m_name, (int)matchSuc);
+
 			if( ! matchSuc )
 			{
 				/* 不是要搜索的目录项，继续匹配下一目录项 */
@@ -973,8 +1048,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 
 		/* 
 		 * 从内层目录项匹配循环跳至此处，说明pathname中
-		 * 当前路径分量匹配成功了，还需匹配pathname中下一路径
-		 * 分量，直至遇到'\0'结束。
+		 * 当前路径分量匹配成功了
 		 */
 		if ( NULL != pBuf )
 		{
@@ -990,6 +1064,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 
 		// 如果当前是创建模式的话, 说明文件已经在目录项内存在, 此时是错误的
 		if (mode == SECONDFS_CREATE) {
+			secondfs_dbg(FILE, "FileManager::DELocate(): EEXIST");
 			return -EEXIST;
 		}
 

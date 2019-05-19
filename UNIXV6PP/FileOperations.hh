@@ -88,12 +88,12 @@ public:
 	/* 
 	 * @comment Read()系统调用处理过程
 	 */
-	u32 Read(u8 *buf, size_t len, u32 *ppos, Inode *inode);
+	long Read(u8 *buf, size_t len, u32 *ppos, Inode *inode);
 
 	/* 
 	 * @comment Write()系统调用处理过程
 	 */
-	u32 Write(const u8 *buf, size_t len, u32 *ppos, Inode *inode);
+	long Write(const u8 *buf, size_t len, u32 *ppos, Inode *inode);
 
 	/* 
 	 * @comment 读写系统调用公共部分代码

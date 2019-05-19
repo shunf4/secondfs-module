@@ -106,15 +106,15 @@ static int __init init_secondfs(void) {
 	}
 
 	// Check consistency of sizeof() various datastructs from C part and C++ part.
-	secondfs_dbg(SB_SIZECONSISTENCY, "Buf size : %u %lu\n", SECONDFS_SIZEOF_Buf, sizeof(Buf));
-	secondfs_dbg(SB_SIZECONSISTENCY, "BufferManager size : %u %lu\n", SECONDFS_SIZEOF_BufferManager, sizeof(BufferManager));
-	secondfs_dbg(SB_SIZECONSISTENCY, "Devtab size : %u %lu\n", SECONDFS_SIZEOF_Devtab, sizeof(Devtab));
-	secondfs_dbg(SB_SIZECONSISTENCY, "DiskInode size : %u %lu\n", SECONDFS_SIZEOF_DiskInode, sizeof(DiskInode));
-	secondfs_dbg(SB_SIZECONSISTENCY, "FileSystem size : %u %lu\n", SECONDFS_SIZEOF_FileSystem, sizeof(FileSystem));
-	secondfs_dbg(SB_SIZECONSISTENCY, "Inode size : %u %lu\n", SECONDFS_SIZEOF_Inode, sizeof(Inode));
-	secondfs_dbg(SB_SIZECONSISTENCY, "SuperBlock size : %u %lu\n", SECONDFS_SIZEOF_SuperBlock, sizeof(SuperBlock));
-	secondfs_dbg(SB_SIZECONSISTENCY, "FileManager size : %u %lu\n", SECONDFS_SIZEOF_FileManager, sizeof(FileManager));
-	secondfs_dbg(SB_SIZECONSISTENCY, "DirectoryEntry size : %u %lu\n", SECONDFS_SIZEOF_DirectoryEntry, sizeof(DirectoryEntry));
+	secondfs_dbg(SIZECONSISTENCY, "Buf size : %u %lu\n", SECONDFS_SIZEOF_Buf, sizeof(Buf));
+	secondfs_dbg(SIZECONSISTENCY, "BufferManager size : %u %lu\n", SECONDFS_SIZEOF_BufferManager, sizeof(BufferManager));
+	secondfs_dbg(SIZECONSISTENCY, "Devtab size : %u %lu\n", SECONDFS_SIZEOF_Devtab, sizeof(Devtab));
+	secondfs_dbg(SIZECONSISTENCY, "DiskInode size : %u %lu\n", SECONDFS_SIZEOF_DiskInode, sizeof(DiskInode));
+	secondfs_dbg(SIZECONSISTENCY, "FileSystem size : %u %lu\n", SECONDFS_SIZEOF_FileSystem, sizeof(FileSystem));
+	secondfs_dbg(SIZECONSISTENCY, "Inode size : %u %lu\n", SECONDFS_SIZEOF_Inode, sizeof(Inode));
+	secondfs_dbg(SIZECONSISTENCY, "SuperBlock size : %u %lu\n", SECONDFS_SIZEOF_SuperBlock, sizeof(SuperBlock));
+	secondfs_dbg(SIZECONSISTENCY, "FileManager size : %u %lu\n", SECONDFS_SIZEOF_FileManager, sizeof(FileManager));
+	secondfs_dbg(SIZECONSISTENCY, "DirectoryEntry size : %u %lu\n", SECONDFS_SIZEOF_DirectoryEntry, sizeof(DirectoryEntry));
 
 	if (		SECONDFS_SIZEOF_Buf		!= sizeof(Buf)
 		||	SECONDFS_SIZEOF_BufferManager	!= sizeof(BufferManager)
@@ -141,9 +141,9 @@ static int __init init_secondfs(void) {
 		if (secondfs_buffermanagerp)
 			deleteBufferManager(secondfs_buffermanagerp);
 		if (secondfs_filesystemp)
-			deleteBufferManager(secondfs_filesystemp);
+			deleteFileSystem(secondfs_filesystemp);
 		if (secondfs_filemanagerp)
-			deleteBufferManager(secondfs_filemanagerp);
+			deleteFileManager(secondfs_filemanagerp);
 		return -ENOMEM;
 	}
 
@@ -158,7 +158,7 @@ static int __init init_secondfs(void) {
 		// 打印“Hello world”信息
 		secondfs_info("Hello %s!", username);
 	} else {
-		secondfs_warning("%s, Unfortunately there is something wrong registering secondfs. Error code is %d\n", username, ret);
+		secondfs_warn("%s, Unfortunately there is something wrong registering secondfs. Error code is %d\n", username, ret);
 	}
 
 	return ret;

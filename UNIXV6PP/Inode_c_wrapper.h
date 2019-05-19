@@ -20,6 +20,7 @@ typedef struct _IOParameter{
 	s32 m_Offset;	/* 当前读、写文件的字节偏移量 */
 	s32 m_Count;	/* 当前还剩余的读、写字节数量 */
 	s32 isUserP;	/* 首地址是否隶属于用户空间 */
+	s32 err;
 } IOParameter;
 #else // __cplusplus
 class IOParameter;
@@ -127,10 +128,10 @@ extern s32 *secondfs_inode_rablockp;	/* 顺序读时，使用预读技术读入�
 SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(Inode)
 void Inode_ReadI(Inode *i, IOParameter *io_paramp);
 void Inode_WriteI(Inode *i, IOParameter *io_paramp);
-void Inode_IUpdate(Inode *i, int time);
+int Inode_IUpdate(Inode *i, int time);
 void Inode_ICopy(Inode *i, Buf *bp, int inumber);
 int Inode_Bmap(Inode *i, int lbn);
-void Inode_ITrunc(Inode *i);
+int Inode_ITrunc(Inode *i);
 
 
 // DiskInode 类的 C 包装

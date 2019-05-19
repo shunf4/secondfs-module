@@ -119,7 +119,7 @@ public:
 	Buf* Breada(short adev, int blkno, int rablkno);	/* 读一个磁盘块，带有预读方式。
 								* adev为主、次设备号。blkno为目标磁盘块逻辑块号，同步方式读blkno。
 								* rablkno为预读磁盘块逻辑块号，异步方式读rablkno。 */
-	void Bwrite(Buf* bp);			/* 写一个磁盘块 */
+	int Bwrite(Buf* bp);			/* 写一个磁盘块 */
 	void Bdwrite(Buf* bp);			/* 延迟写磁盘块 */
 	void Bawrite(Buf* bp);			/* 异步写磁盘块 */
 

@@ -42,16 +42,18 @@ extern const u32
 
 SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(FileManager)
 
-u32 FileManager_Read(FileManager *fm, u8
+long FileManager_Read(FileManager *fm, u8
 #ifndef __cplusplus
 __user
 #endif
  *buf, size_t len, u32 *ppos, Inode *inode);
-u32 FileManager_Write(FileManager *fm, const u8
+
+long FileManager_Write(FileManager *fm, const u8
 #ifndef __cplusplus
 __user
 #endif
 *buf, size_t len, u32 *ppos, Inode *inode);
+
 u32 FileManager_Rdwr(FileManager *fm, u8
 #ifndef __cplusplus
 __user

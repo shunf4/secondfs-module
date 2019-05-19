@@ -31,14 +31,12 @@ static unsigned int kmem_cache_free_num;
 
 void *secondfs_c_helper_malloc(size_t size)
 {
-	// 这个是通用的 C++ new helper, 用 kmalloc 实现. 但对于每一个
-	// C++ 数据结构我们最好还是用类内重载的 new/delete 用 kmem_cache 实现.
-	// 因此这里直接 BUG();
-	// Update: 有的时候基于 kmalloc 就够了, 不 BUG() 了
+	// Generic C++ new helper implemented by kmalloc
+	// 这个是通用的 C++ new helper, 用 kmalloc 实现.
 	void *p;
 
 #ifdef SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
-	printk(KERN_ERR "secondfs: general new operator called!!");
+	secondfs_warn("general new operator called!!");
 	BUG();
 #endif // SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
 
@@ -47,24 +45,22 @@ void *secondfs_c_helper_malloc(size_t size)
 #endif // SECONDFS_DEBUG_ON_MEMORY
 
 	p = kmalloc(size, GFP_KERNEL);
-	printk(KERN_DEBUG "secondfs: Start mallocing, kmalloc size=%lu pointer=%p", size, p);
+	secondfs_dbg(MEMORY, "start mallocing, kmalloc size=%lu pointer=%p", size, p);
 	if (p == NULL)
-		printk(KERN_ERR "secondfs: Unable to allocate memory");
+		secondfs_err("unable to allocate memory");
 	return p;
 }
 
 void secondfs_c_helper_free(void *pointer)
 {
-	// 这个是通用的 C++ new helper, 用 kmalloc 实现. 但对于每一个
-	// C++ 数据结构我们最好还是用类内重载的 new/delete 用 kmem_cache 实现.
-	// 因此这里直接 BUG();
-	// Update: 有的时候基于 kmalloc 就够了, 不 BUG() 了
+	// Generic C++ new helper implemented by kmalloc
+	// 这个是通用的 C++ new helper, 用 kmalloc 实现.
 #ifdef SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
-	printk(KERN_ERR "secondfs: general delete operator called!!");
+	secondfs_warn("general delete operator called!!");
 	BUG();
 #endif // SECONDFS_BUG_ON_KMALLOC_BASED_NEW_DELETE
 
-	printk(KERN_DEBUG "secondfs: Start freeing, kfree pointer=%p", pointer);
+	secondfs_dbg(MEMORY, "secondfs: Start freeing, kfree pointer=%p", pointer);
 
 #ifdef SECONDFS_DEBUG_ON_MEMORY
 	free_num++;
@@ -75,8 +71,8 @@ void secondfs_c_helper_free(void *pointer)
 void secondfs_c_helper_mdebug(void)
 {
 #ifdef SECONDFS_DEBUG_ON_MEMORY
-	printk(KERN_DEBUG "secondfs: malloc_num is %u", malloc_num);
-	printk(KERN_DEBUG "secondfs: free_num is %u", free_num);
+	secondfs_dbg(MEMORY, "malloc_num is %u", malloc_num);
+	secondfs_dbg(MEMORY, "free_num is %u", free_num);
 #endif // SECONDFS_DEBUG_ON_MEMORY
 }
 
@@ -89,17 +85,20 @@ void secondfs_c_helper_mdebug(void)
 void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size)\
 {\
 	void *p;\
-	BUG_ON(size != kmem_cachep->object_size);\
+	if (size != kmem_cachep->object_size) {\
+		secondfs_err("in secondfs_c_helper_kmem_cache_alloc_" #class_name ": size != kmem_cachep->object_size !!");\
+		BUG();\
+	}\
 	p = kmem_cache_alloc(kmem_cachep, GFP_KERNEL);\
-	printk(KERN_DEBUG "secondfs: Start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
+	secondfs_dbg(MEMORY, "start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
 	if (p == NULL)\
-		printk(KERN_ERR "secondfs: Unable to allocate memory");\
+		secondfs_err("unable to allocate memory");\
 	return p;\
 }\
 \
 void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer)\
 {\
-	printk(KERN_DEBUG "secondfs: Start kmem_cache_freeing, pointer=%p", pointer);\
+	secondfs_dbg(MEMORY, "start kmem_cache_freeing, pointer=%p", pointer);\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
@@ -109,19 +108,22 @@ void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer)\
 void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size)\
 {\
 	void *p;\
-	BUG_ON(size != kmem_cachep->object_size);\
+	if (size != kmem_cachep->object_size) {\
+		secondfs_err("in secondfs_c_helper_kmem_cache_alloc_" #class_name ": size != kmem_cachep->object_size !!");\
+		BUG();\
+	}\
 	kmem_cache_malloc_num++;\
 	p = kmem_cache_alloc(kmem_cachep, GFP_KERNEL);\
-	printk(KERN_DEBUG "secondfs: Start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
+	secondfs_dbg(MEMORY, "start kmem_cache_allocing, size=%u pointer=%p", kmem_cachep->object_size, p);\
 	if (p == NULL)\
-		printk(KERN_ERR "secondfs: Unable to allocate memory");\
+		secondfs_err("unable to allocate memory");\
 	return p;\
 }\
 \
 void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer)\
 {\
 	kmem_cache_free_num++;\
-	printk(KERN_DEBUG "secondfs: Start kmem_cache_freeing, pointer=%p", pointer);\
+	secondfs_dbg(MEMORY, "start kmem_cache_freeing, pointer=%p", pointer);\
 	kmem_cache_free(kmem_cachep, pointer);\
 }
 
@@ -130,12 +132,13 @@ void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer)\
 void secondfs_c_helper_kmem_cache_mdebug(void)
 {
 #ifdef SECONDFS_DEBUG_ON_MEMORY
-	printk(KERN_DEBUG "secondfs: kmem_cache_malloc_num is %u", kmem_cache_malloc_num);
-	printk(KERN_DEBUG "secondfs: kmem_cache_free_num is %u", kmem_cache_free_num);
+	secondfs_dbg(MEMORY, "kmem_cache_malloc_num is %u", kmem_cache_malloc_num);
+	secondfs_dbg(MEMORY, "kmem_cache_free_num is %u", kmem_cache_free_num);
 #endif // SECONDFS_DEBUG_ON_MEMORY
 }
 
 SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(DiskInode, secondfs_diskinode_cachep)
+SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE(Inode, secondfs_icachep)
 
 // 以下为 C 为 C++ 提供的 Linux 内核服务
 
@@ -211,11 +214,13 @@ int secondfs_c_helper_mutex_trylock(void *mutexp)
 
 unsigned long secondfs_c_helper_copy_to_user(void __user *to, const void *from, unsigned long n)
 {
+	secondfs_dbg(GENERAL, "copy_to_user(%p,%p,%lu)", to, from, n);
 	return copy_to_user(to, from, n);
 }
 
 unsigned long secondfs_c_helper_copy_from_user(void *to, const void __user *from, unsigned long n)
 {
+	secondfs_dbg(GENERAL, "copy_from_user(%p,%p,%lu)", to, from, n);
 	return copy_from_user(to, from, n);
 }
 

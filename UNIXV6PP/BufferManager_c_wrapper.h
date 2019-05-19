@@ -114,7 +114,7 @@ Buf* BufferManager_GetBlk(BufferManager *bm, Devtab *dev, int blkno);
 void BufferManager_Brelse(BufferManager *bm, Buf* bp);
 void BufferManager_IODone(BufferManager *bm, Buf* bp);
 Buf* BufferManager_Bread(BufferManager *bm, Devtab *dev, int blkno);
-void BufferManager_Bwrite(BufferManager *bm, Buf *bp);
+int BufferManager_Bwrite(BufferManager *bm, Buf *bp);
 void BufferManager_NotAvail(BufferManager *bm, Buf *bp, u32 lockFirst);
 Buf* BufferManager_InCore(BufferManager *bm, Devtab *adev, int blkno);
 void BufferManager_ClrBuf(BufferManager *bm, Buf *bp);

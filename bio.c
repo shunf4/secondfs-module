@@ -6,14 +6,18 @@
 
 /*
  * secondfs_submit_bio : 跳过系统为块设备准备的缓存, 直接操作块设备
+ * 	Directly access block device (read/write) for 1 block(512 bytes)(Do bio).
  * 
+ * 	The main procedure is to submit a bio request to generic
+ * 	block layer and wait it to complete.
  * 	其核心为向通用块层直接提交一个 bio request, 并等待其结束.
  * 
- * 	sb : 当前文件系统的 VFS 超块指针.
- * 	sector : 扇区号. 一个扇区是, 且对齐到 512 字节.
- * 	buf : 结果送出/入的缓冲区.
- * 	op : bio 内要执行的操作.
- * 	op_flags : 操作所需附加的标志位.
+ * 	sb : 当前文件系统的 VFS 超块指针. VFS super_block
+ * 	sector : 扇区号. 一个扇区是, 且对齐到 512 字节. sector number
+ * 	buf : 结果送出/入的缓冲区. The buffer to read from/write to. <= 512 bytes.
+ * 	op : bio 内要执行的操作. the operation(read/write)
+ * 	op_flags : 操作所需附加的标志位. the flags(0/sync)
+ * 	rw : substitution for op/op_flags before kernel 4.8.
  */
 #ifdef SECONDFS_KERNEL_BEFORE_4_8
 static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
@@ -42,11 +46,14 @@ static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 	bio->bi_opf = op | op_flags;
 #endif
 
+	// Bytes to read/write.
+	// bio 的目标区域, 必须以块大小为单位.
 	io_size = SECONDFS_BLOCK_SIZE;
-	// bio 的目标区域, 必须以页为单位.
 	
+	// buf may cross 2 pages; in one loop, one page is processed
 	// 多次调用 bio_add_page, 分次按页对齐完善 bio 请求
 	while (io_size > 0) {
+		// Get the page frame (physical) of buf and its offset in the frame
 		// 首先计算目标区域 buf 的页框号, 在它所在页框的偏移, 不能超过页尾的本次最大读字节数
 		unsigned int page_offset = offset_in_page(buf);
 		unsigned int len = min_t(unsigned int, PAGE_SIZE - page_offset, io_size);
@@ -54,12 +61,13 @@ static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 		ret = bio_add_page(bio, virt_to_page(buf), len, page_offset);
 		if (ret != len) {
 			ret = -EIO;
-			goto out;
+			goto out_eio;
 		}
 		io_size -= len;
 		buf = (u8 *)buf + len;
 	}
 
+	// Wait it to complete
 	// 提交这个同步 bio 请求, 等待执行完毕
 #ifdef SECONDFS_KERNEL_BEFORE_4_8
 	ret = submit_bio_wait(rw, bio);
@@ -67,7 +75,7 @@ static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 	ret = submit_bio_wait(bio);
 #endif
 
-out:
+out_eio:
 	bio_put(bio);
 	return ret < 0 ? ret : 0;
 }

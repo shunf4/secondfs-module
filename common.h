@@ -46,9 +46,13 @@ void delete##classname(classname *p) {\
 	try {\
 		delete p;\
 	} catch (...) {\
-		secondfs_warning("deleteing a " #classname " %p: error!", p);\
+		secondfs_warn("deleteing a " #classname " %p: error!", p);\
 	}\
 }
+
+#define SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE_DECLARATION(class_name) \
+void *secondfs_c_helper_kmem_cache_alloc_##class_name(size_t size);\
+void secondfs_c_helper_kmem_cache_free_##class_name(void *pointer);
 
 #define SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(classname)\
 extern const u32 SECONDFS_SIZEOF_##classname;\
@@ -75,6 +79,9 @@ extern "C" {
 #define le32_to_cpu secondfs_c_helper_le32_to_cpu
 #define le16_to_cpu secondfs_c_helper_le16_to_cpu
 #endif // __cplusplus
+
+SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE_DECLARATION(DiskInode)
+SECONDFS_GEN_C_HELPER_KMEM_CACHE_ALLOC_N_FREE_DECLARATION(Inode)
 
 void *secondfs_c_helper_malloc(size_t size);
 void secondfs_c_helper_free(void *pointer);
@@ -124,10 +131,15 @@ int secondfs_c_helper_printk(const char *s, ...);
 
 // Debug flags and macros
 
-#define SFDBG_SB_SIZECONSISTENCY 0x00000001
+#define SFDBG_SIZECONSISTENCY 0x00000001
 #define SFDBG_SB_FILL 0x00000002
 #define SFDBG_BUFFER 0x00000004
 #define SFDBG_BUFFERQ 0x00000008
+#define SFDBG_MEMORY 0x00000010
+#define SFDBG_INODE 0x00000020
+#define SFDBG_GENERAL 0x00000040
+#define SFDBG_DATABLK 0x00000080
+#define SFDBG_FILE 0x00000100
 
 #define SFDBG_MASK 0xFFFFFFFF
 // #define SECONDFS_DEBUG (0)
@@ -143,7 +155,7 @@ do {\
 } while (0)
 #define secondfs_info(fmt, ...) secondfs_c_helper_printk(KERN_INFO "secondfs: " fmt, ##__VA_ARGS__);
 #define secondfs_notice(fmt, ...) secondfs_c_helper_printk(KERN_NOTICE "secondfs: " fmt, ##__VA_ARGS__);
-#define secondfs_warning(fmt, ...) secondfs_c_helper_printk(KERN_WARNING "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_warn(fmt, ...) secondfs_c_helper_printk(KERN_WARNING "secondfs: " fmt, ##__VA_ARGS__);
 #define secondfs_err(fmt, ...) secondfs_c_helper_printk(KERN_ERR "secondfs: " fmt, ##__VA_ARGS__);
 #define secondfs_crit(fmt, ...) secondfs_c_helper_printk(KERN_CRIT "secondfs: " fmt, ##__VA_ARGS__);
 #define secondfs_alert(fmt, ...) secondfs_c_helper_printk(KERN_ALERT "secondfs: " fmt, ##__VA_ARGS__);
@@ -156,7 +168,7 @@ do {\
 } while (0)
 #define secondfs_info(fmt, ...) printk(KERN_INFO "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
 #define secondfs_notice(fmt, ...) printk(KERN_NOTICE "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
-#define secondfs_warning(fmt, ...) printk(KERN_WARNING "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_warn(fmt, ...) printk(KERN_WARNING "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
 #define secondfs_err(fmt, ...) printk(KERN_ERR "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
 #define secondfs_crit(fmt, ...) printk(KERN_CRIT "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
 #define secondfs_alert(fmt, ...) printk(KERN_ALERT "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);

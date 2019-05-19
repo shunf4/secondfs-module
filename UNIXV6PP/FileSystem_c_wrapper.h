@@ -69,18 +69,20 @@ extern const s32
 	SECONDFS_INODE_ZONE_SIZE,		/* 磁盘上外存Inode区占据的扇区数 */
 	SECONDFS_DATA_ZONE_START_SECTOR,	/* 数据区的起始扇区号 */
 	SECONDFS_DATA_ZONE_END_SECTOR,		/* 数据区的结束扇区号 */
-	SECONDFS_DATA_ZONE_SIZE			/* 数据区占据的扇区数量 */
+	SECONDFS_DATA_ZONE_SIZE,		/* 数据区占据的扇区数量 */
+	SECONDFS_SUPER_BLOCK_DISK_SIZE
 ;
 
 SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(FileSystem)
 
 void FileSystem_Initialize(FileSystem *fs);
 int FileSystem_LoadSuperBlock(FileSystem *fs, SuperBlock *secsb);
+void FileSystem_PrintSuperBlock(FileSystem *fs, SuperBlock *secsb);
 void FileSystem_Update(FileSystem *fs, SuperBlock *secsb);
 void FileSystem_IFree(FileSystem *fs, SuperBlock *secsb, int number);
 void FileSystem_Alloc(FileSystem *fs, SuperBlock *secsb);
 Inode *FileSystem_IAlloc(FileSystem *fs, SuperBlock *secsb);
-void FileSystem_Free(FileSystem *fs, SuperBlock *secsb, int blkno);
+int FileSystem_Free(FileSystem *fs, SuperBlock *secsb, int blkno);
 
 #ifdef __cplusplus
 }
