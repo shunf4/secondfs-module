@@ -161,15 +161,15 @@ do {\
 #define secondfs_dbg(flg, fmt, ...)\
 do {\
 	if (SFDBG_##flg & SFDBG_MASK)\
-		printk(KERN_DEBUG "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);\
+		printk(KERN_DEBUG "secondfs: " fmt, ##__VA_ARGS__);\
 } while (0)
-#define secondfs_info(fmt, ...) printk(KERN_INFO "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
-#define secondfs_notice(fmt, ...) printk(KERN_NOTICE "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
-#define secondfs_warn(fmt, ...) printk(KERN_WARNING "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
-#define secondfs_err(fmt, ...) printk(KERN_ERR "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
-#define secondfs_crit(fmt, ...) printk(KERN_CRIT "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
-#define secondfs_alert(fmt, ...) printk(KERN_ALERT "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
-#define secondfs_emerg(fmt, ...) printk(KERN_EMERG "secondfs: " pr_fmt(fmt), ##__VA_ARGS__);
+#define secondfs_info(fmt, ...) printk(KERN_INFO "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_notice(fmt, ...) printk(KERN_NOTICE "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_warn(fmt, ...) printk(KERN_WARNING "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_err(fmt, ...) printk(KERN_ERR "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_crit(fmt, ...) printk(KERN_CRIT "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_alert(fmt, ...) printk(KERN_ALERT "secondfs: " fmt, ##__VA_ARGS__);
+#define secondfs_emerg(fmt, ...) printk(KERN_EMERG "secondfs: " fmt, ##__VA_ARGS__);
 #endif // __cplusplus
 
 
