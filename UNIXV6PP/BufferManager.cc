@@ -68,7 +68,7 @@ void BufferManager::Initialize()
 		secondfs_c_helper_mutex_init(&bp->b_wait_free_lock);
 
 		/* clear B_BUSY and other flags and put into bFreeList */
-		Brelse(bp, 0);
+		Brelse(bp);
 	}
 	//this->m_DeviceManager = &Kernel::Instance().GetDeviceManager();
 	return;
@@ -235,8 +235,8 @@ loop:
 	return bp;
 }
 
-extern "C" void BufferManager_Brelse(BufferManager *bm, Buf* bp) { bm->Brelse(bp, 1); }
-void BufferManager::Brelse(Buf* bp, int print)
+extern "C" void BufferManager_Brelse(BufferManager *bm, Buf* bp) { bm->Brelse(bp); }
+void BufferManager::Brelse(Buf* bp)
 {
 	/* 临界资源，比如：在同步读末期会调用这个函数，
 	 * 此时很有可能会产生磁盘中断，同样会调用这个函数。
@@ -706,12 +706,14 @@ void BufferManager::Print(Devtab *dev)
 	length += secondfs_c_helper_sprintf(buf + length, "\n");
 
 	length += secondfs_c_helper_sprintf(buf + length, "Devtab %p DEVBUFS:", dev);
-	bp = dev->b_forw;
-	do {
-		length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
-		bp = bp->av_forw;
-	} while (bp != (Buf *)dev);
-
+	if (dev) {
+		bp = dev->b_forw;
+		do {
+			length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
+			bp = bp->av_forw;
+		} while (bp != (Buf *)dev);
+	}
+	
 	secondfs_dbg(BUFFERQ, "%s", buf);
 }
 

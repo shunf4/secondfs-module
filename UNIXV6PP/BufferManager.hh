@@ -111,7 +111,7 @@ public:
 	void Initialize();			/* 缓存控制块队列的初始化。将缓存控制块中b_addr指向相应缓冲区首地址。*/
 	
 	Buf* GetBlk(Devtab *dev, int blkno);	/* 申请一块缓存，用于读写设备dev上的字符块blkno。*/
-	void Brelse(Buf* bp, int print = 1);			/* 释放缓存控制块buf */
+	void Brelse(Buf* bp);			/* 释放缓存控制块buf */
 	void IOWait(Buf* bp);			/* 同步方式I/O，等待I/O操作结束 */
 	void IODone(Buf* bp);			/* I/O操作结束善后处理 */
 
