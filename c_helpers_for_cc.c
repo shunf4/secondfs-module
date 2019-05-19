@@ -274,3 +274,13 @@ int secondfs_c_helper_printk(const char *s, ...)
 	va_end(args);
 	return res;
 }
+
+int secondfs_c_helper_sprintf(char *dest, const char *s, ...)
+{
+	int res;
+	va_list args;
+	va_start(args, s);
+	res = vsprintf(dest, s, args);
+	va_end(args);
+	return res;
+}

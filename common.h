@@ -119,6 +119,7 @@ u16 secondfs_c_helper_le16_to_cpu(u16 x);
 void secondfs_c_helper_set_loff_t(void *x, u32 val);
 
 int secondfs_c_helper_printk(const char *s, ...);
+int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 
 #ifdef __cplusplus
 }

@@ -83,23 +83,23 @@ void FileSystem::PrintSuperBlock(SuperBlock *secsb)
 
 	int length = 0;
 
-	length += sprintf(buf + length, "SuperBlock %p:\n", secsb);
+	length += secondfs_c_helper_sprintf(buf + length, "SuperBlock %p:\n", secsb);
 
-	length += sprintf(buf + length, "s_isize(Inode area blocks): %d\n", secsb->s_isize);
-	length += sprintf(buf + length, "s_fsize(Data area blocks): %d\n", secsb->s_fsize);
-	length += sprintf(buf + length, "s_nfree(Freeblock stack height): %d\n", secsb->s_nfree);
-	length += sprintf(buf + length, "s_ninode(Freeinode stack height): %d\n", secsb->s_ninode);
+	length += secondfs_c_helper_sprintf(buf + length, "s_isize(Inode area blocks): %d\n", secsb->s_isize);
+	length += secondfs_c_helper_sprintf(buf + length, "s_fsize(Data area blocks): %d\n", secsb->s_fsize);
+	length += secondfs_c_helper_sprintf(buf + length, "s_nfree(Freeblock stack height): %d\n", secsb->s_nfree);
+	length += secondfs_c_helper_sprintf(buf + length, "s_ninode(Freeinode stack height): %d\n", secsb->s_ninode);
 
-	length += sprintf(buf + length, "s_has_dots(This fs has . & ..?): 0x%X\n", secsb->s_has_dots);
+	length += secondfs_c_helper_sprintf(buf + length, "s_has_dots(This fs has . & ..?): 0x%X\n", secsb->s_has_dots);
 
-	length += sprintf(buf + length, "s_fmod(SuperBlock modified): %d\n", secsb->s_fmod);
+	length += secondfs_c_helper_sprintf(buf + length, "s_fmod(SuperBlock modified): %d\n", secsb->s_fmod);
 
-	length += sprintf(buf + length, "s_ronly(SuperBlock read-only): %d\n", secsb->s_ronly);
-	length += sprintf(buf + length, "s_time(Last update): %d\n", secsb->s_time);
+	length += secondfs_c_helper_sprintf(buf + length, "s_ronly(SuperBlock read-only): %d\n", secsb->s_ronly);
+	length += secondfs_c_helper_sprintf(buf + length, "s_time(Last update): %d\n", secsb->s_time);
 
-	length += sprintf(buf + length, "Root Inode: %p\n", secsb->s_inodep);
-	length += sprintf(buf + length, "Devtab: %p\n", secsb->s_dev);
-	length += sprintf(buf + length, "VFS super_block: %p\n", secsb->s_vsb);
+	length += secondfs_c_helper_sprintf(buf + length, "Root Inode: %p\n", secsb->s_inodep);
+	length += secondfs_c_helper_sprintf(buf + length, "Devtab: %p\n", secsb->s_dev);
+	length += secondfs_c_helper_sprintf(buf + length, "VFS super_block: %p\n", secsb->s_vsb);
 
 	secondfs_dbg(SB_FILL, "%s", buf);
 }

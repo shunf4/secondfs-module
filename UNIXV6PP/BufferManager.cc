@@ -689,26 +689,26 @@ void BufferManager::Print(Devtab *dev)
 
 	int length = 0;
 
-	length += sprintf(buf + length, "bFreeList NODEV:");
+	length += secondfs_c_helper_sprintf(buf + length, "bFreeList NODEV:");
 	Buf *bp = bFreeList.b_forw;
 	do {
-		length += sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
+		length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
 		bp = bp->b_forw;
 	} while (bp != &bFreeList);
-	length += sprintf(buf + length, "\n");
+	length += secondfs_c_helper_sprintf(buf + length, "\n");
 
-	length += sprintf(buf + length, "bFreeList FREE:");
+	length += secondfs_c_helper_sprintf(buf + length, "bFreeList FREE:");
 	bp = bFreeList.av_forw;
 	do {
-		length += sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
+		length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
 		bp = bp->av_forw;
 	} while (bp != &bFreeList);
-	length += sprintf(buf + length, "\n");
+	length += secondfs_c_helper_sprintf(buf + length, "\n");
 
-	length += sprintf(buf + length, "Devtab %p DEVBUFS:", dev);
+	length += secondfs_c_helper_sprintf(buf + length, "Devtab %p DEVBUFS:", dev);
 	bp = dev->b_forw;
 	do {
-		length += sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
+		length += secondfs_c_helper_sprintf(buf + length, "[%d/%p/%u]->", bp->b_index, bp->b_dev, bp->b_blkno);
 		bp = bp->av_forw;
 	} while (bp != (Buf *)dev);
 
