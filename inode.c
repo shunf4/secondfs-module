@@ -246,7 +246,7 @@ void secondfs_evict_inode(struct inode *inode)
 		/* 释放该文件占据的数据盘块 */
 		secondfs_dbg(INODE, "evict_inode(%p, %d): Inode::ITrunc()...", pNode->i_ssb, pNode->i_number);
 		ret = Inode_ITrunc(pNode);
-		if (IS_ERR_VALUE(ret)) {
+		if (IS_ERR_VALUE((intptr_t)ret)) {
 			secondfs_err("evict_inode(%p,%d) Inode::ITrunc() error %d!", pNode->i_ssb, pNode->i_number, ret);
 			return;
 		}
@@ -258,7 +258,7 @@ void secondfs_evict_inode(struct inode *inode)
 	/* 更新外存Inode信息 */
 	// IUpdate 已经修改, 不会更新时间
 	ret = Inode_IUpdate(pNode, ktime_get_real_seconds());
-	if (IS_ERR_VALUE(ret)) {
+	if (IS_ERR_VALUE((intptr_t)ret)) {
 		secondfs_err("evict_inode(%p,%d) Inode::IUpdate() error %d!", pNode->i_ssb, pNode->i_number, ret);
 		return;
 	}

@@ -301,7 +301,7 @@ int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 	// Read SuperBlock(little-endian) from the disk.
 	// 从硬盘读入 Superblock 块. 注意, 未作任何大小字序转换!
 	ret = FileSystem_LoadSuperBlock(secondfs_filesystemp, secsb);
-	if (IS_ERR_VALUE(ret)) {
+	if (IS_ERR_VALUE((intptr_t)ret)) {
 		secondfs_err("fill_super: LoadSuperBlock failed.");
 		goto out_free;
 	}
