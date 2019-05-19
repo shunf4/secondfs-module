@@ -68,7 +68,7 @@ void BufferManager::Initialize()
 		secondfs_c_helper_mutex_init(&bp->b_wait_free_lock);
 
 		/* clear B_BUSY and other flags and put into bFreeList */
-		Brelse(bp);
+		Brelse(bp, 0);
 	}
 	//this->m_DeviceManager = &Kernel::Instance().GetDeviceManager();
 	return;
