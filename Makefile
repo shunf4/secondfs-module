@@ -12,6 +12,9 @@ LANG = C
 secondfs-cxxobjs := UNIXV6PP/FileSystem.o UNIXV6PP/Inode.o UNIXV6PP/FileOperations.o UNIXV6PP/BufferManager.o UNIXV6PP/CCNewDelete.o
 secondfs-objs := main.o super.o inode.o fileops.o c_helpers_for_cc.o bio.o
 
+CFLAGS_DBG = -g -DDEBUG
+ccflags-y += $(CFLAGS_DBG)
+
 wrapper-headers = $(obj)/UNIXV6PP/FileOperations_c_wrapper.h $(obj)/UNIXV6PP/FileSystem_c_wrapper.h $(obj)/UNIXV6PP/Inode_c_wrapper.h $(obj)/UNIXV6PP/BufferManager_c_wrapper.h
 
 # Avoid echoing of commands
@@ -39,7 +42,7 @@ std_module/hello.ko :
 set_and_print_cxxflags : std_module/hello.ko
 	$(eval CXXMACROS := $(shell bash make-utils/read_sizes_from_hello_ko.sh))
 	$(eval CXXFLAGS := $(shell cat cxxflags.tmp) -I/usr/src/linux-headers-$(shell uname -r)/include $(CXXMACROS))
-	$(eval CXXFLAGS := $(CXXFLAGS) -std=c++14)
+	$(eval CXXFLAGS := $(CXXFLAGS) -std=c++14 $(CFLAGS_DBG))
 	$(Q)echo CXXFLAGS = $(CXXFLAGS)
 
 # Entry for the kernel module
