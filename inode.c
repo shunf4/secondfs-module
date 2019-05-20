@@ -27,6 +27,7 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 		si->i_mode |= SECONDFS_IFBLK;
 		length += sprintf(buf + length, "%s", "BLK|");
 	} else {
+		// REG
 		length += sprintf(buf + length, "%s", "REG|");
 	}
 
@@ -118,6 +119,7 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 		inode->i_mode |= S_IFBLK;
 		length += sprintf(buf + length, "%s", "BLK|");
 	} else {
+		inode->i_mode = S_IFREG;
 		length += sprintf(buf + length, "%s", "REG|");
 	}
 

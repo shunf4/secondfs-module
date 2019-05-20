@@ -33,7 +33,8 @@ static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 	u64 io_size;
 	int ret;
 
-	bio = bio_alloc(GFP_NOIO, 1);
+	// We allow 2 requests at maximum: 2 4096B pages can hold a 512B sector
+	bio = bio_alloc(GFP_NOIO, 2);
 	bio->bi_iter.bi_sector = sector;
 #ifdef SECONDFS_KERNEL_BEFORE_4_14
 	bio->bi_bdev = bdev;
