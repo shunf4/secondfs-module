@@ -833,6 +833,8 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 	unsigned int *type;
 	void *ppos;
 
+	int firstTimeRead = 1;
+
 	s32 has_dots = dir->i_ssb->s_has_dots;
 
 	dir_emit = (decltype(dir_emit))(((void **)inop)[0]);
@@ -845,6 +847,8 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 	pInode = dir;
 
 	secondfs_dbg(FILE, "FileManager::DELocate()...type=%u", mode);
+
+
 
 	/* 检查该Inode是否正在被使用，以及保证在整个目录搜索过程中该Inode不被释放 */
 	// 不需要了, 我们不使用 UnixV6++ 对于 Inode 的锁机制
@@ -934,15 +938,16 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			}
 
 			/* 已读完目录文件的当前盘块，需要读入下一目录项数据盘块 */
-			if ( 0 == out_iop->m_Offset % SECONDFS_BLOCK_SIZE )
+			if ( 0 == out_iop->m_Offset % SECONDFS_BLOCK_SIZE || firstTimeRead  )
 			{
+				firstTimeRead = 0;
 				if ( NULL != pBuf )
 				{
 					bufMgr.Brelse(pBuf);
 				}
 				/* 计算要读的物理盘块号 */
 				int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
-				secondfs_dbg(FILE, "FileManager::DELocate(): finish current block; Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
+				secondfs_dbg(FILE, "FileManager::DELocate(): finish current block || firstTimeRead; Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
 				pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );
 				// We just hard-code IS_ERR() macro here
 				if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {
