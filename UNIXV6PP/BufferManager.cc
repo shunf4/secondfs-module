@@ -44,6 +44,8 @@ void BufferManager::Initialize()
 
 	this->bFreeList.b_forw = this->bFreeList.b_back = &(this->bFreeList);
 	this->bFreeList.av_forw = this->bFreeList.av_back = &(this->bFreeList);
+	secondfs_c_helper_mutex_init(&bFreeList.b_modify_lock);
+	secondfs_c_helper_mutex_init(&bFreeList.b_wait_free_lock);
 
 	for(i = 0; i < SECONDFS_NBUF; i++)
 	{
