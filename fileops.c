@@ -279,8 +279,10 @@ static int secondfs_unlink(struct inode *dir, struct dentry *dentry)
 
 	// 参考自 FileManager::Unlink
 	de.m_ino = 0;
+	strcpy(de.m_name, "(deleted)");
 	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
+	iop.m_Offset -= sizeof(de);
 	secondfs_dbg(FILE, "unlink(): WriteI()...");
 	Inode_WriteI(SECONDFS_INODE(dir), &iop);
 
