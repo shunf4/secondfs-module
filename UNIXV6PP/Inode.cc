@@ -220,7 +220,7 @@ void Inode::WriteI(IOParameter *io_paramp)
 		offset = io_paramp->m_Offset % Inode::BLOCK_SIZE;
 		nbytes = (Inode::BLOCK_SIZE - offset) < io_paramp->m_Count ? (Inode::BLOCK_SIZE - offset) : io_paramp->m_Count;
 
-		secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): lbn = %d, offset = %d, nbytes = %n", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, lbn, offset, nbytes);
+		secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): lbn = %d, offset = %d, nbytes = %d", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, lbn, offset, nbytes);
 
 		if( (this->i_mode & Inode::IFMT) != Inode::IFBLK )
 		{	/* 普通文件 */
