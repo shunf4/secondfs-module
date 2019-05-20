@@ -151,7 +151,7 @@ void FileSystem::Update(SuperBlock *secsb)
 	if(le32_to_cpu(sb->s_fmod) == 0 || secondfs_c_helper_mutex_is_locked(&sb->s_ilock) || secondfs_c_helper_mutex_is_locked(&sb->s_flock) || le32_to_cpu(sb->s_ronly) != 0)
 	{
 		secondfs_dbg(GENERAL, "FileSystem::Update: SB not modified.");
-		return;
+		goto out;
 	}
 
 	/* Clear modify flag */
@@ -187,6 +187,7 @@ void FileSystem::Update(SuperBlock *secsb)
 			secondfs_err("FileSystem::Update: Bwrite() failed!");
 			goto out;
 		}
+		goto flush_out;
 	}
 	
 	// Synchronize all Inodes to disk (we won't do this)
@@ -196,12 +197,14 @@ void FileSystem::Update(SuperBlock *secsb)
 
 	/* Unlock update lock */
 	/* 清除Update()函数锁 */	
-out:
-	secondfs_c_helper_mutex_unlock(&secsb->s_update_lock);
 
+flush_out:
 	/* Flush the dirty buffers */
 	/* 将延迟写的缓存块写到磁盘上 */
 	this->m_BufferManager->Bflush(secsb->s_dev);
+
+out:
+	secondfs_c_helper_mutex_unlock(&secsb->s_update_lock);
 }
 
 extern "C" Inode *FileSystem_IAlloc(FileSystem *fs, SuperBlock *secsb) { return fs->IAlloc(secsb); }

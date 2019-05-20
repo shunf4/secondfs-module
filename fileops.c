@@ -185,17 +185,22 @@ static struct dentry *secondfs_lookup(struct inode *dir, struct dentry *dentry, 
 	ret = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(dir),
 				dentry->d_name.name, dentry->d_name.len, 
 				SECONDFS_OPEN, &iop, &ino);
-	if (ret != 0) {
+	if (ret != 0 && ret != -ENOENT) {
 		secondfs_err("lookup(): DELocate failed (%d)", ret);
 		return ERR_PTR(ret);
 	}
 
-	// 通过 ino 获取这个 inode
-	secondfs_dbg(FILE, "lookup(): secondfs_iget(%d)", ino);
-	inode = secondfs_iget(dir->i_sb, ino);
-	if (IS_ERR_OR_NULL(inode)) {
-		secondfs_err("lookup(): secondfs_iget failed (%ld)", PTR_ERR(inode));
-		return ERR_PTR(-EIO);
+	if (ret != -ENOENT) {
+		// 通过 ino 获取这个 inode
+		secondfs_dbg(FILE, "lookup(): secondfs_iget(%d)", ino);
+		inode = secondfs_iget(dir->i_sb, ino);
+		if (IS_ERR_OR_NULL(inode)) {
+			secondfs_err("lookup(): secondfs_iget failed (%ld)", PTR_ERR(inode));
+			return ERR_PTR(-EIO);
+		}
+	} else {
+		secondfs_dbg(FILE, "lookup(): DELocate did not find inode, link NULL to this entry");
+		inode = NULL;
 	}
 
 	// 将 inode 与 dentry 重新链接起来
