@@ -143,6 +143,7 @@ extern int secondfs_submit_bio_sync_read(void * /* actually struct block_device 
 extern int secondfs_submit_bio_sync_write(void * /* actually struct block_device * */ bdev, u32 sector,
 				void *buf);
 extern Inode *secondfs_iget_forcc(SuperBlock *secsb, unsigned long ino);
+extern Inode *secondfs_c_helper_new_inode(SuperBlock *ssb);
 
 /*** One time C++ objects ***/
 /*** 一次性 C++ 对象 ***/

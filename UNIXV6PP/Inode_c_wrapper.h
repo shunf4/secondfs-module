@@ -49,7 +49,7 @@ SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR_DECLARATION(DirectoryEntry)
 #ifndef __cplusplus
 // 此处由于和 SuperBlock 双向依赖, 添加一个类型声明
 struct _SuperBlock;
-typedef struct Inode
+typedef struct _Inode
 {
 	u32 i_flag;	/* 状态的标志位，定义见enum INodeFlag */
 	u32 i_mode;	/* 文件工作方式信息 */
