@@ -952,6 +952,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			memcpy(&dent, src, sizeof(DirectoryEntry));
 
 			out_iop->m_Offset += (SECONDFS_DIRSIZ + 4);
+			secondfs_dbg(FILE, "FileManager::DELocate(): after load next DE: m_Offset=%d, ino=%d, currname=%0.32s", out_iop->m_Offset, le32_to_cpu(dent.m_ino), dent.m_name);
 			if (SECONDFS_LIST == mode) {
 				secondfs_c_helper_set_loff_t(ppos, has_dots == 0xffffffff ? out_iop->m_Offset : (out_iop->m_Offset + sizeof(DirectoryEntry) * 2));
 			}
@@ -984,6 +985,10 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			{
 				secondfs_dbg(FILE, "FileManager::DELocate(): mode == CHECKEMPTY, return 0");
 				out_iop->m_Offset = 0;
+				if ( NULL != pBuf )
+				{
+					bufMgr.Brelse(pBuf);
+				}
 				return 0;
 			}
 

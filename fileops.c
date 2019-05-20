@@ -426,7 +426,7 @@ static int secondfs_rmdir(struct inode *dir, struct dentry *dentry)
 	// 现在要判断目录是否为空
 	// 函数的输出放在 iop.m_Offset
 	secondfs_dbg(FILE, "rmdir(): DELocate()...");
-	ret = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(dir),
+	ret = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(inode),
 				dentry->d_name.name, dentry->d_name.len, 
 				SECONDFS_CHECKEMPTY, &iop, &dummy_ino);
 
