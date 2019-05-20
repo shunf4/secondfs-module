@@ -361,7 +361,7 @@ Buf* BufferManager::Bread(Devtab *dev, int blkno)
 	ret = secondfs_submit_bio_sync_read(dev->d_bdev, bp->b_blkno, bp->b_addr);
 
 	secondfs_dbg(BUFFER, "Bread Buf: %p/%d: after bio, ret=%d,"
-	 	" content: %02x%02x%02x%02x%02x%02x%02x%02x...", dev, blkno, ret,
+	 	" content: %x %x %x %x %x %x %x %x ...", dev, blkno, ret,
 		bp->b_addr[0],
 		bp->b_addr[1],
 		bp->b_addr[2],

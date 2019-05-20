@@ -952,7 +952,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			}
 
 			/* 没有读完当前目录项盘块，则读取下一目录项至u.u_dent */
-			secondfs_dbg(FILE, "FileManager::DELocate(): load next DE: m_Offset=", out_iop->m_Offset);
+			secondfs_dbg(FILE, "FileManager::DELocate(): load next DE: m_Offset=%d", out_iop->m_Offset);
 			u8* src =(pBuf->b_addr + (out_iop->m_Offset % SECONDFS_BLOCK_SIZE));
 			memcpy(&dent, src, sizeof(DirectoryEntry));
 
