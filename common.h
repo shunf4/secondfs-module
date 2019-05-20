@@ -40,9 +40,11 @@ typedef uint64_t u64;
 #define SECONDFS_QUICK_WRAP_CONSTRUCTOR_DESTRUCTOR(classname) \
 const u32 SECONDFS_SIZEOF_##classname = sizeof(classname);\
 classname *new##classname() {\
+	secondfs_dbg(MEMORY, "Allocating " #classname "...");\
 	return new classname();\
 }\
 void delete##classname(classname *p) {\
+	secondfs_dbg(MEMORY, "Deleting " #classname "...");\
 	delete p;\
 }
 

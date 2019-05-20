@@ -72,7 +72,7 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 	if (inode->i_mode & S_IXOTH) 
 		si->i_mode |= SECONDFS_IEXEC >> 6;
 
-	length += sprintf(buf + length, "%u", si->i_mode & (SECONDFS_IRWXU | SECONDFS_IRWXG | SECONDFS_IRWXO));
+	length += sprintf(buf + length, "%ou", si->i_mode & (SECONDFS_IRWXU | SECONDFS_IRWXG | SECONDFS_IRWXO));
 
 	si->i_uid = i_uid_read(inode);
 	length += sprintf(buf + length, ", UID:%d", si->i_uid);
@@ -162,7 +162,7 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 	if (si->i_mode & SECONDFS_IEXEC >> 6) 
 		inode->i_mode |= S_IXOTH;
 
-	length += sprintf(buf + length, "%u", si->i_mode & (SECONDFS_IRWXU | SECONDFS_IRWXG | SECONDFS_IRWXO));
+	length += sprintf(buf + length, "%ou", si->i_mode & (SECONDFS_IRWXU | SECONDFS_IRWXG | SECONDFS_IRWXO));
 
 	i_uid_write(inode, si->i_uid);
 	length += sprintf(buf + length, ", UID:%d", si->i_uid);

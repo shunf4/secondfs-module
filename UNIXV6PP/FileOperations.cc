@@ -873,7 +873,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			/* 计算要读的物理盘块号 */
 			secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
 			int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
-			secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d) == ", out_iop->m_Offset / SECONDFS_BLOCK_SIZE, phyBlkno);
+			secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d) == %d", out_iop->m_Offset / SECONDFS_BLOCK_SIZE, phyBlkno);
 
 			pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );
 			// We just hard-code IS_ERR() macro here
@@ -928,12 +928,19 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 					return 0;
 				}
 				
-				secondfs_dbg(FILE, "FileManager::DELocate(): ENOENT");
 
 				/* 目录项搜索完毕而没有找到匹配项，释放相关Inode资源，并推出 */
-				ret = -ENOENT;
 				if (SECONDFS_LIST != mode)
+				{
+					secondfs_dbg(FILE, "FileManager::DELocate(): ENOENT");
+					ret = -ENOENT;
 					*inop = 0;
+				}
+				else {
+					secondfs_dbg(FILE, "FileManager::DELocate(): finished");
+					ret = 0;
+				}
+
 				goto out;
 			}
 

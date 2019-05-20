@@ -79,6 +79,10 @@ struct super_operations secondfs_sb_ops = {
 	//.show_options	= secondfs_show_options,
 };
 
+static void secondfs_inode_init_once(void *si) {
+	inode_init_once(&((Inode *)si)->vfs_inode);
+}
+
 static int __init init_secondfs(void) {
 	int ret = 0;
 
@@ -98,7 +102,8 @@ static int __init init_secondfs(void) {
 		sizeof(Inode),
 		sizeof(Inode), 
 		(SLAB_RECLAIM_ACCOUNT| SLAB_MEM_SPREAD | SLAB_HWCACHE_ALIGN),
-		NULL);
+		secondfs_inode_init_once
+	);
 
 	if (!secondfs_icachep) {
 		kmem_cache_destroy(secondfs_diskinode_cachep);

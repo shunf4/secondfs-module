@@ -718,8 +718,19 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 	// 认为目录项的第 0 位放 ".", 第 1 位放 "..".
 	// 那么, 所属未置位 SB 的目录项中, 传递 pos 要减 2.
 
-	// 先让操作系统函数帮我们判断 pos, 看是否 emit 点目录项
-	dir_emit_dots(file, ctx);
+	// 是否 emit 点目录项
+	if (ctx->pos < sizeof(DirectoryEntry)) {
+		if (!dir_emit_dot(file, ctx))
+			return false;
+		ctx->pos = sizeof(DirectoryEntry);
+		secondfs_dbg(FILE, "readdir(): emit_dot");
+	}
+	if (ctx->pos < 2 * sizeof(DirectoryEntry)) {
+		if (!dir_emit_dotdot(file, ctx))
+			return false;
+		ctx->pos = 2 * sizeof(DirectoryEntry);
+		secondfs_dbg(FILE, "readdir(): emit_dotdot");
+	}
 
 	iop.m_Offset = pos;
 
