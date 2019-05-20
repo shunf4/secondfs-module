@@ -312,6 +312,7 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	// Allocate Inode in memory/fs
 	// 先在内存 & 文件系统分配 Inode
 	si = FileSystem_IAlloc(secondfs_filesystemp, secsb);
+
 	if (si == NULL) {
 		secondfs_dbg(INODE, "new_inode(%p,%u,%s): IAlloc fail!", dir, mode, str->name);
 		return ERR_PTR(-ENOMEM);
@@ -319,6 +320,7 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 
 	inode = &si->vfs_inode;
 	secondfs_inode_conform_s2v(inode, si);
+	inode->i_blocks = 0;
 
 #ifdef SECONDFS_KERNEL_BEFORE_4_9
 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME_SEC;

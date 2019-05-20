@@ -123,6 +123,8 @@ void secondfs_c_helper_set_loff_t(void *x, u32 val);
 int secondfs_c_helper_printk(const char *s, ...);
 int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 
+Inode *secondfs_c_helper_new_inode(SuperBlock *ssb);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

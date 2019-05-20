@@ -284,3 +284,11 @@ int secondfs_c_helper_sprintf(char *dest, const char *s, ...)
 	va_end(args);
 	return res;
 }
+
+Inode *secondfs_c_helper_new_inode(SuperBlock *ssb)
+{
+	struct inode *inode;
+	secondfs_dbg(GENERAL, "new_inode called");
+	inode = new_inode(ssb->s_vsb);
+	return SECONDFS_INODE(inode);
+}
