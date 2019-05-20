@@ -1,6 +1,7 @@
 #include <linux/fs.h>
 #include <linux/blkdev.h>
 #include <linux/mm.h>
+#include <linux/types.h>
 
 #include "secondfs.h"
 
@@ -58,8 +59,14 @@ static int secondfs_submit_bio(struct block_device *bdev, sector_t sector,
 		unsigned int page_offset = offset_in_page(buf);
 		unsigned int len = min_t(unsigned int, PAGE_SIZE - page_offset, io_size);
 
+		secondfs_dbg(BUFFER, "submit_bio(): add <sector=%lu,page=%lu,len=%u,pageoffset=%u> to bio_add_page", sector, virt_to_page(buf), len, page_offset);
+
 		ret = bio_add_page(bio, virt_to_page(buf), len, page_offset);
+
+		secondfs_dbg(BUFFER, "submit_bio(): bio_add_page: ret=%d", ret);
+
 		if (ret != len) {
+			secondfs_err("submit_bio(): ret != len; error! return -EIO");
 			ret = -EIO;
 			goto out_eio;
 		}

@@ -12,3 +12,4 @@
 **/*.o.ur-safe
 /*.img
 /test/**
+/*.log

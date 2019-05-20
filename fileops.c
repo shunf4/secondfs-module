@@ -193,7 +193,7 @@ static struct dentry *secondfs_lookup(struct inode *dir, struct dentry *dentry, 
 	// 通过 ino 获取这个 inode
 	secondfs_dbg(FILE, "lookup(): secondfs_iget(%d)", ino);
 	inode = secondfs_iget(dir->i_sb, ino);
-	if (IS_ERR(inode)) {
+	if (IS_ERR_OR_NULL(inode)) {
 		secondfs_err("lookup(): secondfs_iget failed (%ld)", PTR_ERR(inode));
 		return ERR_PTR(-EIO);
 	}
@@ -686,7 +686,7 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 	// 要求对于 file 目录的各项, 逐项调用 dir_emit.
 	// 这样系统就能遍历这个目录了.
 
-	loff_t pos = ctx->pos;	// 这个 pos 我不知道是什么, 姑且当作在目录文件里的偏移好了
+	// 这个 pos 我不知道是什么, 姑且当作在目录文件里的偏移好了
 	struct inode *inode = file_inode(file);
 	IOParameter iop;
 	unsigned int type = DT_UNKNOWN;
@@ -699,14 +699,14 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 	
 	secondfs_dbg(FILE, "readdir()...");
 
-	if (SECONDFS_SB(inode->i_sb)->s_has_dots == 0xffffffff) {
-		if (pos > inode->i_size + 2 * sizeof(DirectoryEntry) - sizeof(DirectoryEntry)) {
-			secondfs_err("readdir(): pos > inode->i_size + sizeof(DirectoryEntry)");
+	if (SECONDFS_SB(inode->i_sb)->s_has_dots != 0xffffffff) {
+		if (ctx->pos > inode->i_size + 2 * sizeof(DirectoryEntry) - sizeof(DirectoryEntry)) {
+			secondfs_err("readdir(): ctx->pos > inode->i_size + sizeof(DirectoryEntry)");
 			return 0;
 		}
 	} else {
-		if (pos > inode->i_size - sizeof(DirectoryEntry)) {
-			secondfs_err("readdir(): pos > inode->i_size - sizeof(DirectoryEntry)");
+		if (ctx->pos > inode->i_size - sizeof(DirectoryEntry)) {
+			secondfs_err("readdir(): ctx->pos > inode->i_size - sizeof(DirectoryEntry)");
 			return 0;
 		}
 	}
@@ -732,7 +732,7 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 		secondfs_dbg(FILE, "readdir(): emit_dotdot");
 	}
 
-	iop.m_Offset = pos;
+	iop.m_Offset = ctx->pos;
 
 	// 然后若 s_has_dots 置位, 不管; 否则, m_Offset 要减掉 2 位.
 	if (SECONDFS_SB(inode->i_sb)->s_has_dots != 0xffffffff) {

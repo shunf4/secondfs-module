@@ -72,7 +72,7 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 	if (inode->i_mode & S_IXOTH) 
 		si->i_mode |= SECONDFS_IEXEC >> 6;
 
-	length += sprintf(buf + length, "%ou", si->i_mode & (SECONDFS_IRWXU | SECONDFS_IRWXG | SECONDFS_IRWXO));
+	length += sprintf(buf + length, "%o", si->i_mode & (SECONDFS_IRWXU | SECONDFS_IRWXG | SECONDFS_IRWXO));
 
 	si->i_uid = i_uid_read(inode);
 	length += sprintf(buf + length, ", UID:%d", si->i_uid);
@@ -162,7 +162,7 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 	if (si->i_mode & SECONDFS_IEXEC >> 6) 
 		inode->i_mode |= S_IXOTH;
 
-	length += sprintf(buf + length, "%ou", si->i_mode & (SECONDFS_IRWXU | SECONDFS_IRWXG | SECONDFS_IRWXO));
+	length += sprintf(buf + length, "%o", si->i_mode & (SECONDFS_IRWXU | SECONDFS_IRWXG | SECONDFS_IRWXO));
 
 	i_uid_write(inode, si->i_uid);
 	length += sprintf(buf + length, ", UID:%d", si->i_uid);
@@ -226,11 +226,11 @@ void secondfs_evict_inode(struct inode *inode)
 	int want_delete = 0;
 	int ret;
 
+	secondfs_dbg(INODE, "evict_inode(%p, %d)...", pNode->i_ssb, pNode->i_number);
 	// inode->pNode synchronization
 	// 先让 Inode 与 VFS Inode 同步
 	secondfs_inode_conform_v2s(pNode, inode);
 
-	secondfs_dbg(INODE, "evict_inode(%p, %d)...", pNode->i_ssb, pNode->i_number);
 
 	// We do not use linux page cache, so 
 	// truncate_inode_pages_final will do nothing

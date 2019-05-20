@@ -863,24 +863,6 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			// 向右对齐
 			out_iop->m_Offset = (out_iop->m_Offset + sizeof(DirectoryEntry) - 1) / sizeof(DirectoryEntry) * sizeof(DirectoryEntry);
 			out_iop->m_Count = pInode->i_size / sizeof(DirectoryEntry) - out_iop->m_Offset / sizeof(DirectoryEntry);
-
-			secondfs_dbg(FILE, "FileManager::DELocate(): mode == LIST; m_Offset=%d, m_Count=%d", out_iop->m_Offset, out_iop->m_Count);
-
-			if ( NULL != pBuf )
-			{
-				bufMgr.Brelse(pBuf);
-			}
-			/* 计算要读的物理盘块号 */
-			secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
-			int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
-			secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d) == %d", out_iop->m_Offset / SECONDFS_BLOCK_SIZE, phyBlkno);
-
-			pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );
-			// We just hard-code IS_ERR() macro here
-			if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {
-				secondfs_err("FileManager::DELocate(): Bread() fail! (%d)", (int)(uintptr_t)(pBuf));
-				return (int)(uintptr_t)(pBuf);
-			}
 		} else {
 			out_iop->m_Offset = 0;
 
@@ -953,6 +935,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 					bufMgr.Brelse(pBuf);
 				}
 				/* 计算要读的物理盘块号 */
+				secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
 				int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
 				secondfs_dbg(FILE, "FileManager::DELocate(): finish current block || firstTimeRead; Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
 				pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );

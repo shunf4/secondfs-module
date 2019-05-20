@@ -79,7 +79,7 @@ struct inode *secondfs_iget(struct super_block *sb, unsigned long ino)
 	pBuf = BufferManager_Bread(bm, SECONDFS_SB(sb)->s_dev, SECONDFS_INODE_ZONE_START_SECTOR + ino / SECONDFS_INODE_NUMBER_PER_SECTOR );
 
 	if (IS_ERR(pBuf)) {
-		secondfs_dbg(INODE, "iget(%p/%lu): read from disk error! %lu", sb, ino, PTR_ERR(pBuf));
+		secondfs_err("iget(%p/%lu): read from disk error! %ld", sb, ino, PTR_ERR(pBuf));
 		iget_failed(inode);
 		return NULL;
 	}
