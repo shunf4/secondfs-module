@@ -53,7 +53,7 @@ set_and_print_cxxflags : std_module/hello.ko
 # 内核模块的构建入口
 kernmodule : $(secondfs-cxxobjs)
 	# 首先链接 C 语言的二进制对象文件: 进入系统内核模块构建目录, 执行 make 进行构建
-	make -e SHELL='sh -x' -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 	# 接着链接 C++ 语言的二进制对象文件: 丢弃刚生成的 .ko 文件, 而是利用临时生成的 .mod.o (可能包含内核模块特有的符号) 文件, 与所有 C/C++ 的 .o 链接
 	$(LD) -r --build-id -osecondfs.ko $(secondfs-objs) secondfs.mod.o $(secondfs-cxxobjs)
 
