@@ -154,11 +154,13 @@ void secondfs_c_helper_spin_lock_init(void *lockp)
 
 void secondfs_c_helper_spin_lock(void *lockp)
 {
+	secondfs_dbg(LOCK, "spin lock: %p", lockp);
 	spin_lock((spinlock_t *)lockp);
 }
 
 void secondfs_c_helper_spin_unlock(void *lockp)
 {
+	secondfs_dbg(LOCK, "spin unlock: %p", lockp);
 	spin_unlock((spinlock_t *)lockp);
 }
 
@@ -174,16 +176,19 @@ void secondfs_c_helper_sema_init(void *semap, int val)
 
 void secondfs_c_helper_up(void *semap)
 {
+	secondfs_dbg(LOCK, "sema up: %p", semap);
 	up((struct semaphore *)semap);
 }
 
 void secondfs_c_helper_down(void *semap)
 {
+	secondfs_dbg(LOCK, "sema down: %p", semap);
 	down((struct semaphore *)semap);
 }
 
 int secondfs_c_helper_down_trylock(void *semap)
 {
+	secondfs_dbg(LOCK, "sema trydown: %p", semap);
 	return down_trylock((struct semaphore *)semap);
 }
 
@@ -194,11 +199,13 @@ void secondfs_c_helper_mutex_init(void *mutexp)
 
 void secondfs_c_helper_mutex_lock(void *mutexp)
 {
+	secondfs_dbg(LOCK, "mutex lock: %p", mutexp);
 	mutex_lock((struct mutex *)mutexp);
 }
 
 void secondfs_c_helper_mutex_unlock(void *mutexp)
 {
+	secondfs_dbg(LOCK, "mutex unlock: %p", mutexp);
 	mutex_unlock((struct mutex *)mutexp);
 }
 
@@ -209,6 +216,7 @@ int secondfs_c_helper_mutex_is_locked(void *mutexp)
 
 int secondfs_c_helper_mutex_trylock(void *mutexp)
 {
+	secondfs_dbg(LOCK, "mutex trylock: %p", mutexp);
 	return mutex_trylock((struct mutex *)mutexp);
 }
 

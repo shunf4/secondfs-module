@@ -619,19 +619,19 @@ int Inode::IUpdate(int time)
 		if( le32_to_cpu(this->i_ssb->s_ronly) != 0 )
 		{
 			/* 如果该文件系统只读 */
-			secondfs_err("Inode::IUpdate(%p,%d): error; filesystem read-only");
+			secondfs_err("Inode::IUpdate(%p,%d): error; filesystem read-only", this->i_ssb, this->i_number);
 			return 0;
 		}
 
 		/* 邓蓉的注释：在缓存池中找到包含本i节点（this->i_number）的缓存块
 		 * 这是一个上锁的缓存块，本段代码中的Bwrite()在将缓存块写回磁盘后会释放该缓存块。
 		 * 将该存放该DiskInode的字符块读入缓冲区 */
-		secondfs_dbg(INODE, "Inode::IUpdate(%p,%d) Breading...");
+		secondfs_dbg(INODE, "Inode::IUpdate(%p,%d) Breading...", this->i_ssb, this->i_number);
 		pBuf = bufMgr->Bread(this->i_ssb->s_dev, SECONDFS_INODE_ZONE_START_SECTOR + this->i_number / SECONDFS_INODE_NUMBER_PER_SECTOR);
 		
 		// We just hard-code IS_ERR() macro here
 		if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {
-			secondfs_err("Inode::IUpdate(%p,%d) Bread fail!");
+			secondfs_err("Inode::IUpdate(%p,%d) Bread fail!", this->i_ssb, this->i_number);
 			return (int)(intptr_t)(pBuf);
 		}
 
@@ -666,7 +666,7 @@ int Inode::IUpdate(int time)
 		}
 
 		/* 将缓存写回至磁盘，达到更新旧外存Inode的目的 */
-		secondfs_dbg(INODE, "Inode::IUpdate(%p,%d) Bwriting...");
+		secondfs_dbg(INODE, "Inode::IUpdate(%p,%d) Bwriting...", this->i_ssb, this->i_number);
 		ret = bufMgr->Bwrite(pBuf);
 		// will be Brelse'd at the end of Bwrite()
 		return ret;

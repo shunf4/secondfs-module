@@ -141,6 +141,9 @@ int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 #define SFDBG_GENERAL 0x00000040
 #define SFDBG_DATABLK 0x00000080
 #define SFDBG_FILE 0x00000100
+#define SFDBG_DELOCATE 0x00000200
+#define SFDBG_DELOCATE_V 0x00000400
+#define SFDBG_LOCK 0x00000800
 
 #define SFDBG_MASK 0xFFFFFFFF
 // #define SECONDFS_DEBUG (0)

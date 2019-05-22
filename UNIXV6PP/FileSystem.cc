@@ -437,6 +437,7 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 	{
 		secondfs_err("FileSystem::Alloc(%p): zero! No space left!", secsb);
 		sb->s_nfree = cpu_to_le32(1);
+		secondfs_c_helper_mutex_unlock(&sb->s_flock);
 
 		// Diagnose::Write("No Space On %d !\n", dev);
 		// u.u_error = User::ENOSPC;
@@ -468,7 +469,7 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 		if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {
 			secondfs_err("FileSystem::Alloc(%p): reading %p/%d failed! errno: %d", secsb, sb->s_dev, blkno, (int)(intptr_t)pBuf);
 
-			secondfs_c_helper_mutex_lock(&sb->s_flock);
+			secondfs_c_helper_mutex_unlock(&sb->s_flock);
 			return NULL;
 		}
 
@@ -489,7 +490,7 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 		/* 解除对空闲磁盘块索引表的锁，唤醒因为等待锁而睡眠的进程 */
 	}
 
-	secondfs_c_helper_mutex_lock(&sb->s_flock);
+	secondfs_c_helper_mutex_unlock(&sb->s_flock);
 
 	/* 普通情况下成功分配到一空闲磁盘块 */
 	pBuf = this->m_BufferManager->GetBlk(sb->s_dev, blkno);	/* 为该磁盘块申请缓存 */
