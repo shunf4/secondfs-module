@@ -145,7 +145,7 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 	// 先为文件分配新 inode (内存中 & 文件系统中)
 	secondfs_dbg(FILE, "create(%.32s): before new_inode", dentry->d_name.name);
 	inode = secondfs_new_inode(dir, mode, &dentry->d_name);
-	secondfs_dbg(FILE, "create(%.32s): new inode has I_NEW? %d", dentry->d_name.name, inode->i_state & I_NEW);
+	secondfs_dbg(FILE, "create(%.32s): new inode has I_NEW? %lu", dentry->d_name.name, inode->i_state & I_NEW);
 
 	if (IS_ERR(inode)) {
 		secondfs_err("create(%.32s): inode is ERR (%ld)", dentry->d_name.name, PTR_ERR(inode));
