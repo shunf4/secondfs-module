@@ -69,12 +69,12 @@ int FileSystem::LoadSuperBlock(SuperBlock *secsb)
 
 	if ((s32)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) < 0 || (s32)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) > 100) {
 		secondfs_err("Validating SuperBlock: secsb->s_nfree == %d, corrupted!", (s32)secondfs_c_helper_le32_to_cpu(secsb->s_nfree));
-		return -1;
+		return -EINVAL;
 	}
 
 	if ((s32)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) < 0 || (s32)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) > 100) {
 		secondfs_err("Validating SuperBlock: secsb->s_ninode == %d, corrupted!", (s32)secondfs_c_helper_le32_to_cpu(secsb->s_ninode));
-		return -1;
+		return -EINVAL;
 	}
 
 	//secsb->s_flock = 0;
