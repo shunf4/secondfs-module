@@ -721,11 +721,26 @@ static int secondfs_readdir(struct file *file, struct dir_context *ctx)
 	iop.isUserP = 0;
 	iop.m_Base = NULL;
 
+	// Regardless of whether secsb->s_has_dots == 0xffffffff,
+	// to upper VFS layer, our directory file always looks
+	// as if it has "." and ".." directory entry.
+	// So when secsb->s_has_dots != 0xffffffff,
+	// ctx->pos (VFS offset on "imaginary directory file with
+	// '.' & '..'") == iop->m_Offset + 2 * sizeof(DirectoryEntry).
+	// When secsb->s_has_dots == 0xffffffff,
+	// ctx->pos == iop->m_Offset.
+
 	// 为统一, 我们不管 secsb->s_has_dots 是否置位,
-	// 认为目录项的第 0 位放 ".", 第 1 位放 "..".
-	// 那么, 所属未置位 SB 的目录项中, 传递 pos 要减 2.
+	// 我们让 VFS 上层以为, 目录项的第 0 个 DirectoryEntry
+	// 总是放 ".", 第 1 个 DirectoryEntry 放 "..".
+	// 那么, secsb->s_has_dots 未置位的目录项中, 
+	// 系统传过来的 pos 总是要比我们实际在文件中的 iop->m_Offset
+	// 超前两个 DirectoryEntry;
+	// 如果 secsb->s_has_dots 置位,
+	// pos 和 iop->m_Offset 是一致的.
 
 	// 是否 emit 点目录项
+	// Whether should we emit "." & ".."
 	if (ctx->pos < sizeof(DirectoryEntry)) {
 		if (!dir_emit_dot(file, ctx))
 			return false;
