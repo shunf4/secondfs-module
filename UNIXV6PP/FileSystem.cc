@@ -98,9 +98,9 @@ void FileSystem::PrintSuperBlock(SuperBlock *secsb)
 	length += secondfs_c_helper_sprintf(buf + length, "s_isize(Inode area blocks): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_isize));
 	length += secondfs_c_helper_sprintf(buf + length, "s_fsize(Data area blocks): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_fsize));
 	length += secondfs_c_helper_sprintf(buf + length, "s_nfree(Freeblock stack height): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_nfree));
-	length += secondfs_c_helper_sprintf(buf + length, "top elements of s_free: %d %d %d %d %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_free[secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 1]), secondfs_c_helper_le32_to_cpu(secsb->s_free[secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 2]), secondfs_c_helper_le32_to_cpu(secsb->s_free[secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 3]), secondfs_c_helper_le32_to_cpu(secsb->s_free[secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 4]), secondfs_c_helper_le32_to_cpu(secsb->s_free[secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 5]));
+	length += secondfs_c_helper_sprintf(buf + length, "top elements of s_free: %d %d %d %d %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 1]), secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 2]), secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 3]), secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 4]), secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 5]));
 	length += secondfs_c_helper_sprintf(buf + length, "s_ninode(Freeinode stack height): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_ninode));
-	length += secondfs_c_helper_sprintf(buf + length, "top elements of s_inode: %d %d %d %d %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_inode[secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 1]), secondfs_c_helper_le32_to_cpu(secsb->s_inode[secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 2]), secondfs_c_helper_le32_to_cpu(secsb->s_inode[secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 3]), secondfs_c_helper_le32_to_cpu(secsb->s_inode[secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 4]), secondfs_c_helper_le32_to_cpu(secsb->s_inode[secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 5]));
+	length += secondfs_c_helper_sprintf(buf + length, "top elements of s_inode: %d %d %d %d %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_inode[(int)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 1]), secondfs_c_helper_le32_to_cpu(secsb->s_inode[(int)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 2]), secondfs_c_helper_le32_to_cpu(secsb->s_inode[(int)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 3]), secondfs_c_helper_le32_to_cpu(secsb->s_inode[(int)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 4]), secondfs_c_helper_le32_to_cpu(secsb->s_inode[(int)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) - 5]));
 
 	length += secondfs_c_helper_sprintf(buf + length, "s_has_dots(This fs has . & ..?): 0x%X\n", secondfs_c_helper_le32_to_cpu(secsb->s_has_dots));
 
@@ -188,7 +188,7 @@ void FileSystem::Update(SuperBlock *secsb)
 		pBuf = this->m_BufferManager->GetBlk(sb->s_dev, SECONDFS_SUPER_BLOCK_SECTOR_NUMBER + j);
 
 		/* 将SuperBlock中第0 - 511字节写入缓存区 */
-		memcpy(p, pBuf->b_addr, SECONDFS_BLOCK_SIZE);
+		memcpy(pBuf->b_addr, p, SECONDFS_BLOCK_SIZE);
 
 		/* 将缓冲区中的数据写到磁盘上 */
 		ret = this->m_BufferManager->Bwrite(pBuf);
