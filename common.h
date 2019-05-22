@@ -145,7 +145,7 @@ int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 #define SFDBG_DELOCATE_V 0x00000400
 #define SFDBG_LOCK 0x00000800
 
-#define SFDBG_MASK (0xFFFFFFFF&~SFDBG_DELOCATE_V)
+#define SFDBG_MASK (0xFFFFFFFF&~SFDBG_DELOCATE_V&~SFDBG_LOCK&~SFDBG_BUFFERQ&~SFDBG_BUFFER)
 // #define SECONDFS_DEBUG (0)
 
 #define SFDBG_ENA(flg) (SFDBG_##flg & SFDBG_MASK)

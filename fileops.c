@@ -83,7 +83,7 @@ int secondfs_add_link(struct dentry *dentry, struct inode *inode)
 	
 	// 此处参考 FileManager::MakNode
 	si->i_flag |= (SECONDFS_IACC | SECONDFS_IUPD);
-	//si->i_nlink = 1;	// TODO: 这句是不是不太好? 不过无所谓, inode_init_always 也是这么干的
+	// si->i_nlink = 1;	// TODO: 这句是不是不太好? 不过无所谓, inode_init_always 也是这么干的
 
 	// 此处参考 FileManager::WriteDir
 
@@ -131,6 +131,7 @@ static inline int secondfs_add_nondir(struct dentry *dentry, struct inode *inode
 err:
 	secondfs_err("add_nondir(): add_link() failed!");
 	inode_dec_link_count(inode);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
 	// discard_new_inode(inode);
 	unlock_new_inode(inode);
 	iput(inode);
@@ -141,6 +142,7 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 {
 	// 要求在 dir 下为新创建文件(而不是文件夹)
 	struct inode *inode;
+	int ret;
 
 	// 先为文件分配新 inode (内存中 & 文件系统中)
 	secondfs_dbg(FILE, "create(%.32s): before new_inode", dentry->d_name.name);
@@ -164,7 +166,10 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 	// 具体在 dentry 里建立与 inode 的链接, 并把
 	// 该文件登记到父目录项中
 	// d_instantiate_new 在里面调用
-	return secondfs_add_nondir(dentry, inode);
+	secondfs_dbg(FILE, "create(%.32s): add_nondir", dentry->d_name.name);
+	ret = secondfs_add_nondir(dentry, inode);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
+	return ret;
 }
 
 
@@ -236,6 +241,7 @@ static int secondfs_link(struct dentry *old_dentry, struct inode *dir,
 		goto err;
 	// link 也要 d_instantiate
 	d_instantiate(dentry, inode);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
 	return 0;
 
 err:
@@ -243,6 +249,7 @@ err:
 	inode_dec_link_count(inode);
 	//discard_new_inode(inode);
 	unlock_new_inode(inode);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
 	iput(inode);
 	return err;
 }
