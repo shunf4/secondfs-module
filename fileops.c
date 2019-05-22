@@ -30,7 +30,7 @@ ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t le
 	ssize_t ret;
 	u32 pos_u32 = *ppos;
 
-	secondfs_dbg(FILE, "file_write(%p,%p,%lu)", filp, buf, len);
+	secondfs_dbg(FILE, "file_write(%.32s,%p,%lu)", filp->f_path.dentry->d_name.name, buf, len);
 	
 	ret = FileManager_Write(secondfs_filemanagerp, buf, len, &pos_u32, si);
 	*ppos = pos_u32;
@@ -147,7 +147,6 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 	// 先为文件分配新 inode (内存中 & 文件系统中)
 	secondfs_dbg(FILE, "create(%.32s): before new_inode", dentry->d_name.name);
 	inode = secondfs_new_inode(dir, mode, &dentry->d_name);
-	secondfs_dbg(FILE, "create(%.32s): new inode has I_NEW? %lu", dentry->d_name.name, inode->i_state & I_NEW);
 
 	if (IS_ERR(inode)) {
 		secondfs_err("create(%.32s): inode is ERR (%ld)", dentry->d_name.name, PTR_ERR(inode));

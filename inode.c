@@ -310,6 +310,7 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	struct inode *inode;
 	Inode *si;
 	SuperBlock *secsb;
+	int ret;
 
 	secsb = SECONDFS_SB(sb);
 
@@ -318,7 +319,6 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	// Allocate Inode in memory/fs
 	// 先在内存 & 文件系统分配 Inode
 	si = FileSystem_IAlloc(secondfs_filesystemp, secsb);
-	secondfs_dbg(FILE, "new_inode: new inode has I_NEW? %lu", si->vfs_inode.i_state & I_NEW);
 
 	if (si == NULL) {
 		secondfs_dbg(INODE, "new_inode(%p,%u,%s): IAlloc fail!", dir, mode, str->name);
@@ -337,11 +337,21 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 	
 	inode_init_owner(inode, dir, mode);
 	mark_inode_dirty(inode);
-	secondfs_inode_conform_v2s(si, inode);
 
-	secondfs_dbg(FILE, "new_inode: at the end: new inode has I_NEW? %lu", si->vfs_inode.i_state & I_NEW);
+	// At the end: insert the inode into list &
+	// set I_NEW by calling insert_inode_locked
+	if (insert_inode_locked(inode) < 0) {
+		secondfs_err("new_inode(%p,%u,%s): insert_inode_locked fail!", dir, mode, str->name);
+		ret = -EIO;
+		goto fail;
+	}
+	secondfs_inode_conform_v2s(si, inode);
 	
 	return inode;
+fail:
+	make_bad_inode(inode);
+	iput(inode);
+	return ERR_PTR(ret);
 }
 
 void secondfs_dirty_inode(struct inode *inode, int flags)
