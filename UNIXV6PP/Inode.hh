@@ -111,7 +111,7 @@ public:
 	static const u32 IRWXO = ((IRWXU) >> 6);			/* 其他用户对文件的读、写、执行权限 */
 	
 	static const s32 BLOCK_SIZE = 512;		/* 文件逻辑块大小: 512字节 */
-	static const s32 ADDRESS_PER_INDEX_BLOCK = BLOCK_SIZE / sizeof(int);	/* 每个间接索引表(或索引块)包含的物理盘块号 */
+	static const s32 ADDRESS_PER_INDEX_BLOCK = BLOCK_SIZE / sizeof(s32);	/* 每个间接索引表(或索引块)包含的物理盘块号 */
 
 	static const s32 SMALL_FILE_BLOCK = 6;	/* 小型文件：直接索引表最多可寻址的逻辑块号 */
 	static const s32 LARGE_FILE_BLOCK = 128 * 2 + 6;	/* 大型文件：经一次间接索引表最多可寻址的逻辑块号 */

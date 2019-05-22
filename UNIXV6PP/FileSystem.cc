@@ -67,13 +67,13 @@ int FileSystem::LoadSuperBlock(SuperBlock *secsb)
 		bufMgr.Brelse(pBuf);
 	}
 
-	if (secondfs_c_helper_le32_to_cpu(secsb->s_nfree) < 0 || secondfs_c_helper_le32_to_cpu(secsb->s_nfree) > 100) {
-		secondfs_err("Validating SuperBlock: secsb->s_nfree == %d, corrupted!", secondfs_c_helper_le32_to_cpu(secsb->s_nfree));
+	if ((s32)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) < 0 || (s32)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) > 100) {
+		secondfs_err("Validating SuperBlock: secsb->s_nfree == %d, corrupted!", (s32)secondfs_c_helper_le32_to_cpu(secsb->s_nfree));
 		return -1;
 	}
 
-	if (secondfs_c_helper_le32_to_cpu(secsb->s_ninode) < 0 || secondfs_c_helper_le32_to_cpu(secsb->s_ninode) > 100) {
-		secondfs_err("Validating SuperBlock: secsb->s_ninode == %d, corrupted!", secondfs_c_helper_le32_to_cpu(secsb->s_ninode));
+	if ((s32)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) < 0 || (s32)secondfs_c_helper_le32_to_cpu(secsb->s_ninode) > 100) {
+		secondfs_err("Validating SuperBlock: secsb->s_ninode == %d, corrupted!", (s32)secondfs_c_helper_le32_to_cpu(secsb->s_ninode));
 		return -1;
 	}
 
@@ -238,7 +238,7 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 	 * 因为在以下程序中会进行读盘操作可能会导致进程切换，
 	 * 其他进程有可能访问该索引表，将会导致不一致性。
 	 */
-	if((int)le32_to_cpu(sb->s_ninode) <= 0)
+	if((s32)le32_to_cpu(sb->s_ninode) <= 0)
 	{
 		/* 空闲Inode索引表上锁 */
 		// 前面已经上锁
@@ -247,7 +247,7 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 		ino = -1;
 
 		/* 依次读入磁盘Inode区中的磁盘块，搜索其中空闲外存Inode，记入空闲Inode索引表 */
-		for(int i = 0; i < ((int)le32_to_cpu(sb->s_isize)); i++)
+		for(int i = 0; i < ((s32)le32_to_cpu(sb->s_isize)); i++)
 		{
 			pBuf = this->m_BufferManager->Bread(sb->s_dev, FileSystem::INODE_ZONE_START_SECTOR + i);
 
@@ -451,7 +451,7 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 	 * 栈已空，新分配到空闲磁盘块中记录了下一组空闲磁盘块的编号,
 	 * 将下一组空闲磁盘块的编号读入SuperBlock的空闲磁盘块索引表s_free[100]中。
 	 */
-	if((int)le32_to_cpu(sb->s_nfree) <= 0)
+	if((s32)le32_to_cpu(sb->s_nfree) <= 0)
 	{
 		/* 
 		 * 此处加锁，因为以下要进行读盘操作，有可能发生进程切换，
@@ -531,16 +531,16 @@ int FileSystem::Free(SuperBlock *secsb, int blkno)
 	 * 如果先前系统中已经没有空闲盘块，
 	 * 现在释放的是系统中第1块空闲盘块
 	 */
-	if((int) le32_to_cpu(sb->s_nfree) <= 0)
+	if((s32) le32_to_cpu(sb->s_nfree) <= 0)
 	{
 		secondfs_err("FileSystem::Free(%p,%d): abnormal situation.", secsb, blkno);
-		sb->s_nfree = (int) cpu_to_le32(1);
+		sb->s_nfree = (s32) cpu_to_le32(1);
 		sb->s_free[0] = 0;	/* 使用0标记空闲盘块链结束标志 */
 	}
 
 	/* The fast stack in SuperBlock is full */
 	/* SuperBlock中直接管理空闲磁盘块号的栈已满 */
-	if((int) le32_to_cpu(sb->s_nfree) >= 100)
+	if((s32) le32_to_cpu(sb->s_nfree) >= 100)
 	{
 		secondfs_dbg(DATABLK, "FileSystem::Free(%p,%d): fast stack full.", secsb, blkno);
 		/* 
