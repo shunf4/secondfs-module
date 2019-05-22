@@ -890,7 +890,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 					{
 						/* 将空闲目录项偏移量保存，写目录项WriteDir()会用到 */
 						out_iop->m_Offset = freeEntryOffset - (SECONDFS_DIRSIZ + 4);
-						secondfs_dbg(FILE, "FileManager::DELocate(): mode == CREATE, found freeEntryOffset=%d", freeEntryOffset);
+						secondfs_dbg(FILE, "FileManager::DELocate(): mode == CREATE, found freeEntryOffset=%d", out_iop->m_Offset);
 					}
 					else /*目录项只能在末尾添加, Inode 长度更新*/
 					{
@@ -937,7 +937,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 				/* 计算要读的物理盘块号 */
 				secondfs_dbg(FILE, "FileManager::DELocate(): Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
 				int phyBlkno = pInode->Bmap(out_iop->m_Offset / SECONDFS_BLOCK_SIZE );
-				secondfs_dbg(FILE, "FileManager::DELocate(): finish current block || firstTimeRead; Bmap(%d)", out_iop->m_Offset / SECONDFS_BLOCK_SIZE);
+				secondfs_dbg(FILE, "FileManager::DELocate(): finish current block || firstTimeRead; Bmap(%d) == %d", out_iop->m_Offset / SECONDFS_BLOCK_SIZE, phyBlkno);
 				pBuf = bufMgr.Bread(pInode->i_ssb->s_dev, phyBlkno );
 				// We just hard-code IS_ERR() macro here
 				if ((uintptr_t)(pBuf) >= (uintptr_t)-4095) {

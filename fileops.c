@@ -115,9 +115,11 @@ int secondfs_add_link(struct dentry *dentry, struct inode *inode)
 static inline int secondfs_add_nondir(struct dentry *dentry, struct inode *inode)
 {
 	// 要求将本文件 dentry 以及 inode 登记到父目录项
-	int err = secondfs_add_link(dentry, inode);
+	int err;
 
 	secondfs_dbg(FILE, "add_nondir(): before add_link");
+	err = secondfs_add_link(dentry, inode);
+	secondfs_dbg(FILE, "add_nondir(): after add_link");
 
 	if (err)
 		goto err;
@@ -141,16 +143,16 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 	struct inode *inode;
 
 	// 先为文件分配新 inode (内存中 & 文件系统中)
-	secondfs_dbg(FILE, "create(): before new_inode");
+	secondfs_dbg(FILE, "create(%.32s): before new_inode", dentry->d_name.name);
 	inode = secondfs_new_inode(dir, mode, &dentry->d_name);
 
 	if (IS_ERR(inode)) {
-		secondfs_err("create(): inode is ERR (%ld)", PTR_ERR(inode));
+		secondfs_err("create(%.32s): inode is ERR (%ld)", PTR_ERR(inode), dentry->d_name.name);
 		return PTR_ERR(inode);
 	}
 
 	if (inode == NULL) {
-		secondfs_err("create(): inode is NULL");
+		secondfs_err("create(%.32s): inode is NULL", dentry->d_name.name);
 		return -ENOSPC;
 	}
 

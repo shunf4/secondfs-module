@@ -15,6 +15,9 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 
 	secondfs_dbg(INODE, "Conform vfs->secondfs: %p->%p", inode, si);
 
+	length += sprintf(buf + length, "inode no: %d ", inode->i_ino);
+	si->i_number = inode->i_ino;
+
 	// TODO: 是否能假设 Inode 一定是 IALLOC 的?
 	si->i_mode &= ~SECONDFS_IFMT;
 	if (S_ISDIR(inode->i_mode)) {
@@ -106,6 +109,9 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 	int length = 0;
 	
 	secondfs_dbg(INODE, "Conform secondfs->vfs: %p->%p", si, inode);
+
+	length += sprintf(buf + length, "inode no: %d ", si->i_number);
+	inode->i_ino = si->i_number;
 
 	//inode->i_mode = si->i_mode;
 	inode->i_mode &= ~S_IFMT;
