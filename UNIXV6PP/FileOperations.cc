@@ -889,7 +889,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 					if ( freeEntryOffset )	/* 此变量存放了空闲目录项位于目录文件中的偏移量 */   /*问题：为何if分支没有置IUPD标志？  这是因为文件的长度没有变呀*/
 					{
 						/* 将空闲目录项偏移量保存，写目录项WriteDir()会用到 */
-						out_iop->m_Offset = freeEntryOffset - (SECONDFS_DIRSIZ + 4);
+						out_iop->m_Offset = freeEntryOffset - sizeof(DirectoryEntry);
 						secondfs_dbg(FILE, "FileManager::DELocate(): mode == CREATE, found freeEntryOffset=%d", out_iop->m_Offset);
 					}
 					else /*目录项只能在末尾添加, Inode 长度更新*/

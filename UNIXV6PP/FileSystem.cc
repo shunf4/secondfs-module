@@ -344,6 +344,7 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 
 		pNode = secondfs_c_helper_new_inode(sb);
 		pNode->i_number = ino;
+		pNode->i_ssb = secsb;
 
 		/* 未能分配到内存inode */
 		if(NULL == pNode)

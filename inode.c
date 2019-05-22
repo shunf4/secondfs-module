@@ -177,7 +177,7 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 	i_gid_write(inode, si->i_gid);
 	length += sprintf(buf + length, ", GID:%d", si->i_gid);
 	set_nlink(inode, si->i_nlink);
-	length += sprintf(buf + length, ", nlink:%d", si->i_nlink);
+	length += sprintf(buf + length, ", nlink:%d ~ %d", si->i_nlink, inode->i_nlink);
 	inode->i_size = si->i_size;
 	length += sprintf(buf + length, ", size:%d", si->i_size);
 	inode->i_atime.tv_sec = si->i_atime;
@@ -323,7 +323,7 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 		secondfs_dbg(INODE, "new_inode(%p,%u,%s): IAlloc fail!", dir, mode, str->name);
 		return ERR_PTR(-ENOMEM);
 	}
-
+	
 	inode = &si->vfs_inode;
 	secondfs_inode_conform_s2v(inode, si);
 	inode->i_blocks = 0;

@@ -145,6 +145,7 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 	// 先为文件分配新 inode (内存中 & 文件系统中)
 	secondfs_dbg(FILE, "create(%.32s): before new_inode", dentry->d_name.name);
 	inode = secondfs_new_inode(dir, mode, &dentry->d_name);
+	secondfs_dbg(FILE, "create(%.32s): new inode has I_NEW? %d", dentry->d_name.name, inode->i_state & I_NEW);
 
 	if (IS_ERR(inode)) {
 		secondfs_err("create(%.32s): inode is ERR (%ld)", dentry->d_name.name, PTR_ERR(inode));
@@ -261,20 +262,20 @@ static int secondfs_unlink(struct inode *dir, struct dentry *dentry)
 	};
 	DirectoryEntry de;
 
-	secondfs_dbg(FILE, "unlink(): DELocate()...");
+	secondfs_dbg(FILE, "unlink(%.32s): DELocate()...", dentry->d_name.name);
 
 	// 首先定位到这个文件
 	err = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(dir),
 			dentry->d_name.name, dentry->d_name.len, SECONDFS_DELETE,
 			&iop, &ino);
 	if (err) {
-		secondfs_err("unlink(): DELocate() failed");
+		secondfs_err("unlink(%.32s): DELocate() failed", dentry->d_name.name);
 		goto out;
 	}
 
 	// 可以多加一个检测
 	if (ino != d_inode(dentry)->i_ino) {
-		secondfs_err("unlink(): ino != d_inode(dentry)->i_ino");
+		secondfs_err("unlink(%.32s): ino != d_inode(dentry)->i_ino", dentry->d_name.name);
 		err = -EINVAL;
 		goto out;
 	}
@@ -285,11 +286,11 @@ static int secondfs_unlink(struct inode *dir, struct dentry *dentry)
 	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
 	iop.m_Offset -= sizeof(de);
-	secondfs_dbg(FILE, "unlink(): WriteI()...");
+	secondfs_dbg(FILE, "unlink(%.32s): WriteI()...", dentry->d_name.name);
 	Inode_WriteI(SECONDFS_INODE(dir), &iop);
 
 	if (iop.err != 0) {
-		secondfs_err("unlink(): WriteI() failed (%d)", iop.err);
+		secondfs_err("unlink(%.32s): WriteI() failed (%d)", dentry->d_name.name, iop.err);
 		err = iop.err;
 		goto out;
 	}

@@ -50,8 +50,8 @@ Inode::Inode()
 	/* 将Inode对象的成员变量初始化为无效值 */
 	this->i_flag = 0;
 	this->i_mode = 0;
-	this->i_count = 0;
-	this->i_nlink = 0;
+	this->i_count = 1;
+	this->i_nlink = 1;
 	this->i_ssb = NULL;
 	this->i_number = -1;
 	this->i_uid = -1;

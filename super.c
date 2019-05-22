@@ -159,6 +159,7 @@ struct inode *secondfs_alloc_inode(struct super_block *sb)
 {
 	Inode *si;
 	si = newInode();
+	
 	if (!si) {
 		secondfs_err("secondfs_alloc_inode: null pointer from newInode()!");
 		return NULL;
@@ -343,6 +344,7 @@ int secondfs_fill_super(struct super_block *sb, void *data, int silent)
 		// 把错误指针转为错误号
 		ret = PTR_ERR(root_inode);
 		goto out_free;
+		
 	}
 
 	// Make root dentry
