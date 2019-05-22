@@ -1046,7 +1046,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			{
 				/* 目录项匹配成功，跳出While(true)循环 */
 				secondfs_dbg(DELOCATE, "FileManager::DELocate(): currname=%0.32s, match!", dent.m_name);
-				out_iop -= sizeof(DirectoryEntry);
+				out_iop->m_Offset -= sizeof(DirectoryEntry);
 				break;
 			}
 		}
@@ -1070,7 +1070,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 		// 如果当前是创建模式的话, 说明文件已经在目录项内存在, 此时是错误的
 		if (mode == SECONDFS_CREATE) {
 			secondfs_dbg(FILE, "FileManager::DELocate(): EEXIST");
-			out_iop -= sizeof(DirectoryEntry);
+			out_iop->m_Offset -= sizeof(DirectoryEntry);
 			return -EEXIST;
 		}
 
