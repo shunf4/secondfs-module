@@ -298,6 +298,5 @@ Inode *secondfs_c_helper_new_inode(SuperBlock *ssb)
 	struct inode *inode;
 	secondfs_dbg(GENERAL, "new_inode called");
 	inode = new_inode(ssb->s_vsb);
-	secondfs_dbg(FILE, "c_helper_new_inode: new inode has I_NEW? %lu", inode->i_state & I_NEW);
 	return SECONDFS_INODE(inode);
 }

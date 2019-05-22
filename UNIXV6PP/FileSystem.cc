@@ -331,20 +331,30 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 		secondfs_dbg(INODE, "IAlloc %p: got Inode %d from top of fast stack", secsb, ino);
 		secondfs_dbg(INODE, "IAlloc %p: now sb->s_ninode == %d", secsb, le32_to_cpu(sb->s_ninode));
 
-		/* 将空闲Inode读入内存 */
-		//pNode = g_InodeTable.IGet(dev, ino);
+		// 在原 Unix V6++ 的逻辑中, 从内存中分配一个 Inode
+		// 是用 IGet() 完成的. 在此处, 用 new_inode() 是一个
+		// 等价的方法.
+		
+		// 有一个缺点: 原方法因为向 IGet 传入了 i_number, 
+		// 就可以从返回的 Inode 中判断出这样一种异常情况:
+		// 明明是从空闲 Inode 栈上拿的 Inode 号, 却发现内存
+		// 中已经有一个同 Inode 号的, 已经在工作中的 Inode.
 
+		// new_inode() 检测不到这种情况.
 
-		// 此函数会调用 iget_locked, iget_locked 会
-		// 间接调用 secondfs_alloc_inode, 在内存区域
-		// 分配一个 Inode. 
+		// new_inode will call secondfs_alloc_inode
+		// indirectly, allocating an Inode in memory
+		// (instead of filesystem volume! Allocating
+		// an Inode in FS needs the logic in the first
+		// code block at the beginning of this method).
+
+		// new_inode 会间接调用 secondfs_alloc_inode, 在内
+		// 存区域分配一个 Inode. 
 		// 注意是内存内而不是文件系统内.
-		// 在文件系统中分配 Inode 则需要上面的逻辑.
-		// pNode = secondfs_iget_forcc(sb, ino);
+		// 在文件系统中分配 Inode 则需要此函数刚开始时的那段
+		// 逻辑.
 
 		pNode = secondfs_c_helper_new_inode(sb);
-		pNode->i_number = ino;
-		pNode->i_ssb = secsb;
 
 		/* 未能分配到内存inode */
 		if(NULL == pNode)
@@ -353,22 +363,15 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 			return NULL;
 		}
 
-		/* If this Inode is free */
-		/* 如果该Inode空闲,清空Inode中的数据 */
-		if(0 == pNode->i_mode)
-		{
-			pNode->Clean();
-			/* 设置SuperBlock被修改标志 */
-			sb->s_fmod = cpu_to_le32(1);
-			return pNode;
-		}
-		else	/* 如果该Inode已被占用 of Occupied */
-		{	
-			secondfs_warn("IAlloc %p: occupied Inode %d ???", secsb, ino);
-			secondfs_c_helper_iput(&pNode->vfs_inode);
-			// Pick next from fast stack
-			continue;	/* while循环 */
-		}
+		pNode->i_number = ino;
+		pNode->i_ssb = secsb;
+
+		// 此处删掉了判断 "明明是从空闲 Inode 栈上拿的 Inode 号, 
+		// 却发现内存中已经有一个同 Inode 号的, 已经在工作中的 Inode."
+		// 的逻辑, 也就不再 Clean() 这个 Inode 了.
+		
+		// 注意同 Unix V6++ 不同, 所有的 Inode 一经创建, i_nlink 都
+		// 置为 1.
 	}
 	return NULL;	/* GCC likes it! */
 }
