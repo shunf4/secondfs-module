@@ -923,6 +923,8 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 					ret = 0;
 				}
 
+				// m_Offset 减去加过头的 sizeof(DirectoryEntry)
+				out_iop->m_Offset -= sizeof(DirectoryEntry);
 				goto out;
 			}
 
@@ -964,6 +966,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 				secondfs_dbg(DELOCATE_V, "FileManager::DELocate(): found empty DE slot");
 				if ( 0 == freeEntryOffset )
 				{
+					// 注意: 加过头了, 之后得减掉一个 DE
 					freeEntryOffset = out_iop->m_Offset;
 				}
 				/* 跳过空闲目录项，继续比较下一目录项 */
@@ -1043,6 +1046,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 			{
 				/* 目录项匹配成功，跳出While(true)循环 */
 				secondfs_dbg(DELOCATE, "FileManager::DELocate(): currname=%0.32s, match!", dent.m_name);
+				out_iop -= sizeof(DirectoryEntry);
 				break;
 			}
 		}
@@ -1066,6 +1070,7 @@ int FileManager::DELocate(Inode *dir, const char *name, u32 namelen, u32 mode, I
 		// 如果当前是创建模式的话, 说明文件已经在目录项内存在, 此时是错误的
 		if (mode == SECONDFS_CREATE) {
 			secondfs_dbg(FILE, "FileManager::DELocate(): EEXIST");
+			out_iop -= sizeof(DirectoryEntry);
 			return -EEXIST;
 		}
 

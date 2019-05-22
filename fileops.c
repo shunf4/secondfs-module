@@ -291,7 +291,14 @@ static int secondfs_unlink(struct inode *dir, struct dentry *dentry)
 	strcpy(de.m_name, "(deleted)");
 	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
-	iop.m_Offset -= sizeof(de);
+	
+	// 由于 DELocate(原UnixV6++ NameI) 在读入一个目录项后 
+	// m_Offset 自动加上 DE 大小, 所以返回的 iop 都比
+	// 所找目录项超出一个 DE. 原 Unlink 是在这里减回去,
+	// 我们在 DELocate 里减, 这里不减
+	//iop.m_Offset -= sizeof(de);
+
+
 	secondfs_dbg(FILE, "unlink(%.32s): WriteI()...", dentry->d_name.name);
 	Inode_WriteI(SECONDFS_INODE(dir), &iop);
 
