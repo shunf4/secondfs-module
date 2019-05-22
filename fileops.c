@@ -639,8 +639,10 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 
 	secondfs_dbg(FILE, "rename(): conforming new_dir...");
 	secondfs_inode_conform_v2s(SECONDFS_INODE(new_dir), new_dir);
-	secondfs_dbg(FILE, "rename(): conforming new_inode...");
-	secondfs_inode_conform_v2s(SECONDFS_INODE(new_inode), new_inode);
+	if (new_inode) {
+		secondfs_dbg(FILE, "rename(): conforming new_inode...");
+		secondfs_inode_conform_v2s(SECONDFS_INODE(new_inode), new_inode);
+	}
 	secondfs_dbg(FILE, "rename(): conforming old_dir...");
 	secondfs_inode_conform_v2s(SECONDFS_INODE(old_dir), old_dir);
 	secondfs_dbg(FILE, "rename(): conforming old_inode...");
