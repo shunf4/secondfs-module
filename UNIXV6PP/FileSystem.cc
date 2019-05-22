@@ -369,11 +369,11 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 
 		if( secondfs_c_helper_ilookup_without_iget(secsb->s_vsb, ino) != NULL ) {
 			secondfs_err("IAlloc %p: race condition detected!", secsb, ino);
-			// TODO: appropriate handling
+			// TODO: appropriate handling (iput inode)
 			return NULL;
 		}
 
-		break;
+		return pNode;
 
 		// 此处删掉了判断 "明明是从空闲 Inode 栈上拿的 Inode 号, 
 		// 却发现内存中已经有一个同 Inode 号的, 已经在工作中的 Inode.
