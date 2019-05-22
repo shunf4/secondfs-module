@@ -15,7 +15,7 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 
 	secondfs_dbg(INODE, "Conform vfs->secondfs: %p->%p", inode, si);
 
-	length += sprintf(buf + length, "inode no: %d ", inode->i_ino);
+	length += sprintf(buf + length, "inode no: %lu ", inode->i_ino);
 	si->i_number = inode->i_ino;
 
 	// TODO: 是否能假设 Inode 一定是 IALLOC 的?
