@@ -147,7 +147,7 @@ static int secondfs_create(struct inode *dir, struct dentry *dentry, umode_t mod
 	inode = secondfs_new_inode(dir, mode, &dentry->d_name);
 
 	if (IS_ERR(inode)) {
-		secondfs_err("create(%.32s): inode is ERR (%ld)", PTR_ERR(inode), dentry->d_name.name);
+		secondfs_err("create(%.32s): inode is ERR (%ld)", dentry->d_name.name, PTR_ERR(inode));
 		return PTR_ERR(inode);
 	}
 
