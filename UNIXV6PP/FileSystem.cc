@@ -67,9 +67,19 @@ int FileSystem::LoadSuperBlock(SuperBlock *secsb)
 		bufMgr.Brelse(pBuf);
 	}
 
+	if (secondfs_c_helper_le32_to_cpu(secsb->s_nfree) < 0 || secondfs_c_helper_le32_to_cpu(secsb->s_nfree) > 100) {
+		secondfs_err("Validating SuperBlock: secsb->s_nfree == %d, corrupted!", secondfs_c_helper_le32_to_cpu(secsb->s_nfree));
+		return -1;
+	}
+
+	if (secondfs_c_helper_le32_to_cpu(secsb->s_ninode) < 0 || secondfs_c_helper_le32_to_cpu(secsb->s_ninode) > 100) {
+		secondfs_err("Validating SuperBlock: secsb->s_ninode == %d, corrupted!", secondfs_c_helper_le32_to_cpu(secsb->s_ninode));
+		return -1;
+	}
+
 	//secsb->s_flock = 0;
 	//secsb->s_ilock = 0;
-	secsb->s_ronly = 0;
+	//secsb->s_ronly = 0;
 
 	secsb->s_time = cpu_to_le32(secondfs_c_helper_ktime_get_real_seconds());
 	return 0;
