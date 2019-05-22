@@ -322,6 +322,7 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 	 * 上面部分已经保证，除非系统中没有可用外存Inode，
 	 * 否则空闲Inode索引表中必定会记录可用外存Inode的编号。
 	 */
+	// This "while" is unused here (inner code only executed once)
 	while(true)
 	{
 		/* 从索引表“栈顶”获取空闲外存Inode编号 */
@@ -366,9 +367,21 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 		pNode->i_number = ino;
 		pNode->i_ssb = secsb;
 
+		if( secondfs_c_helper_ilookup_without_iget(secsb->s_vsb, ino) != NULL ) {
+			secondfs_err("IAlloc %p: race condition detected!", secsb, ino);
+			// TODO: appropriate handling
+			return NULL;
+		}
+
+		break;
+
 		// 此处删掉了判断 "明明是从空闲 Inode 栈上拿的 Inode 号, 
-		// 却发现内存中已经有一个同 Inode 号的, 已经在工作中的 Inode."
-		// 的逻辑, 也就不再 Clean() 这个 Inode 了.
+		// 却发现内存中已经有一个同 Inode 号的, 已经在工作中的 Inode.
+		// 这样需要重走 while 循环"的逻辑, 也就不再 Clean() 这个
+		// Inode 了.
+
+		// 注意上述逻辑还有一个 BUG: 重走 while 循环如果用完了 Inode
+		// 栈, 会访问无效内存!
 		
 		// 注意同 Unix V6++ 不同, 所有的 Inode 一经创建, i_nlink 都
 		// 置为 1.
