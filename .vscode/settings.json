@@ -30,5 +30,6 @@
         "new": "c"
     },
     "editor.tabSize": 8,
-    "editor.insertSpaces": false
+    "editor.insertSpaces": false,
+    "editor.autoClosingQuotes": "never"
 }

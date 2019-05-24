@@ -145,6 +145,19 @@ int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 #define SFDBG_DELOCATE_V 0x00000400
 #define SFDBG_LOCK 0x00000800
 
+#define SFDBGTAG_SIZECONSISTENCY "SC"
+#define SFDBGTAG_SB_FILL "SB"
+#define SFDBGTAG_BUFFER "BF"
+#define SFDBGTAG_BUFFERQ "BQ"
+#define SFDBGTAG_MEMORY "MM"
+#define SFDBGTAG_INODE "IN"
+#define SFDBGTAG_GENERAL "GN"
+#define SFDBGTAG_DATABLK "DB"
+#define SFDBGTAG_FILE "FI"
+#define SFDBGTAG_DELOCATE "DL"
+#define SFDBGTAG_DELOCATE_V "DV"
+#define SFDBGTAG_LOCK "LK"
+
 //#define SFDBG_MASK (0xFFFFFFFF)
 #define SFDBG_MASK (0xFFFFFFFF&~SFDBG_DELOCATE_V&~SFDBG_LOCK&~SFDBG_BUFFERQ&~SFDBG_BUFFER&~SFDBG_MEMORY)
 // #define SECONDFS_DEBUG (0)
@@ -156,7 +169,7 @@ int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 #define secondfs_dbg(flg, fmt, ...)\
 do {\
 	if (SFDBG_##flg & SFDBG_MASK)\
-		secondfs_c_helper_printk(KERN_DEBUG "secondfs: " fmt, ##__VA_ARGS__);\
+		secondfs_c_helper_printk(KERN_DEBUG "secondfs-" SFDBGTAG_##flg ": " fmt, ##__VA_ARGS__);\
 } while (0)
 #define secondfs_info(fmt, ...) secondfs_c_helper_printk(KERN_INFO "secondfs: " fmt, ##__VA_ARGS__);
 #define secondfs_notice(fmt, ...) secondfs_c_helper_printk(KERN_NOTICE "secondfs: " fmt, ##__VA_ARGS__);
@@ -169,7 +182,7 @@ do {\
 #define secondfs_dbg(flg, fmt, ...)\
 do {\
 	if (SFDBG_##flg & SFDBG_MASK)\
-		printk(KERN_DEBUG "secondfs: " fmt, ##__VA_ARGS__);\
+		printk(KERN_DEBUG "secondfs-" SFDBGTAG_##flg ": " fmt, ##__VA_ARGS__);\
 } while (0)
 #define secondfs_info(fmt, ...) printk(KERN_INFO "secondfs: " fmt, ##__VA_ARGS__);
 #define secondfs_notice(fmt, ...) printk(KERN_NOTICE "secondfs: " fmt, ##__VA_ARGS__);
