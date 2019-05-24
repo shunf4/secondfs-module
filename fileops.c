@@ -611,7 +611,7 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	// parent directory.
 	// 如果源文件是个目录, 它是否有 "." ".." 目录项?
 	// 因为源目录移动, 肯定是要动它的 ".." 文件的链接位置的.
-	if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
+	if (source_is_dir && SECONDFS_SB(old_inode->i_sb)->s_has_dots == 0xffffffff) {
 		secondfs_dbg(FILE, "rename(): DELocate() OPEN_NOT_IGNORE_DOTS source's '..' in old_inode...");
 		ret_dot = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(old_inode),
 							"..", 2, 
@@ -700,7 +700,7 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 		}
 		
 		// 对于目标文件的父 Inode, 由于多了一个子目录, 要递增链接计数.
-		if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
+		if (source_is_dir && SECONDFS_SB(old_inode->i_sb)->s_has_dots == 0xffffffff) {
 			inode_inc_link_count(new_dir);
 		}
 	}
@@ -741,7 +741,7 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 	secondfs_inode_conform_s2v(old_dir, SECONDFS_INODE(old_dir));
 	
 	// 如果我们是搬动目录的话, 最后还要重新链接源目录的 ".."
-	if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
+	if (source_is_dir && SECONDFS_SB(old_inode->i_sb)->s_has_dots == 0xffffffff) {
 		if (old_dir != new_dir)
 		{
 			secondfs_dbg(FILE, "rename(): secondfs_set_link() (.. -> new_dir)...");
