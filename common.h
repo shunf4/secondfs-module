@@ -144,6 +144,7 @@ int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 #define SFDBG_DELOCATE 0x00000200
 #define SFDBG_DELOCATE_V 0x00000400
 #define SFDBG_LOCK 0x00000800
+#define SFDBG_FILE_V 0x00001000
 
 #define SFDBGTAG_SIZECONSISTENCY "SC"
 #define SFDBGTAG_SB_FILL "SB"
@@ -157,6 +158,7 @@ int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 #define SFDBGTAG_DELOCATE "DL"
 #define SFDBGTAG_DELOCATE_V "DV"
 #define SFDBGTAG_LOCK "LK"
+#define SFDBGTAG_FILE_V "FV"
 
 //#define SFDBG_MASK (0xFFFFFFFF)
 #define SFDBG_MASK (0xFFFFFFFF&~SFDBG_DELOCATE_V&~SFDBG_LOCK&~SFDBG_BUFFERQ&~SFDBG_BUFFER&~SFDBG_MEMORY)
