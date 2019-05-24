@@ -209,7 +209,7 @@ void Inode::WriteI(IOParameter *io_paramp)
 
 	if( 0 == io_paramp->m_Count)
 	{
-		secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): count == 0; return", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
+		secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): count == 0; return", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 		/* 需要读字节数为零，则返回 */
 		return;
 	}
@@ -220,7 +220,7 @@ void Inode::WriteI(IOParameter *io_paramp)
 		offset = io_paramp->m_Offset % Inode::BLOCK_SIZE;
 		nbytes = (Inode::BLOCK_SIZE - offset) < io_paramp->m_Count ? (Inode::BLOCK_SIZE - offset) : io_paramp->m_Count;
 
-		secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): lbn = %d, offset = %d, nbytes = %d", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, lbn, offset, nbytes);
+		secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): lbn = %d, offset = %d, nbytes = %d", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, lbn, offset, nbytes);
 
 		if( (this->i_mode & Inode::IFMT) != Inode::IFBLK )
 		{	/* 普通文件 */
@@ -245,13 +245,13 @@ void Inode::WriteI(IOParameter *io_paramp)
 		if(Inode::BLOCK_SIZE == nbytes)
 		{
 			/* 如果写入数据正好满一个字符块，则为其分配缓存 */
-			secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): nbytes equals to 1 block; Getblk()", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
+			secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): nbytes equals to 1 block; Getblk()", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 			pBuf = bufMgr.GetBlk(dev, bn);
 		}
 		else
 		{
 			/* 写入数据不满一个字符块，先读后写（读出该字符块以保护不需要重写的数据） */
-			secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): nbytes less than 1 block; Bread()", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
+			secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): nbytes less than 1 block; Bread()", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 			pBuf = bufMgr.Bread(dev, bn);
 
 			// We just hard-code IS_ERR() macro here
@@ -272,27 +272,27 @@ void Inode::WriteI(IOParameter *io_paramp)
 		else
 			memcpy(start, io_paramp->m_Base, nbytes);
 
-		secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): write complete; (before) ", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
+		secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): write complete; (before) ", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 
 		/* 用传送字节数nbytes更新读写位置 */
 		io_paramp->m_Base += nbytes;
 		io_paramp->m_Offset += nbytes;
 		io_paramp->m_Count -= nbytes;
 
-		secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): write complete; (after) ", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
+		secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): write complete; (after) ", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 
 		if( (io_paramp->m_Offset % Inode::BLOCK_SIZE) == 0 )	/* 如果写满一个字符块 */
 		{
 			/* 以异步方式将字符块写入磁盘，进程不需等待I/O操作结束，可以继续往下执行 */
 			// bufMgr.Bawrite(pBuf);
 			// 所有的异步写改为同步写
-			secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): written to edge of a block; Bwrite()", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
+			secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): written to edge of a block; Bwrite()", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 			bufMgr.Bwrite(pBuf);
 		}
 		else /* 如果缓冲区未写满 */
 		{
 			/* 将缓存标记为延迟写，不急于进行I/O操作将字符块输出到磁盘上 */
-			secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): not written to edge of a block; Bdwrite()", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
+			secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): not written to edge of a block; Bdwrite()", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 			bufMgr.Bdwrite(pBuf);
 		}
 
@@ -327,7 +327,7 @@ int Inode::Bmap(int lbn)
 	BufferManager& bufMgr = *secondfs_buffermanagerp;
 	FileSystem& fileSys = *secondfs_filesystemp;
 
-	secondfs_dbg(FILE, "Inode::Bmap(%d)...", lbn);
+	secondfs_dbg(FILE_V, "Inode::Bmap(%d)...", lbn);
 	
 	/* 
 	 * Unix V6++的文件索引结构：(小型、大型和巨型文件)
@@ -352,10 +352,10 @@ int Inode::Bmap(int lbn)
 	{
 		phyBlkno = this->i_addr[lbn];
 
-		secondfs_dbg(FILE, "Inode::Bmap(%d): i_addr[%d] == %d", lbn, lbn, phyBlkno);
+		secondfs_dbg(FILE_V, "Inode::Bmap(%d): i_addr[%d] == %d", lbn, lbn, phyBlkno);
 		
 		if (phyBlkno == 0) {
-			secondfs_dbg(FILE, "Inode::Bmap(%d): need Alloc()", lbn);
+			secondfs_dbg(FILE_V, "Inode::Bmap(%d): need Alloc()", lbn);
 		}
 
 		/* 
@@ -413,13 +413,13 @@ int Inode::Bmap(int lbn)
 			index = (lbn - Inode::LARGE_FILE_BLOCK) / (Inode::ADDRESS_PER_INDEX_BLOCK * Inode::ADDRESS_PER_INDEX_BLOCK) + 8;
 		}
 
-		secondfs_dbg(FILE, "Inode::Bmap(%d): index block %d", lbn, index);
+		secondfs_dbg(FILE_V, "Inode::Bmap(%d): index block %d", lbn, index);
 
 		phyBlkno = this->i_addr[index];
 		/* 若该项为零，则表示不存在相应的间接索引表块 */
 		if( 0 == phyBlkno )
 		{
-			secondfs_dbg(FILE, "Inode::Bmap(%d): i_addr[%d] == 0; need Alloc()", lbn, index);
+			secondfs_dbg(FILE_V, "Inode::Bmap(%d): i_addr[%d] == 0; need Alloc()", lbn, index);
 			this->i_flag |= Inode::IUPD;
 			/* 分配一空闲盘块存放间接索引表 */
 			if( (pFirstBuf = fileSys.Alloc(this->i_ssb)) == NULL )
@@ -447,13 +447,13 @@ int Inode::Bmap(int lbn)
 			 * 还需根据逻辑块号，经由二次间接索引表找到一次间接索引表
 			 */
 			index = ( (lbn - Inode::LARGE_FILE_BLOCK) / Inode::ADDRESS_PER_INDEX_BLOCK ) % Inode::ADDRESS_PER_INDEX_BLOCK;
-			secondfs_dbg(FILE, "Inode::Bmap(%d): 2nd level indirect index block %d", lbn, index);
+			secondfs_dbg(FILE_V, "Inode::Bmap(%d): 2nd level indirect index block %d", lbn, index);
 
 			/* iTable指向缓存中的二次间接索引表。该项为零，不存在一次间接索引表 */
 			phyBlkno = iTable[index];
 			if( 0 == phyBlkno )
 			{
-				secondfs_dbg(FILE, "Inode::Bmap(%d): 2nd level indirect index block iTable[%d] == 0; need Alloc()", lbn, index);
+				secondfs_dbg(FILE_V, "Inode::Bmap(%d): 2nd level indirect index block iTable[%d] == 0; need Alloc()", lbn, index);
 				if( (pSecondBuf = fileSys.Alloc(this->i_ssb)) == NULL)
 				{
 					/* 分配一次间接索引表磁盘块失败，释放缓存中的二次间接索引表，然后返回 */
@@ -471,7 +471,7 @@ int Inode::Bmap(int lbn)
 			{
 				/* 释放二次间接索引表占用的缓存，并读入一次间接索引表 */
 				bufMgr.Brelse(pFirstBuf);
-				secondfs_dbg(FILE, "Inode::Bmap(%d): Bread iTable[%d] == %d", lbn, index, phyBlkno);
+				secondfs_dbg(FILE_V, "Inode::Bmap(%d): Bread iTable[%d] == %d", lbn, index, phyBlkno);
 				pSecondBuf = bufMgr.Bread(this->i_ssb->s_dev, phyBlkno);
 			}
 
@@ -491,10 +491,10 @@ int Inode::Bmap(int lbn)
 			index = (lbn - Inode::LARGE_FILE_BLOCK) % Inode::ADDRESS_PER_INDEX_BLOCK;
 		}
 
-		secondfs_dbg(FILE, "Inode::Bmap(%d): offset index in index block: %d; iTable[%d] == %d", lbn, index, index, iTable[index]);
+		secondfs_dbg(FILE_V, "Inode::Bmap(%d): offset index in index block: %d; iTable[%d] == %d", lbn, index, index, iTable[index]);
 
 		if (iTable[index] == 0)
-			secondfs_dbg(FILE, "Inode::Bmap(%d): iTable[index] == 0; need Alloc()", lbn);
+			secondfs_dbg(FILE_V, "Inode::Bmap(%d): iTable[index] == 0; need Alloc()", lbn);
 
 		if( (phyBlkno = iTable[index]) == 0)
 		{
