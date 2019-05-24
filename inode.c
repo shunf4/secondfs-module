@@ -15,7 +15,7 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 
 	secondfs_dbg(INODE, "Conform vfs->secondfs: %p->%p", inode, si);
 
-	length += sprintf(buf + length, "inode no: %lu ", inode->i_ino);
+	length += sprintf(buf + length, "inode no: %ld ", inode->i_ino);
 	si->i_number = inode->i_ino;
 
 	// TODO: 是否能假设 Inode 一定是 IALLOC 的?
@@ -275,16 +275,6 @@ void secondfs_evict_inode(struct inode *inode)
 		return;
 	}
 
-	/* 解锁内存Inode，并且唤醒等待进程 */
-	// 不解锁了, 暂不使用 Inode 的锁机制
-	//pNode->Prele();
-	/* 清除内存Inode的所有标志位 */
-	pNode->i_flag = 0;
-
-	/* 这是内存inode空闲的标志之一，另一个是i_count == 0 */
-	// i_count is not used in this module
-	pNode->i_number = -1;
-
 	// System clean actions to VFS inode
 	// 执行 VFS Inode 的清理动作
 	invalidate_inode_buffers(inode);
@@ -300,6 +290,17 @@ void secondfs_evict_inode(struct inode *inode)
 		secondfs_dbg(INODE, "evict_inode(%p, %d): Inode::IFree()...", pNode->i_ssb, pNode->i_number);
 		FileSystem_IFree(secondfs_filesystemp, pNode->i_ssb, pNode->i_number);
 	}
+	
+	/* 解锁内存Inode，并且唤醒等待进程 */
+	// 不解锁了, 暂不使用 Inode 的锁机制
+	//pNode->Prele();
+	/* 清除内存Inode的所有标志位 */
+	pNode->i_flag = 0;
+
+	/* 这是内存inode空闲的标志之一，另一个是i_count == 0 */
+	// i_count is not used in this module
+	pNode->i_number = -1;
+
 	// TODO: 在目录项中删除(真的需要吗?)
 }
 
