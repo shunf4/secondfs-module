@@ -299,7 +299,7 @@ void Inode::WriteI(IOParameter *io_paramp)
 		/* 普通文件长度增加 */
 		if( (this->i_size < io_paramp->m_Offset) && (this->i_mode & (Inode::IFBLK & Inode::IFCHR)) == 0 )
 		{
-			secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): file size stretched to %d", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, this->i_size);
+			secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): file size stretched to %d", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, io_paramp->m_Offset);
 			this->i_size = io_paramp->m_Offset;
 		}
 

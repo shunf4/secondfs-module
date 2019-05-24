@@ -416,6 +416,8 @@ void FileSystem::IFree(SuperBlock *secsb, int number)
 	}
 
 	sb->s_inode[le32_to_cpu(sb->s_ninode)] = cpu_to_le32(number);
+	sb->s_ninode = cpu_to_le32(le32_to_cpu(sb->s_ninode) + 1);
+	secondfs_dbg(INODE, "IFree: released %d, curr sb->s_ninode == %d", number, le32_to_cpu(sb->s_ninode));
 
 	/* 设置SuperBlock被修改标志 */
 	sb->s_fmod = cpu_to_le32(1);

@@ -91,8 +91,8 @@ public:
 
 	s32		b_index;		/* For debug - the index in BufferManager */
 
-	struct {u8 data[SECONDFS_MUTEX_SIZE];}	b_modify_lock;
-	struct {u8 data[SECONDFS_MUTEX_SIZE];}	b_wait_free_lock;
+	struct {u8 data[SECONDFS_MUTEX_SIZE];} __attribute__((packed))	b_modify_lock;
+	struct {u8 data[SECONDFS_MUTEX_SIZE];} __attribute__((packed))	b_wait_free_lock;
 };
 
 class BufferManager
@@ -145,8 +145,8 @@ public:
 	
 	//DeviceManager* m_DeviceManager;		/* 指向设备管理模块全局对象 */
 
-	struct {u8 data[SECONDFS_SPINLOCK_T_SIZE];}	b_queue_lock;		// 保护整个缓存块队列的自旋锁 Spin lock to guard the two queues
-	struct {u8 data[SECONDFS_SEMAPHORE_SIZE];}	b_bFreeList_lock;	// 表征是否有自由缓存的信号量 Semaphore to indicate the number of free buffers
+	struct {u8 data[SECONDFS_SPINLOCK_T_SIZE];} __attribute__((packed))	b_queue_lock;		// 保护整个缓存块队列的自旋锁 Spin lock to guard the two queues
+	struct {u8 data[SECONDFS_SEMAPHORE_SIZE];} __attribute__((packed))	b_bFreeList_lock;	// 表征是否有自由缓存的信号量 Semaphore to indicate the number of free buffers
 };
 
 #endif // __BUFFERMANAGER_HH__

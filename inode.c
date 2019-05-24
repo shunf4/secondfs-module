@@ -177,7 +177,7 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 	i_gid_write(inode, si->i_gid);
 	length += sprintf(buf + length, ", GID:%d", si->i_gid);
 	set_nlink(inode, si->i_nlink);
-	length += sprintf(buf + length, ", nlink:%d ~ %d", si->i_nlink, inode->i_nlink);
+	length += sprintf(buf + length, ", nlink:%d", si->i_nlink);
 	inode->i_size = si->i_size;
 	length += sprintf(buf + length, ", size:%d", si->i_size);
 	inode->i_atime.tv_sec = si->i_atime;
@@ -248,7 +248,7 @@ void secondfs_evict_inode(struct inode *inode)
 	// 这里没有必要
 	// truncate_inode_pages_final(&inode->i_data);
 
-	/* When refcount falls to 0, delete(unlink) it */
+	/* When linkcount falls to 0, delete(unlink) it */
 	/* 该文件已经没有目录路径指向它, 删除它 */
 	if(inode->i_nlink <= 0)
 	{

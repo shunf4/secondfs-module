@@ -58,9 +58,9 @@ public:
 	Devtab*	s_dev;			// SuperBlock 所在文件系统的设备
 	void * /* struct super_block * */s_vsb;		// VFS 超块
 
-	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_update_lock;
-	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_flock;
-	struct {u8 data[SECONDFS_MUTEX_SIZE];}	s_ilock;
+	struct {u8 data[SECONDFS_MUTEX_SIZE];} __attribute__((packed))	s_update_lock;
+	struct {u8 data[SECONDFS_MUTEX_SIZE];} __attribute__((packed))	s_flock;
+	struct {u8 data[SECONDFS_MUTEX_SIZE];} __attribute__((packed))	s_ilock;
 };
 
 /*

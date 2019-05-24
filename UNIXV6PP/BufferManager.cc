@@ -42,6 +42,9 @@ void BufferManager::Initialize()
 	int i;
 	Buf* bp;
 
+	this->bFreeList.b_index = -1;
+	this->bFreeList.b_dev = NULL;
+	this->bFreeList.b_blkno = -1;
 	this->bFreeList.b_forw = this->bFreeList.b_back = &(this->bFreeList);
 	this->bFreeList.av_forw = this->bFreeList.av_back = &(this->bFreeList);
 	secondfs_c_helper_mutex_init(&bFreeList.b_modify_lock);
