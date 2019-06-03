@@ -122,20 +122,7 @@ static int write_block(int fd, int block_no, const void *buf, int len)
 
 static int write_stack_in_block(int fd, int block_no, const fast_stack *buf)
 {
-	int ret;
-	int len = sizeof(fast_stack);
-	int count = le32toh(buf->count);
-
-	sfdbg_pf("Write into physical block %d (data block %d): ", block_no, block_no - SECONDFS_DATA_FIRST_BLOCK);
-
-	sfdbg_pf("[%d]", count);
-
-	for (int i = 0; i < count; i++) {
-		sfdbg_pf(" %d", le32toh(buf->stack[i]));
-	}
-
-	sfdbg_pf("\n");
-
+	int len = sizeof(fast_stack); 
 	return write_block(fd, block_no, buf, len);
 }
 
@@ -271,6 +258,8 @@ int main(int argc, char **argv)
 	remain_data_block_num = arg_block_num - SECONDFS_DATA_FIRST_BLOCK - 1;
 
 	while (1) {
+		int host_count;
+
 		fast_stack_buf.count = 0;
 		int group_max_size = first_time ? 99 : 100;
 
@@ -293,6 +282,7 @@ int main(int argc, char **argv)
 
 		if (remain_data_block_num == 0) {
 			sb_buf.s_free = fast_stack_buf;
+			sfdbg_pf("Write into SuperBlock: ");
 			break;
 		} else {
 			last_index_data_block_no = remain_data_block_num;
@@ -301,7 +291,18 @@ int main(int argc, char **argv)
 				eprintf("Error writing data block %d: %s\n", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, strerror(errno));
 				goto fclose_err;
 			}
+			sfdbg_pf("Write into physical block %d (data block %d): ", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, last_index_data_block_no);
 		}
+
+		host_count = le32toh(fast_stack_buf.count);
+
+		sfdbg_pf("[%d]", host_count);
+
+		for (int i = 0; i < host_count; i++) {
+			sfdbg_pf(" %d", le32toh(fast_stack_buf.stack[i]));
+		}
+
+		sfdbg_pf("\n");
 	}
 }
 
