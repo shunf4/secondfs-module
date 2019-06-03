@@ -266,11 +266,15 @@ int main(int argc, char **argv)
 		if (first_time)
 			fast_stack_buf.stack[LE32_POST_INC(fast_stack_buf.count)] = htole32(0);
 		
+		sfdbg_pf("1\n");
+
 		curr_group_size = remain_data_block_num < group_max_size ? remain_data_block_num : group_max_size;
 
 		for (int i = 0; i < curr_group_size; i++) {
 			fast_stack_buf.stack[LE32_POST_INC(fast_stack_buf.count)] = htole32(remain_data_block_num - i + SECONDFS_DATA_FIRST_BLOCK);
 		}
+
+		sfdbg_pf("2\n");
 
 		fast_stack_buf.count = htole32(first_time ? curr_group_size + 1 : curr_group_size);
 
