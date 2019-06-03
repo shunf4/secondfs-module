@@ -114,7 +114,7 @@ static int write_block(int fd, int block_no, const void *buf, int len)
 		curr_len -= ret;
 		p += ret;
 
-		if (curr_len == len) {
+		if (curr_len == 0) {
 			return 0;
 		}
 	}
