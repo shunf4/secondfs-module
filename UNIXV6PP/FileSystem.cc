@@ -364,6 +364,7 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 			return NULL;
 		}
 
+		pNode->i_mode |= SECONDFS_IALLOC;
 		pNode->i_number = ino;
 		pNode->i_ssb = secsb;
 
