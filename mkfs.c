@@ -30,8 +30,8 @@ typedef struct _fast_stack {
 } fast_stack;
 
 typedef struct _DirectoryEntry{
-	u32 m_ino;		/* 目录项中Inode编号部分 */
-	u8 m_name[28];	/* 目录项中路径名部分 */
+	__u32 m_ino;		/* 目录项中Inode编号部分 */
+	__u8 m_name[28];	/* 目录项中路径名部分 */
 } DirectoryEntry;
 
 typedef struct _SuperBlock
@@ -367,9 +367,9 @@ int main(int argc, char **argv)
 		DirectoryEntry de[2];
 		bzero(&de, sizeof(de));
 		de[0].m_ino = 0;
-		strcpy(de[0].m_name, ".");
-		de[0].m_ino = 0;
-		strcpy(de[0].m_name, "..");
+		strcpy(&de[0].m_name, ".");
+		de[1].m_ino = 0;
+		strcpy(&de[1].m_name, "..");
 		
 		memcpy(block, de, sizeof(de));
 	}
