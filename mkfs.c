@@ -10,6 +10,7 @@
 #include <endian.h>
 #include <string.h>
 #include <getopt.h>
+#include <ctype.h>
 #include <time.h>
 
 #include <linux/types.h>
