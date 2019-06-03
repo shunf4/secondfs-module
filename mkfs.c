@@ -331,11 +331,12 @@ int main(int argc, char **argv)
 
 	// Reset i_number of all inodes
 	char zero[SECONDFS_BLOCK_SIZE] = {0};
+	sfdbg_pf("Writing Inode area...\n");
 	for (int blkno = SECONDFS_INODE_FIRST_BLOCK; blkno < SECONDFS_DATA_FIRST_BLOCK; blkno++) {
-		sfdbg_pf("Writing Inode blk %d\n", blkno);
 		write_block(fd, blkno, zero, sizeof(zero));
 	}
 
+	sfdbg_pf("Done!\n");
 	close(fd);
 	return ret;
 
