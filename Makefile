@@ -34,7 +34,7 @@ all : set_and_print_cxxflags kernmodule mkfs.secondfs
 # hello.ko also contains sizeof() values of several kernel objects
 # 模仿内核模块构建器 kbuild 构建 .c 文件的过程, 生成构建 C++ 源文件的参数, 存入 cxxflags.tmp
 std_module/hello.ko :
-	python ./make-utils/generate_cpp_compile_options.py $(shell uname -r) "" cxxflags.tmp
+	python2 ./make-utils/generate_cpp_compile_options.py $(shell uname -r) "" cxxflags.tmp
 
 # Generate C++ compiler flags & options from standard kernel module
 # 模仿内核模块构建器 kbuild 构建 .c 文件的过程, 生成构建 C++ 源文件的参数, 从 cxxflags.tmp 读取
