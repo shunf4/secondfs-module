@@ -12,7 +12,7 @@
 #include <getopt.h>
 #include <time.h>
 
-#include "common.h"
+#include <linux/types.h>
 
 #define SECONDFS_BLOCK_SIZE 512
 #define SECONDFS_SB_FIRST_BLOCK 200
