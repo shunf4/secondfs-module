@@ -325,7 +325,7 @@ int main(int argc, char **argv)
 	sb_buf.s_has_dots = htole32(has_dots_flag ? 0xFFFFFFFF : 0);
 	
 	sb_buf.s_ronly = htole32(read_only_flag ? 1 : 0);
-	sb_buf.s_time = (__s32)time(NULL);
+	sb_buf.s_time = htole32((__s32)time(NULL));
 
 	sfdbg_pf("Writing SuperBlock...\n");
 
@@ -347,14 +347,14 @@ int main(int argc, char **argv)
 	// Write root inode and root directory file (Inode 0, Data block 0)
 	DiskInode di;
 	bzero(&di, sizeof(di));
-	di.d_addr[0] = SECONDFS_DATA_FIRST_BLOCK;
-	di.d_atime = (__s32)time(NULL);
-	di.d_gid = 0;
-	di.d_mode = 0x8000 | 0x4000 | (0x100 | 0x80 | 0x40) | (0x100 | 0x80 | 0x40) >> 3 | (0x100 | 0x80 | 0x40) >> 6;
-	di.d_mtime = (__s32)time(NULL);
-	di.d_nlink = has_dots_flag ? 2 : 1;
-	di.d_size = has_dots_flag ? (2 * sizeof(DirectoryEntry)) : 0;
-	di.d_uid = 0;
+	di.d_addr[0] = htole32(SECONDFS_DATA_FIRST_BLOCK);
+	di.d_atime = htole32((__s32)time(NULL));
+	di.d_gid = htole16(0);
+	di.d_mode = htole32(0x8000 | 0x4000 | (0x100 | 0x80 | 0x40) | (0x100 | 0x80 | 0x40) >> 3 | (0x100 | 0x80 | 0x40) >> 6);
+	di.d_mtime = htole32((__s32)time(NULL));
+	di.d_nlink = htole32(has_dots_flag ? 2 : 1);
+	di.d_size = htole32(has_dots_flag ? (2 * sizeof(DirectoryEntry)) : 0);
+	di.d_uid = htole16(0);
 
 	if (write_block(fd, SECONDFS_INODE_FIRST_BLOCK, &di, sizeof(di)) < 0) {
 		eprintf("Error writing root Inode: %s\n", strerror(errno));
@@ -366,9 +366,9 @@ int main(int argc, char **argv)
 	if (has_dots_flag) {
 		DirectoryEntry de[2];
 		bzero(&de, sizeof(de));
-		de[0].m_ino = 0;
+		de[0].m_ino = htole32(0);
 		memcpy(de[0].m_name, ".", 2);
-		de[1].m_ino = 0;
+		de[1].m_ino = htole32(0);
 		memcpy(de[1].m_name, "..", 3);
 		
 		memcpy(block, de, sizeof(de));
