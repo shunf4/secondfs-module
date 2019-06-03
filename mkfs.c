@@ -366,9 +366,14 @@ int main(int argc, char **argv)
 	if (has_dots_flag) {
 		DirectoryEntry de[2];
 		bzero(&de, sizeof(de));
-		de[0].m_ino = htole32(0);
+
+		// Actually "." & ".." should point to the root dir itself
+		// (ino == 0), but ino == 0 indicates this DE is not used
+		// for now, so we set it to 0xFFFFFFFF. In secondfs, we 
+		// will never read this two inos
+		de[0].m_ino = htole32(0xFFFFFFFF);
 		memcpy(de[0].m_name, ".", 2);
-		de[1].m_ino = htole32(0);
+		de[1].m_ino = htole32(0xFFFFFFFF);
 		memcpy(de[1].m_name, "..", 3);
 		
 		memcpy(block, de, sizeof(de));
