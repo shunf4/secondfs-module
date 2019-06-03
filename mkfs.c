@@ -29,6 +29,11 @@ typedef struct _fast_stack {
 	__s32 stack[100];
 } fast_stack;
 
+typedef struct _DirectoryEntry{
+	u32 m_ino;		/* 目录项中Inode编号部分 */
+	u8 m_name[28];	/* 目录项中路径名部分 */
+} DirectoryEntry;
+
 typedef struct _SuperBlock
 {
 	__s32	s_isize;		/* 外存Inode区占用的盘块数 */
@@ -333,7 +338,45 @@ int main(int argc, char **argv)
 	char zero[SECONDFS_BLOCK_SIZE] = {0};
 	sfdbg_pf("Writing Inode area...\n");
 	for (int blkno = SECONDFS_INODE_FIRST_BLOCK; blkno < SECONDFS_DATA_FIRST_BLOCK; blkno++) {
-		write_block(fd, blkno, zero, sizeof(zero));
+		if (write_block(fd, blkno, zero, sizeof(zero)) < 0) {
+			eprintf("Error writing Inode block: %s\n", strerror(errno));
+			goto fclose_err;
+		}
+	}
+
+	// Write root inode and root directory file (Inode 0, Data block 0)
+	DiskInode di;
+	bzero(&di, sizeof(di));
+	di.d_addr[0] = SECONDFS_DATA_FIRST_BLOCK;
+	di.d_atime = (__s32)time(NULL);
+	di.d_gid = 0;
+	di.d_mode = 0x8000 | 0x4000 | (0x100 | 0x80 | 0x40) | (0x100 | 0x80 | 0x40) >> 3 | (0x100 | 0x80 | 0x40) >> 6;
+	di.d_mtime = (__s32)time(NULL);
+	di.d_nlink = has_dots_flag ? 2 : 1;
+	di.d_size = has_dots_flag ? (2 * sizeof(DirectoryEntry)) : 0;
+	di.d_uid = 0;
+
+	if (write_block(fd, SECONDFS_INODE_FIRST_BLOCK, &di, sizeof(di)) < 0) {
+		eprintf("Error writing root Inode: %s\n", strerror(errno));
+		goto fclose_err;
+	}
+
+	char block[512] = {0};
+
+	if (has_dots_flag) {
+		DirectoryEntry de[2];
+		bzero(&de, sizeof(de));
+		de[0].m_ino = 0;
+		strcpy(de[0].m_name, ".");
+		de[0].m_ino = 0;
+		strcpy(de[0].m_name, "..");
+		
+		memcpy(block, de, sizeof(de));
+	}
+
+	if (write_block(fd, SECONDFS_DATA_FIRST_BLOCK, block, sizeof(block)) < 0) {
+		eprintf("Error writing root directory file: %s\n", strerror(errno));
+		goto fclose_err;
 	}
 
 	sfdbg_pf("Done!\n");

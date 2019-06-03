@@ -18,7 +18,10 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 	length += sprintf(buf + length, "inode no: %ld ", inode->i_ino);
 	si->i_number = inode->i_ino;
 
-	// TODO: 是否能假设 Inode 一定是 IALLOC 的?
+	// Q: 是否能假设 Inode 一定是 IALLOC 的?
+	// A: 不能. 新分配的 Inode, 依赖于本函数加上 IALLOC 标志.
+
+	si->i_mode |= SECONDFS_IALLOC;
 	si->i_mode &= ~SECONDFS_IFMT;
 	if (S_ISDIR(inode->i_mode)) {
 		si->i_mode |= SECONDFS_IFDIR;

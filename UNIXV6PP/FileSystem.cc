@@ -291,7 +291,7 @@ Inode* FileSystem::IAlloc(SuperBlock *secsb)
 						break;
 					}
 				} else {
-					secondfs_dbg(INODE, "IAlloc %p: though free Inode %d is being used in memory", secsb, ino);
+					secondfs_dbg(INODE, "IAlloc %p: but free Inode %d is being used in memory", secsb, ino);
 				}
 			}
 
