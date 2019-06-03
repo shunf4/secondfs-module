@@ -96,7 +96,7 @@ void FileSystem::PrintSuperBlock(SuperBlock *secsb)
 	length += secondfs_c_helper_sprintf(buf + length, "SuperBlock %p:\n", secsb);
 
 	length += secondfs_c_helper_sprintf(buf + length, "s_isize(Inode area blocks): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_isize));
-	length += secondfs_c_helper_sprintf(buf + length, "s_fsize(Data area blocks): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_fsize));
+	length += secondfs_c_helper_sprintf(buf + length, "s_fsize(Total blocks): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_fsize));
 	length += secondfs_c_helper_sprintf(buf + length, "s_nfree(Freeblock stack height): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_nfree));
 	length += secondfs_c_helper_sprintf(buf + length, "top elements of s_free: %d %d %d %d %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 1]), secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 2]), secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 3]), secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 4]), secondfs_c_helper_le32_to_cpu(secsb->s_free[(int)secondfs_c_helper_le32_to_cpu(secsb->s_nfree) - 5]));
 	length += secondfs_c_helper_sprintf(buf + length, "s_ninode(Freeinode stack height): %d\n", secondfs_c_helper_le32_to_cpu(secsb->s_ninode));
@@ -179,7 +179,7 @@ void FileSystem::Update(SuperBlock *secsb)
 	*/
 
 	// Sync 1024 bytes(2 blocks) back to disk
-	for(int j = 0; j < SECONDFS_SUPER_BLOCK_DISK_SIZE / SECONDFS_BLOCK_SIZE; j++)
+	for(int j = 0; j < SECONDFS_SUPER_BLOCK_SIZE / SECONDFS_BLOCK_SIZE; j++)
 	{
 		/* 第一次p指向SuperBlock的第0字节，第二次p指向第512字节 */
 		u8* p = (u8 *)sb + j * SECONDFS_BLOCK_SIZE;
@@ -572,11 +572,11 @@ int FileSystem::Free(SuperBlock *secsb, int blkno)
 		/* 从该磁盘块的0字节开始记录，共占据4(s_nfree)+400(s_free[100])个字节 */
 		u32* p = (u32 *)pBuf->b_addr;
 		
-		/* This block is used to store n_free(most of the time 100/99) and 100 free
+		/* This block is used to store n_free(most of the time 100) and 100 free
 		 * block numbers stored in fast stack. Then this block is sent to disk,
 		 * and fast stack cleared.
 		 */
-		/* 首先写入空闲盘块数，除了第一组为99块，后续每组都是100块 */
+		/* 首先写入空闲盘块数，100块 */
 		*p++ = sb->s_nfree;
 		/* 将SuperBlock的空闲盘块索引表s_free[100]写入缓存中后续位置 */
 		memcpy(p, sb->s_free, sizeof(sb->s_free));
@@ -632,7 +632,7 @@ extern "C" {
 	const s32
 		SECONDFS_NMOUNT = FileSystem::NMOUNT,			/* 系统中用于挂载子文件系统的装配块数量 */
 		SECONDFS_SUPER_BLOCK_SECTOR_NUMBER = FileSystem::SUPER_BLOCK_SECTOR_NUMBER,	/* 定义SuperBlock位于磁盘上的扇区号，占据200，201两个扇区。 */
-		SECONDFS_SUPER_BLOCK_DISK_SIZE = 1024,
+		SECONDFS_SUPER_BLOCK_SIZE = 1024,
 		SECONDFS_ROOTINO = FileSystem::ROOTINO,			/* 文件系统根目录外存Inode编号 */
 		SECONDFS_INODE_NUMBER_PER_SECTOR = FileSystem::INODE_NUMBER_PER_SECTOR,	/* 外存INode对象长度为64字节，每个磁盘块可以存放512/64 = 8个外存Inode */
 		SECONDFS_INODE_ZONE_START_SECTOR = FileSystem::INODE_ZONE_START_SECTOR,	/* 外存Inode区位于磁盘上的起始扇区号 */

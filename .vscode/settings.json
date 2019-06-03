@@ -27,7 +27,10 @@
         "version.h": "c",
         "kern_levels.h": "c",
         "slub_def.h": "c",
-        "new": "c"
+        "new": "c",
+        "string.h": "c",
+        "endian.h": "c",
+        "stdint.h": "c"
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false,

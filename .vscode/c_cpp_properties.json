@@ -13,7 +13,8 @@
                 "__KERNEL__",
                 "__IN_VSCODE__",
                 "CONFIG_PAGE_OFFSETUL=0xc0000000",
-                "KBUILD_MODNAME=\"secondfs\""
+                "KBUILD_MODNAME=\"secondfs\"",
+                "__USE_MISC"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
