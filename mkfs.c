@@ -266,15 +266,11 @@ int main(int argc, char **argv)
 		if (first_time)
 			fast_stack_buf.stack[LE32_POST_INC(fast_stack_buf.count)] = htole32(0);
 		
-		sfdbg_pf("1\n");
-
 		curr_group_size = remain_data_block_num < group_max_size ? remain_data_block_num : group_max_size;
 
 		for (int i = 0; i < curr_group_size; i++) {
 			fast_stack_buf.stack[LE32_POST_INC(fast_stack_buf.count)] = htole32(remain_data_block_num - i + SECONDFS_DATA_FIRST_BLOCK);
 		}
-
-		sfdbg_pf("2\n");
 
 		fast_stack_buf.count = htole32(first_time ? curr_group_size + 1 : curr_group_size);
 
@@ -285,9 +281,8 @@ int main(int argc, char **argv)
 		remain_data_block_num -= curr_group_size;
 
 		if (remain_data_block_num == 0) {
-			sb_buf.s_free = fast_stack_buf;
 			sfdbg_pf("Write into SuperBlock: ");
-			break;
+			sb_buf.s_free = fast_stack_buf;
 		} else {
 			last_index_data_block_no = remain_data_block_num;
 			sfdbg_pf("Write into physical block %d (data block %d): ", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, last_index_data_block_no);
@@ -307,6 +302,9 @@ int main(int argc, char **argv)
 		}
 
 		sfdbg_pf("\n");
+
+		if (remain_data_block_num == 0)
+			break;
 	}
 }
 
@@ -324,6 +322,8 @@ int main(int argc, char **argv)
 	sb_buf.s_ronly = htole32(read_only_flag ? 1 : 0);
 	sb_buf.s_time = (__s32)time(NULL);
 
+	sfdbg_pf("Writing SuperBlock...\n");
+
 	if (write_block(fd, SECONDFS_SB_FIRST_BLOCK, &sb_buf, sizeof(sb_buf)) < 0) {
 		eprintf("Error writing SuperBlock: %s\n", strerror(errno));
 		goto fclose_err;
@@ -332,6 +332,7 @@ int main(int argc, char **argv)
 	// Reset i_number of all inodes
 	char zero[SECONDFS_BLOCK_SIZE] = {0};
 	for (int blkno = SECONDFS_INODE_FIRST_BLOCK; blkno < SECONDFS_DATA_FIRST_BLOCK; blkno++) {
+		sfdbg_pf("Writing Inode blk %d\n", blkno);
 		write_block(fd, blkno, zero, sizeof(zero));
 	}
 
