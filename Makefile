@@ -64,7 +64,7 @@ mkfs.secondfs : mkfs.c
 clean:
 	$(RM) cxxflags.tmp
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
-	rm mkfs.secondfs
+	$(RM) mkfs.secondfs
 
 ######### 下面是 C 或 C++ 实现的辅助功能/共同函数/入口点相关文件的编译 #########
 
