@@ -367,9 +367,9 @@ int main(int argc, char **argv)
 		DirectoryEntry de[2];
 		bzero(&de, sizeof(de));
 		de[0].m_ino = 0;
-		strcpy(&de[0].m_name, ".");
+		memcpy(de[0].m_name, ".", 2);
 		de[1].m_ino = 0;
-		strcpy(&de[1].m_name, "..");
+		memcpy(de[1].m_name, "..", 3);
 		
 		memcpy(block, de, sizeof(de));
 	}
