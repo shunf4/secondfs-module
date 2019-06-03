@@ -24,42 +24,42 @@
 #define LE32_POST_INC(x) x = htole32(le32toh(x) + 1), le32toh(x) - 1
 
 typedef struct _fast_stack {
-	s32 count;
-	s32 stack[100];
+	__s32 count;
+	__s32 stack[100];
 } fast_stack;
 
 typedef struct _SuperBlock
 {
-	s32	s_isize;		/* 外存Inode区占用的盘块数 */
-	s32	s_fsize;		/* 盘块总数 */
+	__s32	s_isize;		/* 外存Inode区占用的盘块数 */
+	__s32	s_fsize;		/* 盘块总数 */
 	
 	fast_stack s_free;
 	
 	fast_stack s_inode;
 	
-	//s32	s_flock_obsolete;	/* 封锁空闲盘块索引表标志 */
-	s32	s_has_dots;		/* 我们用两个 lock 弃置后的空间来表示 "文件系统是否有 . 和 .. 目录项"吧. */
-	s32	s_ilock_obsolete;	/* 封锁空闲Inode表标志 */
+	//__s32	s_flock_obsolete;	/* 封锁空闲盘块索引表标志 */
+	__s32	s_has_dots;		/* 我们用两个 lock 弃置后的空间来表示 "文件系统是否有 . 和 .. 目录项"吧. */
+	__s32	s_ilock_obsolete;	/* 封锁空闲Inode表标志 */
 	
-	s32	s_fmod;			/* 内存中super block副本被修改标志，意味着需要更新外存对应的Super Block */
-	s32	s_ronly;		/* 本文件系统只能读出 */
-	s32	s_time;			/* 最近一次更新时间 */
-	s32	padding[47];		/* 填充使SuperBlock块大小等于1024字节，占据2个扇区 */
+	__s32	s_fmod;			/* 内存中super block副本被修改标志，意味着需要更新外存对应的Super Block */
+	__s32	s_ronly;		/* 本文件系统只能读出 */
+	__s32	s_time;			/* 最近一次更新时间 */
+	__s32	padding[47];		/* 填充使SuperBlock块大小等于1024字节，占据2个扇区 */
 } SuperBlock;
 
 typedef struct _DiskInode
 {
-	u32		d_mode;			/* 状态的标志位，定义见enum INodeFlag */
-	s32		d_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
+	__u32		d_mode;			/* 状态的标志位，定义见enum INodeFlag */
+	__s32		d_nlink;		/* 文件联结计数，即该文件在目录树中不同路径名的数量 */
 	
-	u16		d_uid;			/* 文件所有者的用户标识数 */
-	u16		d_gid;			/* 文件所有者的组标识数 */
+	__u16		d_uid;			/* 文件所有者的用户标识数 */
+	__u16		d_gid;			/* 文件所有者的组标识数 */
 	
-	s32		d_size;			/* 文件大小，字节为单位 */
-	s32		d_addr[10];		/* 用于文件逻辑块号和物理块好转换的基本索引表 */
+	__s32		d_size;			/* 文件大小，字节为单位 */
+	__s32		d_addr[10];		/* 用于文件逻辑块号和物理块好转换的基本索引表 */
 
-	s32		d_atime;		/* 最后访问时间 */
-	s32		d_mtime;		/* 最后修改时间 */
+	__s32		d_atime;		/* 最后访问时间 */
+	__s32		d_mtime;		/* 最后修改时间 */
 } DiskInode;
 
 static int read_only_flag = -1;
@@ -82,9 +82,9 @@ static struct option long_options[] = {
 #define sfdbg_pf(fmt, ...)
 #endif // SFDBG_MKFS
 
-static void show_usage(int fd)
+static void show_usage(FILE *f)
 {
-	fprintf(fd, 
+	fprintf(f, 
 		"Usage: %s [-rdD] [<long-options>] device [block-count]\n"
 		"\t-r, --read-only\tFormat as read-only filesystem (You need to modify the superblock manually to deactivate).\n"
 		"\t-d, --dots\tFormat this filesystem as having dots(. & ..) in directory entry. No special effects other than taking more space in directory files.\n"
@@ -316,7 +316,7 @@ int main(int argc, char **argv)
 	sb_buf.s_has_dots = htole32(has_dots_flag ? 0xFFFFFFFF : 0);
 	
 	sb_buf.s_ronly = htole32(read_only_flag ? 1 : 0);
-	sb_buf.s_time = (s32)time(NULL);
+	sb_buf.s_time = (__s32)time(NULL);
 
 	if (write_block(fd, SECONDFS_SB_FIRST_BLOCK, &sb_buf, sizeof(sb_buf)) < 0) {
 		eprintf("Error writing SuperBlock: %s\n", strerror(errno));
