@@ -82,13 +82,13 @@ static struct option long_options[] = {
 #define sfdbg_pf(fmt, ...)
 #endif // SFDBG_MKFS
 
-static void show_usage(FILE *f)
+static void show_usage(FILE *f, const char *argv0)
 {
 	fprintf(f, 
 		"Usage: %s [-rdD] [<long-options>] device [block-count]\n"
 		"\t-r, --read-only\tFormat as read-only filesystem (You need to modify the superblock manually to deactivate).\n"
 		"\t-d, --dots\tFormat this filesystem as having dots(. & ..) in directory entry. No special effects other than taking more space in directory files.\n"
-		"\t-D, --no-dots\tOpposition of -d.\n"
+		"\t-D, --no-dots\tOpposition of -d.\n", argv0
 	);
 	
 }
@@ -196,7 +196,7 @@ int main(int argc, char **argv)
 			else
 				eprintf("Error: unrecognized option - \\x%x\n", optopt);
 				
-			show_usage(stderr);
+			show_usage(stderr, argv[0]);
 			return EXIT_FAILURE;
 			break;
 
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 
 	if (optind != argc - 2 && optind != argc - 1) {
 		eprintf("Error: invalid arguments number\n");
-		show_usage(stderr);
+		show_usage(stderr, argv[0]);
 		return EXIT_FAILURE;
 	}
 
@@ -239,7 +239,7 @@ int main(int argc, char **argv)
 	block_num = stat_buf.st_size / SECONDFS_BLOCK_SIZE;
 	if (block_num < SECONDFS_BLOCK_MIN_REQUIRED) {
 		eprintf("Error: device too small (required = %d blocks, device = %d blocks)\n", SECONDFS_BLOCK_MIN_REQUIRED, block_num);
-		ret = ETOOSMALL;
+		ret = ENOSPC;
 		goto fclose_err;
 	}
 
