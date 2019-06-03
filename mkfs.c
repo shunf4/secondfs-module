@@ -286,12 +286,12 @@ int main(int argc, char **argv)
 			break;
 		} else {
 			last_index_data_block_no = remain_data_block_num;
+			sfdbg_pf("Write into physical block %d (data block %d): ", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, last_index_data_block_no);
 			ret = write_stack_in_block(fd, last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, &fast_stack_buf);
 			if (ret < 0) {
 				eprintf("Error writing data block %d: %s\n", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, strerror(errno));
 				goto fclose_err;
 			}
-			sfdbg_pf("Write into physical block %d (data block %d): ", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, last_index_data_block_no);
 		}
 
 		host_count = le32toh(fast_stack_buf.count);
