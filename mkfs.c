@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 				// more-verbose
 				sfdbg_pf("Option --more-verbose enabled.\n");
 			} else {
-				eprint("logic error;\n");
+				eprintf("logic error;\n");
 				abort();
 			}
 			break;
