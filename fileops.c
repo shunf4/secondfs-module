@@ -540,8 +540,12 @@ static int secondfs_rmdir(struct inode *dir, struct dentry *dentry)
 		}
 
 		inode->i_size = 0;
-		inode_dec_link_count(inode);
+		
+		if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xFFFFFFFF)
+			inode_dec_link_count(inode);
+
 		secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
+		
 		if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xffffffff) {
 			inode_dec_link_count(dir);
 			secondfs_inode_conform_v2s(SECONDFS_INODE(dir), dir);

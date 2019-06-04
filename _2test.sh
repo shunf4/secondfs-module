@@ -26,5 +26,18 @@ stat . abc abc/def abc/ghi abc/def/123 abc/def/456.txt
 
 cd ../test2
 
+mv abc/def abc/ghi
+
 ls -R
 stat . abc abc/def abc/ghi abc/def/123 abc/def/456.txt
+
+rm -rf abc
+
+ls -R
+stat . abc abc/def abc/ghi abc/def/123 abc/def/456.txt
+
+cd ..
+sudo umount test2
+./fsck.secondfs new.img
+
+sudo rmmod test2
