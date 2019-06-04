@@ -13,9 +13,18 @@ mkdir abc/def abc/ghi abc/jkl
 mkdir abc/def/123
 touch abc/def/456.txt
 
+ls -R
+stat . abc abc/def abc/ghi abc/def/123 abc/def/456.txt
+
 rm -rf ../test3/*
 cp -R * ../test3/
 
 cd ../test3
+
+ls -R
 stat . abc abc/def abc/ghi abc/def/123 abc/def/456.txt
 
+cd ../test2
+
+ls -R
+stat . abc abc/def abc/ghi abc/def/123 abc/def/456.txt
