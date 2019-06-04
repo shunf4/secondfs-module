@@ -220,7 +220,7 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 int secondfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 {
 	Inode *si = SECONDFS_INODE(inode);
-	int ret;
+	int ret = 0;
 
 	si->i_flag |= SECONDFS_IUPD;
 
@@ -234,7 +234,15 @@ int secondfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 	secondfs_dbg(INODE, "write_inode(%p, %d), IUpdate...", si->i_ssb, si->i_number);
 
 	// Bflush() will be called at the end of IUpdate
-	ret = Inode_IUpdate(si, ktime_get_real_seconds());
+#ifdef SECONDFS_KERNEL_BEFORE_4_14
+	if (inode->i_sb->s_flags & MS_RDONLY == 0)
+#else
+	if (inode->i_sb->s_flags & SB_RDONLY == 0)
+#endif
+		ret = Inode_IUpdate(si, ktime_get_real_seconds());
+	else
+		ret = -EPERM;
+
 	return ret;
 }
 
@@ -288,10 +296,18 @@ void secondfs_evict_inode(struct inode *inode)
 
 	/* 更新外存Inode信息 */
 	// IUpdate 已经修改, 不会更新时间
-	ret = Inode_IUpdate(pNode, ktime_get_real_seconds());
-	if (IS_ERR_VALUE((intptr_t)ret)) {
-		secondfs_err("evict_inode(%p,%d) Inode::IUpdate() error %d!", pNode->i_ssb, pNode->i_number, ret);
-		return;
+
+#ifdef SECONDFS_KERNEL_BEFORE_4_14
+	if (inode->i_sb->s_flags & MS_RDONLY == 0)
+#else
+	if (inode->i_sb->s_flags & SB_RDONLY == 0)
+#endif
+	{
+		ret = Inode_IUpdate(pNode, ktime_get_real_seconds());
+		if (IS_ERR_VALUE((intptr_t)ret)) {
+			secondfs_err("evict_inode(%p,%d) Inode::IUpdate() error %d!", pNode->i_ssb, pNode->i_number, ret);
+			return;
+		}
 	}
 
 	// System clean actions to VFS inode

@@ -222,7 +222,15 @@ int secondfs_sync_fs(struct super_block *sb, int wait)
 	}
 
 	secondfs_dbg(GENERAL, "SB %p: sync_fs...", secsb);
-	FileSystem_Update(secondfs_filesystemp, secsb);
+	
+
+#ifdef SECONDFS_KERNEL_BEFORE_4_14
+	if (sb->s_flags & MS_RDONLY == 0)
+#else
+	if (sb->s_flags & SB_RDONLY == 0)
+#endif
+		FileSystem_Update(secondfs_filesystemp, secsb);
+
 	// Bflush() will be executed at the end of Update()
 	return 0;
 }

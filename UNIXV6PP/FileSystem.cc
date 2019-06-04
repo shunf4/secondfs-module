@@ -160,7 +160,7 @@ void FileSystem::Update(SuperBlock *secsb)
 
 	/* 同步SuperBlock到磁盘 */
 	/* 如果该SuperBlock内存副本没有被修改，直接管理inode和空闲盘块被上锁或该文件系统是只读文件系统 */
-	if(le32_to_cpu(sb->s_fmod) == 0 || secondfs_c_helper_mutex_is_locked(&sb->s_ilock) || secondfs_c_helper_mutex_is_locked(&sb->s_flock) || le32_to_cpu(sb->s_ronly) != 0)
+	if(le32_to_cpu(sb->s_fmod) == 0 || secondfs_c_helper_mutex_is_locked(&sb->s_ilock) || secondfs_c_helper_mutex_is_locked(&sb->s_flock))
 	{
 		secondfs_dbg(GENERAL, "FileSystem::Update: SB not modified.");
 		goto out;
