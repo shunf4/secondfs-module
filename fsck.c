@@ -250,8 +250,6 @@ int main(int argc, char **argv)
 
 		printf("\n");
 
-		getchar();
-
 		if ((nxt_ind_blkno = le32toh(fast_stack_buf.stack[0])) == 0) {
 			printf("No free blocks anymore.\n");
 			break;
