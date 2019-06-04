@@ -19,9 +19,10 @@ ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
 	ret = FileManager_Read(secondfs_filemanagerp, buf, len, &pos_u32, si);
 	*ppos = pos_u32;
 
-	file_accessed(filp);
-
 	secondfs_inode_conform_s2v(inode, si);
+
+	file_accessed(filp);
+	// secondfs_inode_conform_v2s needed later
 	mark_inode_dirty_sync(inode);
 
 	inode_unlock(inode);
@@ -46,15 +47,19 @@ ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t le
 	inode_lock(inode);
 
 	secondfs_dbg(FILE, "file_write(%.32s,%p,%lu): update_time()", filp->f_path.dentry->d_name.name, buf, len);
+	
+	ret = FileManager_Write(secondfs_filemanagerp, buf, len, &pos_u32, si);
+	*ppos = pos_u32;
+	secondfs_inode_conform_s2v(inode, si);
+
 	ret = file_update_time(filp);
 	if (ret) {
 		secondfs_err("file_write(%.32s,%p,%lu): update_time() failed!", filp->f_path.dentry->d_name.name, buf, len);
 		goto out;
 	}
+
+	// secondfs_inode_conform_v2s needed later
 	
-	ret = FileManager_Write(secondfs_filemanagerp, buf, len, &pos_u32, si);
-	*ppos = pos_u32;
-	secondfs_inode_conform_s2v(inode, si);
 	mark_inode_dirty_sync(inode);
 
 out:
