@@ -60,7 +60,7 @@ kernmodule : $(secondfs-cxxobjs)
 mkfs.secondfs : mkfs.c
 	$(CC) -o$@ $^
 
-mkfs.secondfs : mkfs.c
+fsck.secondfs : fsck.c
 	$(CC) -o$@ $^
 
 # 清理
