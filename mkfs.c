@@ -154,9 +154,9 @@ int main(int argc, char **argv)
 			break;
 
 		case 'r':
-			sfdbg_pf("Option -%c / --%s enabled.\n", (char)ret, long_options[option_index].name);
+			sfdbg_pf("Option -r / --read-only enabled.\n");
 			if (read_only_flag != -1) {
-				eprintf("Error: -%c / --%s enabled more than once.\n", (char)ret, long_options[option_index].name);
+				eprintf("Error: -r / --read-only enabled more than once.\n");
 				getopt_err = 1;
 				break;
 			}
@@ -164,9 +164,9 @@ int main(int argc, char **argv)
 			break;
 
 		case 'd':
-			sfdbg_pf("Option -%c / --%s enabled.\n", (char)ret, long_options[option_index].name);
+			sfdbg_pf("Option -d / --dots enabled.\n", (char)ret, long_options[option_index].name);
 			if (has_dots_flag != -1) {
-				eprintf("Error: -%c / --%s enabled/disabled more than once.\n", (char)ret, long_options[option_index].name);
+				eprintf("Error: -d / --dots enabled/disabled more than once.\n");
 				getopt_err = 1;
 				break;
 			}
@@ -174,9 +174,9 @@ int main(int argc, char **argv)
 			break;
 
 		case 'D':
-			sfdbg_pf("Option -%c / --%s enabled.\n", (char)ret, long_options[option_index].name);
+			sfdbg_pf("Option -D / --no-dots enabled.\n", (char)ret, long_options[option_index].name);
 			if (has_dots_flag != -1) {
-				eprintf("Error: -%c / --%s enabled/disabled more than once.\n", (char)ret, long_options[option_index].name);
+				eprintf("Error: -D / --no-dots enabled/disabled more than once.\n");
 				getopt_err = 1;
 				break;
 			}
