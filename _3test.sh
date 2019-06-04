@@ -42,6 +42,15 @@ mv -T abc/def abc/ghi
 ls -R
 stat . abc abc/ghi abc/ghi/123 abc/ghi/123/xxx.txt
 
+cd ..
+sudo umount test2
+./fsck.secondfs new.img
+
+sudo mount -t secondfs -o loop new.img ./test2
+
+ls -R
+stat . abc abc/ghi abc/ghi/123 abc/ghi/123/xxx.txt
+
 rm -rf abc
 
 ls -R
