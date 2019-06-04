@@ -20,9 +20,7 @@ ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
 	*ppos = pos_u32;
 
 	file_accessed(filp);
-
-out:
-
+	
 	secondfs_inode_conform_s2v(inode, si);
 	mark_inode_dirty_sync(inode);
 
