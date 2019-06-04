@@ -71,19 +71,26 @@ typedef struct _DiskInode
 static int read_only_flag = -1;
 static int has_dots_flag = -1;
 static int getopt_err = 0;
+static int verbose_level = -1;
 
 static struct option long_options[] = {
 	{ "read-only",	no_argument, NULL, 'r' },
 	{ "dots",	no_argument, NULL, 'd' },
 	{ "no-dots",	no_argument, NULL, 'D' },
+	{ "verbose",	no_argument, &verbose_level, 1 },
+	{ "more-verbose",	no_argument, &verbose_level, 2 },
 };
+
+#define verbose_pf(fmt, ...) do { if (verbose_level >= 1) printf(fmt, ##__VA_ARGS__); } while (0)
+#define vverbose_pf(fmt, ...) do { if (verbose_level >= 2) printf(fmt, ##__VA_ARGS__); } while (0)
 
 #define SFDBG_MKFS
 
 #define eprintf(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
 #ifdef SFDBG_MKFS
-#define sfdbg_pf(fmt, ...) printf(fmt, ##__VA_ARGS__);
+#define sfdbg_pf(fmt, ...) printf(fmt, ##__VA_ARGS__)
+
 #else // SFDBG_MKFS
 #define sfdbg_pf(fmt, ...)
 #endif // SFDBG_MKFS
@@ -94,7 +101,12 @@ static void show_usage(FILE *f, const char *argv0)
 		"Usage: %s [-rdD] [<long-options>] device [block-count]\n"
 		"\t-r, --read-only\tFormat as read-only filesystem (You need to modify the superblock manually to deactivate).\n"
 		"\t-d, --dots\tFormat this filesystem as having dots(. & ..) in directory entry. No special effects other than taking more space in directory files.\n"
-		"\t-D, --no-dots\tOpposition of -d.\n", argv0
+		"\t-D, --no-dots\tOpposition of -d.\n"
+
+		"\t-v, --verbose\tEnables verbose output.\n"
+		"\t--more-verbose\tEnables more verbose output.\n"
+		
+		, argv0
 	);
 	
 }
@@ -143,14 +155,23 @@ int main(int argc, char **argv)
 
 	while (1) {
 
-		ret = getopt_long(argc, argv, "rdD", long_options, &option_index);
+		ret = getopt_long(argc, argv, "rvdD", long_options, &option_index);
 
 		if (ret == -1)
 			break;
 
 		switch (ret) {
 		case 0:
-			eprintf("Logic error.\n");
+			if (option_index == 3) {
+				// verbose
+				sfdbg_pf("Option -v / --verbose enabled.\n");
+			} else if (option_index == 4) {
+				// more-verbose
+				sfdbg_pf("Option --more-verbose enabled.\n");
+			} else {
+				eprint("logic error;\n");
+				abort();
+			}
 			break;
 
 		case 'r':
@@ -184,6 +205,11 @@ int main(int argc, char **argv)
 			has_dots_flag = 0;
 			break;
 
+		case 'v':
+			sfdbg_pf("Option -v / --verbose enabled.\n");
+			verbose_level = 1;
+			break;
+
 		case '?':
 			if (isprint(optopt))
 				eprintf("Error: unrecognized option - %c\n", optopt);
@@ -207,7 +233,11 @@ int main(int argc, char **argv)
 		has_dots_flag = 1;
 	}
 
-	sfdbg_pf("Read-only: %d, has-dots: %d\n", read_only_flag, has_dots_flag);
+	if (verbose_level == -1) {
+		verbose_level = 0;
+	}
+
+	sfdbg_pf("Read-only: %d, has-dots: %d, verbose: %d\n", read_only_flag, has_dots_flag, verbose_level);
 
 	if (optind != argc - 2 && optind != argc - 1) {
 		eprintf("Error: invalid arguments number\n");
@@ -249,7 +279,7 @@ int main(int argc, char **argv)
 		arg_block_num = block_num;
 	}
 
-	sfdbg_pf("File: %s, blocks: %d\n", argv[optind], arg_block_num);
+	verbose_pf("File: %s, blocks: %d\n", argv[optind], arg_block_num);
 
 	SuperBlock sb_buf;
 	bzero(&sb_buf, sizeof(sb_buf));
@@ -287,11 +317,11 @@ int main(int argc, char **argv)
 		remain_data_block_num -= curr_group_size;
 
 		if (remain_data_block_num == 0) {
-			sfdbg_pf("Write into SuperBlock(bottom->top): ");
+			verbose_pf("Write into SuperBlock(bottom->top): ");
 			sb_buf.s_free = fast_stack_buf;
 		} else {
 			last_index_data_block_no = remain_data_block_num;
-			sfdbg_pf("Write into physical block %d (data block %d) (bottom->top): ", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, last_index_data_block_no);
+			verbose_pf("Write into physical block %d (data block %d) (bottom->top): ", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, last_index_data_block_no);
 			ret = write_stack_in_block(fd, last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, &fast_stack_buf);
 			if (ret < 0) {
 				eprintf("Error writing data block %d: %s\n", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, strerror(errno));
@@ -301,13 +331,13 @@ int main(int argc, char **argv)
 
 		host_count = le32toh(fast_stack_buf.count);
 
-		sfdbg_pf("[%d]", host_count);
+		verbose_pf("[%d]", host_count);
 
 		for (int i = 0; i < host_count; i++) {
-			sfdbg_pf(" %d", le32toh(fast_stack_buf.stack[i]));
+			vverbose_pf(" %d", le32toh(fast_stack_buf.stack[i]));
 		}
 
-		sfdbg_pf("\n");
+		verbose_pf("\n");
 
 		if (remain_data_block_num == 0)
 			break;
@@ -328,7 +358,7 @@ int main(int argc, char **argv)
 	sb_buf.s_ronly = htole32(read_only_flag ? 1 : 0);
 	sb_buf.s_time = htole32((__s32)time(NULL));
 
-	sfdbg_pf("Writing SuperBlock...\n");
+	verbose_pf("Writing SuperBlock...\n");
 
 	if (write_block(fd, SECONDFS_SB_FIRST_BLOCK, &sb_buf, sizeof(sb_buf)) < 0) {
 		eprintf("Error writing SuperBlock: %s\n", strerror(errno));
@@ -337,7 +367,7 @@ int main(int argc, char **argv)
 
 	// Reset i_number of all inodes
 	char zero[SECONDFS_BLOCK_SIZE] = {0};
-	sfdbg_pf("Writing Inode area...\n");
+	verbose_pf("Writing Inode area...\n");
 	for (int blkno = SECONDFS_INODE_FIRST_BLOCK; blkno < SECONDFS_DATA_FIRST_BLOCK; blkno++) {
 		if (write_block(fd, blkno, zero, sizeof(zero)) < 0) {
 			eprintf("Error writing Inode block: %s\n", strerror(errno));
@@ -385,7 +415,7 @@ int main(int argc, char **argv)
 		goto fclose_err;
 	}
 
-	sfdbg_pf("Done!\n");
+	verbose_pf("Done!\n");
 	close(fd);
 	return ret;
 
