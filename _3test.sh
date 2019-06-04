@@ -48,6 +48,8 @@ sudo umount test2
 
 sudo mount -t secondfs -o loop new.img ./test2
 
+cd test2
+
 ls -R
 stat . abc abc/ghi abc/ghi/123 abc/ghi/123/xxx.txt
 
