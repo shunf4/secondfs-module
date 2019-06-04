@@ -27,7 +27,7 @@ EXTRA_CFLAGS += -Wall -I/usr/include
 
 # The main target
 # all 目标, 主要构建目标
-all : set_and_print_cxxflags kernmodule mkfs.secondfs
+all : set_and_print_cxxflags kernmodule mkfs.secondfs fsck.secondfs
 
 # Analysis the step in which kbuild builds the standard kernel module
 # and fetch the compile options & flags into cxxflags.tmp
@@ -56,6 +56,9 @@ kernmodule : $(secondfs-cxxobjs)
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 	# 接着链接 C++ 语言的二进制对象文件: 丢弃刚生成的 .ko 文件, 而是利用临时生成的 .mod.o (可能包含内核模块特有的符号) 文件, 与所有 C/C++ 的 .o 链接
 	$(LD) -r --build-id -osecondfs.ko $(secondfs-objs) secondfs.mod.o $(secondfs-cxxobjs)
+
+mkfs.secondfs : mkfs.c
+	$(CC) -o$@ $^
 
 mkfs.secondfs : mkfs.c
 	$(CC) -o$@ $^

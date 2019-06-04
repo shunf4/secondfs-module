@@ -286,11 +286,11 @@ int main(int argc, char **argv)
 		remain_data_block_num -= curr_group_size;
 
 		if (remain_data_block_num == 0) {
-			sfdbg_pf("Write into SuperBlock: ");
+			sfdbg_pf("Write into SuperBlock(bottom->top): ");
 			sb_buf.s_free = fast_stack_buf;
 		} else {
 			last_index_data_block_no = remain_data_block_num;
-			sfdbg_pf("Write into physical block %d (data block %d): ", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, last_index_data_block_no);
+			sfdbg_pf("Write into physical block %d (data block %d) (bottom->top): ", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, last_index_data_block_no);
 			ret = write_stack_in_block(fd, last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, &fast_stack_buf);
 			if (ret < 0) {
 				eprintf("Error writing data block %d: %s\n", last_index_data_block_no + SECONDFS_DATA_FIRST_BLOCK, strerror(errno));

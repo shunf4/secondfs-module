@@ -34,5 +34,6 @@
     },
     "editor.tabSize": 8,
     "editor.insertSpaces": false,
-    "editor.autoClosingQuotes": "never"
+    "editor.autoClosingQuotes": "never",
+    "files.eol": "\n"
 }
