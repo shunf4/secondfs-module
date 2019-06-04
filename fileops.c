@@ -545,7 +545,7 @@ static int secondfs_rmdir(struct inode *dir, struct dentry *dentry)
 			inode_dec_link_count(inode);
 
 		secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
-		
+
 		if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xffffffff) {
 			inode_dec_link_count(dir);
 			secondfs_inode_conform_v2s(SECONDFS_INODE(dir), dir);
@@ -684,7 +684,7 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 			}
 
 			// 空则对
-			if (!iop.m_Offset /* not Empty */) {
+			if (!iop2.m_Offset /* not Empty */) {
 				err = -ENOTEMPTY;
 				secondfs_err("rename(): mv target is not empty");
 				goto out_dir;
