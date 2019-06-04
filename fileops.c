@@ -691,8 +691,9 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 			}
 		}
 
-		// 为保证文件系统一致性, 这里要搜一下新 dentry 的父
-		// 看是否有新 dentry 的目录项
+		// 搜一下新 dentry 的父目录
+		// 看是否有新 dentry 的目录项, 以便后续
+		// 把新文件链接到旧文件
 		iop3.isUserP = 0;
 		secondfs_dbg(FILE, "rename(): DELocate() OPEN to ensure new_dentry is in new_dir...");
 		err = FileManager_DELocate(secondfs_filemanagerp, SECONDFS_INODE(new_dir),
@@ -705,7 +706,7 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 
 		// 现在可以把新文件链接到旧文件了
 		secondfs_dbg(FILE, "rename(): secondfs_set_link()...");
-		secondfs_set_link(new_dir, &iop, old_inode, 1);
+		secondfs_set_link(new_dir, &iop3, old_inode, 1);
 
 		// 对于被替换的文件 Inode, 要递减它的链接计数
 		if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
