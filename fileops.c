@@ -12,12 +12,21 @@ ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
 	ssize_t ret;
 	u32 pos_u32 = *ppos;
 
-	secondfs_dbg(FILE, "file_read(%p,%p,%lu)", filp, buf, len);
+	secondfs_dbg(FILE, "file_read(%p,%p,%lu): inode_lock()", filp, buf, len);
+
+	inode_lock(inode);
 	
 	ret = FileManager_Read(secondfs_filemanagerp, buf, len, &pos_u32, si);
 	*ppos = pos_u32;
+
+	file_accessed(filp);
+
+out:
+
 	secondfs_inode_conform_s2v(inode, si);
 	mark_inode_dirty_sync(inode);
+
+	inode_unlock(inode);
 	return ret;
 }
 
@@ -33,11 +42,22 @@ ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t le
 	u32 pos_u32 = *ppos;
 
 	secondfs_dbg(FILE, "file_write(%.32s,%p,%lu)", filp->f_path.dentry->d_name.name, buf, len);
+
+	secondfs_dbg(FILE, "file_write(%.32s,%p,%lu): inode_lock()", filp->f_path.dentry->d_name.name, buf, len);
+
+	inode_lock(inode);
+
+	ret = file_update_time(filp);
+	if (ret)
+		goto out;
 	
 	ret = FileManager_Write(secondfs_filemanagerp, buf, len, &pos_u32, si);
 	*ppos = pos_u32;
 	secondfs_inode_conform_s2v(inode, si);
 	mark_inode_dirty_sync(inode);
+
+out:
+	inode_unlock(inode);
 	return ret;
 }
 
