@@ -381,6 +381,9 @@ static int secondfs_add_dots(struct inode *inode, struct inode *parent)
 		return 0;
 
 	de.m_ino = cpu_to_le32(inode->i_ino);
+	if (de.m_ino == 0) {
+		de.m_ino = 0xFFFFFFFF;
+	}
 	memset(de.m_name, 0, sizeof(de.m_name));
 	de.m_name[0] = '.';
 
@@ -397,6 +400,9 @@ static int secondfs_add_dots(struct inode *inode, struct inode *parent)
 	}
 
 	de.m_ino = cpu_to_le32(parent->i_ino);
+	if (de.m_ino == 0) {
+		de.m_ino = 0xFFFFFFFF;
+	}
 	de.m_name[1] = '.';
 	iop.m_Base = (u8 *)&de;
 	iop.m_Count = sizeof(de);
@@ -422,6 +428,10 @@ static int secondfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	// only when SuperBlock::s_has_dots == 0xffffffff (which
 	// is impossible in original UnixV6++),
 	// we read & write "." & ".." in directory file.
+
+	// In addition, DE with ino == 0 will be treated as an
+	// empty DE. So the DEs which point to the root directory
+	// has ino == 0xffffffff
 	
 	// ext2 的设计: 将 ".", ".." 对于目录的链接也计入 i_nlink.
 	// (https://unix.stackexchange.com/questions/101515/why-does-a-new-directory-have-a-hard-link-count-of-2-before-anything-is-added-to)
@@ -437,6 +447,10 @@ static int secondfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 	// 我们通过 SuperBlock::s_has_dots 来指定是否有 "." "..".
 	//  - 若有(0xFFFFFFFF) : 按 ext2 来设计链接计数
 	//  - 若没有(其他, 一般为 0x00000000) : 按原 Unix V6++ 来设计链接计数
+
+	// 如果 . 或者 .. 的 ino 是根目录项 (ino == 0, 此目录是根目录的直接子目录),
+	// 则不能让其 ino == 0, 否则会使得 DELocate 将其当作空目录项.
+	// 如果遇到指向根目录项的 DE, 则把 0 置换成 0xFFFFFFFF 
 
 	if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xFFFFFFFF) {
 		inode_inc_link_count(dir);
