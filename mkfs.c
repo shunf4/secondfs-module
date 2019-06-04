@@ -79,6 +79,7 @@ static struct option long_options[] = {
 	{ "no-dots",	no_argument, NULL, 'D' },
 	{ "verbose",	no_argument, &verbose_level, 1 },
 	{ "more-verbose",	no_argument, &verbose_level, 2 },
+	{ 0, 0, 0, 0 },
 };
 
 #define verbose_pf(fmt, ...) do { if (verbose_level >= 1) printf(fmt, ##__VA_ARGS__); } while (0)
