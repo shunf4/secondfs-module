@@ -225,9 +225,9 @@ int secondfs_sync_fs(struct super_block *sb, int wait)
 	
 
 #ifdef SECONDFS_KERNEL_BEFORE_4_14
-	if (sb->s_flags & MS_RDONLY == 0)
+	if ((sb->s_flags & MS_RDONLY) == 0)
 #else
-	if (sb->s_flags & SB_RDONLY == 0)
+	if ((sb->s_flags & SB_RDONLY) == 0)
 #endif
 		FileSystem_Update(secondfs_filesystemp, secsb);
 

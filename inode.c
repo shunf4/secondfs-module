@@ -235,9 +235,9 @@ int secondfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 
 	// Bflush() will be called at the end of IUpdate
 #ifdef SECONDFS_KERNEL_BEFORE_4_14
-	if (inode->i_sb->s_flags & MS_RDONLY == 0)
+	if ((inode->i_sb->s_flags & MS_RDONLY) == 0)
 #else
-	if (inode->i_sb->s_flags & SB_RDONLY == 0)
+	if ((inode->i_sb->s_flags & SB_RDONLY) == 0)
 #endif
 		ret = Inode_IUpdate(si, ktime_get_real_seconds());
 	else
