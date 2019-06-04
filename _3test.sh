@@ -1,5 +1,8 @@
 #!/bin/bash -x
 
+sudo umount test2
+sudo rmmod secondfs.ko
+
 sudo insmod secondfs.ko
 sudo umount test2
 mkdir -p test test2 test3
