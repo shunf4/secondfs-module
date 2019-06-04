@@ -95,7 +95,11 @@ void secondfs_inode_conform_v2s(Inode *si, struct inode *inode)
 	length += sprintf(buf + length, ", size:%d", si->i_size);
 	si->i_atime = inode->i_atime.tv_sec;
 	length += sprintf(buf + length, ", atime:%d", si->i_atime);
-	si->i_mtime = inode->i_mtime.tv_sec;
+	si->i_mtime = (inode->i_mtime.tv_sec > inode->i_ctime.tv_sec) ? inode->i_mtime.tv_sec : inode->i_ctime.tv_sec;
+	// c_time is always more easily changed than m_time.
+	// But in secondfs there is only m_time saved on disk,
+	// so only c_time (named as m_time) is saved.
+	inode->i_mtime = inode->i_ctime;
 	length += sprintf(buf + length, ", mtime:%d", si->i_mtime);
 
 	secondfs_dbg(INODE, "%s", buf);
@@ -195,7 +199,7 @@ void secondfs_inode_conform_s2v(struct inode *inode, Inode *si)
 	length += sprintf(buf + length, ", size:%d", si->i_size);
 	inode->i_atime.tv_sec = si->i_atime;
 	length += sprintf(buf + length, ", atime:%d", si->i_atime);
-	inode->i_mtime.tv_sec = si->i_mtime;
+	inode->i_ctime.tv_sec = inode->i_mtime.tv_sec = si->i_mtime;
 	length += sprintf(buf + length, ", mtime:%d", si->i_mtime);
 
 	if (si->i_flag & SECONDFS_IUPD) {

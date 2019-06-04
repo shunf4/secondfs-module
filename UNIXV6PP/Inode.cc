@@ -648,6 +648,8 @@ int Inode::IUpdate(int time)
 		pNode->d_uid = cpu_to_le16(this->i_uid);
 		pNode->d_gid = cpu_to_le16(this->i_gid);
 		pNode->d_size = cpu_to_le32(this->i_size);
+		pNode->d_atime = cpu_to_le32(this->i_atime);
+		pNode->d_mtime = cpu_to_le32(this->i_mtime);
 		for (int i = 0; i < 10; i++)
 		{
 			pNode->d_addr[i] = cpu_to_le32(this->i_addr[i]);
