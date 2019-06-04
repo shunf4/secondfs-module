@@ -440,6 +440,7 @@ static int secondfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 
 	if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xFFFFFFFF) {
 		inode_inc_link_count(dir);
+		secondfs_inode_conform_v2s(SECONDFS_INODE(dir), dir);
 	}
 
 	// 创建一个新 Inode, 注意 mode 附上 IFDIR
