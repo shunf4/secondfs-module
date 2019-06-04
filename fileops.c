@@ -270,6 +270,8 @@ static int secondfs_link(struct dentry *old_dentry, struct inode *dir,
 	inode_inc_link_count(inode);
 	ihold(inode);
 
+	secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
+
 	// Write to the dentry to its parent
 	// 把这个 inode 和相关 dentry 信息写到父目录去
 	err = secondfs_add_link(dentry, inode);
@@ -457,6 +459,7 @@ static int secondfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 
 	if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xffffffff) {
 		inode_inc_link_count(inode);
+		secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
 	}
 
 	secondfs_dbg(FILE, "mkdir(): secondfs_add_dots()...");
@@ -486,6 +489,8 @@ out_fail:
 	//discard_new_inode(inode);
 	unlock_new_inode(inode);
 	iput(inode);
+	secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
+
 	goto out;
 }
 
@@ -521,10 +526,11 @@ static int secondfs_rmdir(struct inode *dir, struct dentry *dentry)
 
 		inode->i_size = 0;
 		inode_dec_link_count(inode);
+		secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
 		if (SECONDFS_SB(dir->i_sb)->s_has_dots == 0xffffffff) {
 			inode_dec_link_count(dir);
+			secondfs_inode_conform_v2s(SECONDFS_INODE(dir), dir);
 		}
-		secondfs_inode_conform_v2s(SECONDFS_INODE(inode), inode);
 	}
 
 	// 不空则返回默认错误号
@@ -684,9 +690,10 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 
 		// 对于被替换的文件 Inode, 要递减它的链接计数
 		if (source_is_dir && SECONDFS_SB(new_inode->i_sb)->s_has_dots == 0xffffffff) {
-			secondfs_dbg(FILE, "rename(): drop_nlink()...");
+			secondfs_dbg(FILE, "rename(): drop_nlink(new_inode)...");
 			drop_nlink(new_inode);
 		}
+		secondfs_dbg(FILE, "rename(): inode_dec_link_count(new_inode)...");
 		inode_dec_link_count(new_inode);
 	} else {
 		// 当目标不存在时
@@ -748,6 +755,8 @@ static int secondfs_rename(struct inode * old_dir, struct dentry * old_dentry,
 			secondfs_set_link(old_inode, &iop_dot, new_dir, 0);
 		}
 		inode_dec_link_count(old_dir);
+		secondfs_dbg(FILE, "rename(): conforming old_dir...");
+		secondfs_inode_conform_v2s(SECONDFS_INODE(old_dir), old_dir);
 	}
 	return 0;
 out_dir:
