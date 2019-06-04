@@ -165,6 +165,7 @@ int main(int argc, char **argv)
 
 		case 'd':
 			sfdbg_pf("Option -d / --dots enabled.\n");
+
 			if (has_dots_flag != -1) {
 				eprintf("Error: -d / --dots enabled/disabled more than once.\n");
 				getopt_err = 1;
