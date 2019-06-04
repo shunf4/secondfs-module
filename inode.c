@@ -298,9 +298,9 @@ void secondfs_evict_inode(struct inode *inode)
 	// IUpdate 已经修改, 不会更新时间
 
 #ifdef SECONDFS_KERNEL_BEFORE_4_14
-	if (inode->i_sb->s_flags & MS_RDONLY == 0)
+	if ((inode->i_sb->s_flags & MS_RDONLY) == 0)
 #else
-	if (inode->i_sb->s_flags & SB_RDONLY == 0)
+	if ((inode->i_sb->s_flags & SB_RDONLY) == 0)
 #endif
 	{
 		ret = Inode_IUpdate(pNode, ktime_get_real_seconds());
