@@ -226,8 +226,10 @@ int secondfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 	// 在此之前: 将 VFS Inode 的状态根据 inode 进行同步
 	secondfs_inode_conform_v2s(si, inode);
 
-	// IUpdate 已经修改, 不会更新时间
+	// 与 UnixV6++  不同, 这里的IUpdate 不会更新时间
 	secondfs_dbg(INODE, "write_inode(%p, %d), IUpdate...", si->i_ssb, si->i_number);
+
+	// Bflush() will be called at the end of IUpdate
 	ret = Inode_IUpdate(si, ktime_get_real_seconds());
 	return ret;
 }

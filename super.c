@@ -397,6 +397,8 @@ void secondfs_put_super(struct super_block *sb)
 		secondfs_sync_fs(sb, 1);
 #endif
 
+	BufferManager_Bflush(secondfs_buffermanagerp, secsb->s_dev);
+
 	deleteDevtab(secsb->s_dev);
 	deleteSuperBlock(secsb);
 }

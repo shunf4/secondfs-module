@@ -669,7 +669,13 @@ int Inode::IUpdate(int time)
 		secondfs_dbg(INODE, "Inode::IUpdate(%p,%d) Bwriting...", this->i_ssb, this->i_number);
 		ret = bufMgr->Bwrite(pBuf);
 		// will be Brelse'd at the end of Bwrite()
-		return ret;
+		if (ret != 0) {
+			secondfs_err("Inode::IUpdate(%p,%d): Bwrite() failed!");
+			return ret;
+		}
+
+		bufMgr->Bflush(this->i_ssb->s_dev);
+		return 0;
 	}
 	return 0;
 }
