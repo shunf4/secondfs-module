@@ -336,7 +336,7 @@ struct inode *secondfs_new_inode(struct inode *dir, umode_t mode,
 
 	if (si == NULL) {
 		secondfs_dbg(INODE, "new_inode(%p,%u,%s): IAlloc fail!", dir, mode, str->name);
-		return ERR_PTR(-ENOMEM);
+		return ERR_PTR(-ENOSPC);
 	}
 	
 	inode = &si->vfs_inode;

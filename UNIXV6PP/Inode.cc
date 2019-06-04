@@ -126,7 +126,7 @@ void Inode::ReadI(IOParameter *io_paramp)
 			if( (bn = this->Bmap(lbn)) == 0 )
 			{
 				secondfs_err("Inode::ReadI(%p,%d,%d): Bmap(%d) failed", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, lbn);
-				io_paramp->err = -ENOMEM;
+				io_paramp->err = -ENOSPC;
 				return;
 			}
 			secondfs_dbg(FILE, "Inode::ReadI(%p,%d,%d): Bmap(%d) -> %d", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, lbn, bn);
@@ -229,7 +229,7 @@ void Inode::WriteI(IOParameter *io_paramp)
 			if( (bn = this->Bmap(lbn)) == 0 )
 			{
 				secondfs_err("Inode::WriteI(%p,%d,%d): Bmap(%d) failed", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, lbn);
-				io_paramp->err = -ENOMEM;
+				io_paramp->err = -ENOSPC;
 				return;
 			}
 			secondfs_dbg(FILE, "Inode::WriteI(%p,%d,%d): Bmap(%d) -> %d", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset, lbn, bn);
