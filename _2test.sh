@@ -41,7 +41,7 @@ stat . abc abc/def abc/ghi abc/def/123 abc/def/123/xxx.txt
 mv -T abc/def abc/ghi
 
 ls -R
-stat . abc abc/def abc/ghi abc/ghi/123 abc/ghi/123/xxx.txt
+stat . abc abc/ghi abc/ghi/123 abc/ghi/123/xxx.txt
 
 rm -rf abc
 
