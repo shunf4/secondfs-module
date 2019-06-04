@@ -563,6 +563,7 @@ int FileSystem::Free(SuperBlock *secsb, int blkno)
 	/* SuperBlock中直接管理空闲磁盘块号的栈已满 */
 	if((s32) le32_to_cpu(sb->s_nfree) >= 100)
 	{
+		sb->s_nfree = cpu_to_le32(100);
 		secondfs_dbg(DATABLK, "FileSystem::Free(%p,%d): fast stack full.", secsb, blkno);
 		/* 
 		 * 使用当前Free()函数正要释放的磁盘块，存放前一组100个空闲

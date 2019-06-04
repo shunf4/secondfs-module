@@ -237,7 +237,7 @@ int main(int argc, char **argv)
 
 		printf("[%d]", le32toh(fast_stack_buf.count));
 
-		if (le32toh(fast_stack_buf.count) > 100) {
+		if (le32toh(fast_stack_buf.count) > 100 || (int)le32toh(fast_stack_buf.count) <= 0) {
 			printf("\n");
 			eprintf("Error: current fast stack's height exceeds 100. Invalid image.\n");
 			ret = EINVAL;
