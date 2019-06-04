@@ -244,11 +244,8 @@ int main(int argc, char **argv)
 			goto fclose_err;
 		}
 
-		while (1) {
+		while (le32toh(fast_stack_buf.count)) {
 			printf(" %d", le32toh(fast_stack_buf.stack[LE32_PRE_DEC(fast_stack_buf.count)]));
-			if (le32toh(fast_stack_buf.count) == 0) {
-				break;
-			}
 		}
 
 		printf("\n");
