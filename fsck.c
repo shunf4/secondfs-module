@@ -161,7 +161,7 @@ static int write_stack_in_block(int fd, int block_no, const fast_stack *buf)
 static int read_stack_from_block(int fd, int block_no, fast_stack *buf)
 {
 	int len = sizeof(fast_stack); 
-	return write_block(fd, block_no, buf, len);
+	return read_block(fd, block_no, buf, len);
 }
 
 
