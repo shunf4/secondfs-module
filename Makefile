@@ -58,10 +58,10 @@ kernmodule : $(secondfs-cxxobjs)
 	$(LD) -r --build-id -osecondfs.ko $(secondfs-objs) secondfs.mod.o $(secondfs-cxxobjs)
 
 mkfs.secondfs : mkfs.c
-	$(CC) -o$@ -g -ggdb $^
+	$(CC) -o$@ -g3 $^
 
 fsck.secondfs : fsck.c
-	$(CC) -o$@ -g -ggdb $^
+	$(CC) -o$@ -g3 $^
 
 # 清理
 clean:
