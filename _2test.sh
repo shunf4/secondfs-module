@@ -1,10 +1,11 @@
 #!/bin/bash +x
 
-set -e
-
 sudo insmod secondfs.ko
 sudo umount test2
 mkdir -p test test2 test3
+
+set -e
+
 dd if=/dev/urandom of=new.img bs=512 count=2048
 ./mkfs.secondfs new.img
 
