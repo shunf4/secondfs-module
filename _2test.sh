@@ -1,4 +1,4 @@
-#!/bin/bash +x
+#!/bin/bash -x
 
 sudo insmod secondfs.ko
 sudo umount test2
