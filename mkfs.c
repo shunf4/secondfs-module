@@ -85,7 +85,7 @@ static struct option long_options[] = {
 #define verbose_pf(fmt, ...) do { if (verbose_level >= 1) printf(fmt, ##__VA_ARGS__); } while (0)
 #define vverbose_pf(fmt, ...) do { if (verbose_level >= 2) printf(fmt, ##__VA_ARGS__); } while (0)
 
-#define SFDBG_MKFS
+//#define SFDBG_MKFS
 
 #define eprintf(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
@@ -212,11 +212,6 @@ int main(int argc, char **argv)
 			break;
 
 		case '?':
-			if (isprint(optopt))
-				eprintf("Error: unrecognized option - %c\n", optopt);
-			else
-				eprintf("Error: unrecognized option - \\x%x\n", optopt);
-				
 			show_usage(stderr, argv[0]);
 			return EXIT_FAILURE;
 			break;
