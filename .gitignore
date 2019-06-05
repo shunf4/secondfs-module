@@ -10,7 +10,6 @@
 **/*.tmp
 /.vscode/ipch
 **/*.o.ur-safe
-/*.img
 /test/**
 /*.log
 /log.txt
