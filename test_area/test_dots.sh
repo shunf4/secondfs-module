@@ -1,11 +1,14 @@
 #!/bin/bash -x
 
-make -C ..
+cd ..
+make
+
+cd test_area
 
 sudo umount dir2
-sudo rmmod secondfs.ko
+sudo rmmod secondfs
 
-sudo insmod secondfs.ko
+sudo insmod ../secondfs.ko
 sudo umount dir2
 mkdir -p dir dir2 dir3
 
