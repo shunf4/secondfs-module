@@ -22,7 +22,7 @@ ssize_t secondfs_file_read(struct file *filp, char __user *buf, size_t len,
 	secondfs_inode_conform_s2v(inode, si);
 
 	file_accessed(filp);
-	// secondfs_inode_conform_v2s needed later
+	secondfs_inode_conform_v2s(si, inode);
 	mark_inode_dirty_sync(inode);
 
 	inode_unlock(inode);
@@ -60,7 +60,7 @@ ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t le
 		goto out;
 	}
 
-	// secondfs_inode_conform_v2s needed later
+	secondfs_inode_conform_v2s(si, inode);
 	
 	mark_inode_dirty_sync(inode);
 
