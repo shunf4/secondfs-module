@@ -1,10 +1,11 @@
-This module is here so that we could analyze the flags that we
-need to use in the compilation of the C++ parts of the module.
+This module is here as a standard module,
+so that we can analyze the flags needed
+in the compilation of the C++ parts of the module.
 
 Also, some kernel data structures' size is stored in hello.ko
-when compiling(see main.c). Then by analyzing constant symbols
-of hello.ko, we get the exact sizes of them to use in the
-C++ linking.
+when compiling(see main.c). By analyzing constant symbols
+of hello.ko, we get the exact sizes of those data structures'
+size to use in the C++ linking.
 
 这个模块用于为我们主模块的 C++ 部分编译选项提供参考.
 在主 Makefile 中, 会调用本标准模块的 Makefile 进行构建

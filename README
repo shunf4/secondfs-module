@@ -1,0 +1,131 @@
+The Second Filesystem (SecondFS, UnixV6++ Filesystem)
+=====================================================
+                                                                      |
+(For user manual, please refer to "Usage" section directly.)
+
+UnixV6++ filesystem was designed on the basis of UnixV6++, an
+experimental and educational C++ UNIX V6 implementation under Intel
+80386 architecture, written by Chen Hong's team
+(https://gitee.com/solym/UNIX_V6PP) in Department of Computer Science
+and Technology, Tongji University.
+
+UnixV6++ uses a disk formatted as UnixV6++ filesystem (volume) to do 
+bootstrapping, load kernel image and do file reading and writing. 
+UnixV6++ is much the same as V6FS
+(https://github.com/us8945/Unix_v6_filesystem/blob/master/docs/Unix_v6_disk.pdf)
+of original UNIX V6, except that:
+
+ - the super-block struct has all its members in 32-bit (4-byte) sizes, 
+   thus 2 consecutive blocks (each is 512-byte) are needed to store it.
+
+ - the first block of super-block resides at the sector(block) #200
+   instead of sector #1.
+
+ - also i-nodes and directory entries have members with more bits
+   and take more spaces.
+
+ - i-nodes are addressed (i-numbers) from 0 rather than 1 as in 
+   UNIX V6 FS.
+
+ - in UnivV6++, no "." and ".." is included in directory files.
+   (Yes, you can't chdir into parent dir by typing  "cd .." in UnixV6++
+   shell!) However, SecondFS is adding back this two directory entries
+   by setting an option in super-block (s_has_dots) to 0xFFFFFFFF.
+
+ - and other detailed differences not covered here.
+
+
+
+Usage
+=====
+
+Build SecondFS module
+---------------------
+
+SecondFS is implemented as a Linux Loadable Kernel Module (LKM),
+supporting Linux kernel 4.4-146 to 4.14-20 (tested on these 2
+versions, the most popular distributions of which are Ubuntu
+16.04 LTS and Ubuntu 18.04 LTS).
+
+Prerequisites:
+
+ - Linux distribution with supported kernel as the host OS.
+
+ - Linux kernel header files of current kernel (the most
+   popular way to install it is by package manager like
+   "apt install linux-header-<version number>", where the version
+   number can be fetched by typing "uname -a" as shell command line.
+
+ - Most common build tools: make, gcc, g++, gdb...
+
+ - Lastest version of Python 2
+
+Steps:
+
+ - Change current working directory to the directory containing this
+   README. (cd <directory>)
+
+ - Run command:
+	make
+   If everything goes well, you shouldn't see any prompts indicating
+   "error", though many WARNINGs will appear complaining some symbols
+   are undefined, which will be linked later in the "make" steps.
+
+   If some error is reported, run:
+	make clean
+   and then
+	make
+   again to see if the problem is resolved. If not, you may need expert
+   knowledge to solve the problem.
+
+ - Run command:
+	ls secondfs.ko mkfs.secondfs
+   to list these two files. If you see the two filenames appear again,
+   the "make" process succeeded. Otherwise, you should check if your
+   system meets the requirements mentioned above, or you may need expert
+   knowledge to solve the problem.
+
+
+Loading SecondFS module
+-----------------------
+
+As an LKM, SecondFS will work only after you "insert" it into current
+running system. To do this, you must have access to the "root"
+privilege of current OS. A familiar way to use the "root" privilege
+is using "sudo <something to do>" command.
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SecondFS is an experimental module and might break your running system
+at any time. Please make sure you keep this in mind and use a 
+non-productive OS to test it. Also, you may run
+	dmesg -wH
+to keep an eye on bugs reported on Linux message channel, which may
+help fixing the bugs.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+To install the module:
+	sudo insmod secondfs
+If everything goes well, you should not see any output.
+
+To uninstall the module:
+	sudo rmmod secondfs
+
+
+Preparing an image
+------------------
+
+SecondFS is designed only for image file based device at present.
+That is to say, you should prepare an image file first before you can
+load it as a SecondFS volume.
+
+The "c.img" generated as Bochs disk image for UnixV6++ is supported
+and can be directly used to mount and load filesystem from. Or you can
+create a new image file and format it by typing command lines:
+
+	dd if=/dev/zero of=<filename you want>.img bs=512 count=<sector size you want>
+	./mkfs.secondfs <filename you want>.img
+
+<sector size you want> should be at lease 1026 to contain at least one
+file with content. For KB order file storage, 2048 sectors are enough.

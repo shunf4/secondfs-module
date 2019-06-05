@@ -65,6 +65,7 @@ fsck.secondfs : fsck.c
 
 # 清理
 clean:
+	make -C std_module clean
 	$(RM) cxxflags.tmp
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 	$(RM) mkfs.secondfs
