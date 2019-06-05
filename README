@@ -5,7 +5,7 @@ The Second Filesystem (SecondFS, UnixV6++ Filesystem)
 
 UnixV6++ filesystem was designed on the basis of UnixV6++, an
 experimental and educational C++ UNIX V6 implementation under Intel
-80386 architecture, written by Chen Hong's team
+80386 architecture, written by Chen Hongzhong's team
 (https://gitee.com/solym/UNIX_V6PP) in Department of Computer Science
 and Technology, Tongji University.
 
