@@ -72,7 +72,8 @@ clean:
 	make -C std_module clean
 	$(RM) cxxflags.tmp
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
-	$(RM) mkfs.secondfs
+	$(RM) mkfs.secondfs fsck.secondfs
+	$(RM) *.o.ur-safe *.log gdb.tmp.script
 
 ######### 下面是 C 或 C++ 实现的辅助功能/共同函数/入口点相关文件的编译 #########
 
