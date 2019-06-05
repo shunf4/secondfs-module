@@ -16,4 +16,5 @@
 /log.txt
 /*.secondfs
 /gdb.tmp.script
-
+/test_area/*.img
+/test_area/dir*
