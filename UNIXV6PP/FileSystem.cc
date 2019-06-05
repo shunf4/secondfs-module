@@ -62,7 +62,7 @@ int FileSystem::LoadSuperBlock(SuperBlock *secsb)
 			return (int)(intptr_t)pBuf;
 		}
 
-		memcpy(p, pBuf->b_addr, SECONDFS_BLOCK_SIZE);
+		secondfs_c_helper_memcpy(p, pBuf->b_addr, SECONDFS_BLOCK_SIZE);
 
 		bufMgr.Brelse(pBuf);
 	}
@@ -188,7 +188,7 @@ void FileSystem::Update(SuperBlock *secsb)
 		pBuf = this->m_BufferManager->GetBlk(sb->s_dev, SECONDFS_SUPER_BLOCK_SECTOR_NUMBER + j);
 
 		/* 将SuperBlock中第0 - 511字节写入缓存区 */
-		memcpy(pBuf->b_addr, p, SECONDFS_BLOCK_SIZE);
+		secondfs_c_helper_memcpy(pBuf->b_addr, p, SECONDFS_BLOCK_SIZE);
 
 		/* 将缓冲区中的数据写到磁盘上 */
 		ret = this->m_BufferManager->Bwrite(pBuf);
@@ -499,7 +499,7 @@ Buf* FileSystem::Alloc(SuperBlock *secsb)
 		sb->s_nfree = (*p++);
 
 		/* 读取缓存中后续位置的数据，写入到SuperBlock空闲盘块索引表s_free[100]中 */
-		memcpy(sb->s_free, p, sizeof(sb->s_free));
+		secondfs_c_helper_memcpy(sb->s_free, p, sizeof(sb->s_free));
 
 		secondfs_dbg(FILE, "FileSystem::Alloc(%p): s_nfree == %d, s_free[top] == %d", secsb, le32_to_cpu(sb->s_nfree), le32_to_cpu(sb->s_free[99]));
 
@@ -581,7 +581,7 @@ int FileSystem::Free(SuperBlock *secsb, int blkno)
 		/* 首先写入空闲盘块数，100块 */
 		*p++ = sb->s_nfree;
 		/* 将SuperBlock的空闲盘块索引表s_free[100]写入缓存中后续位置 */
-		memcpy(p, sb->s_free, sizeof(sb->s_free));
+		secondfs_c_helper_memcpy(p, sb->s_free, sizeof(sb->s_free));
 
 		sb->s_nfree = cpu_to_le32(0);
 		/* 将存放空闲盘块索引表的“当前释放盘块”写入磁盘，即实现了空闲盘块记录空闲盘块号的目标 */

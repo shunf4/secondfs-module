@@ -167,7 +167,7 @@ void Inode::ReadI(IOParameter *io_paramp)
 		if (io_paramp->isUserP)
 			secondfs_c_helper_copy_to_user(io_paramp->m_Base, start, nbytes);
 		else
-			memcpy(io_paramp->m_Base, start, nbytes);
+			secondfs_c_helper_memcpy(io_paramp->m_Base, start, nbytes);
 		
 		secondfs_dbg(FILE, "Inode::ReadI(%p,%d,%d): read complete; (before) ", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 
@@ -270,7 +270,7 @@ void Inode::WriteI(IOParameter *io_paramp)
 		if (io_paramp->isUserP)
 			secondfs_c_helper_copy_from_user(start, io_paramp->m_Base, nbytes);
 		else
-			memcpy(start, io_paramp->m_Base, nbytes);
+			secondfs_c_helper_memcpy(start, io_paramp->m_Base, nbytes);
 
 		secondfs_dbg(FILE_V, "Inode::WriteI(%p,%d,%d): write complete; (before) ", io_paramp->m_Base, io_paramp->m_Count, io_paramp->m_Offset);
 

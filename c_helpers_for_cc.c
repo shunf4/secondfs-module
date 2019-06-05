@@ -300,3 +300,8 @@ Inode *secondfs_c_helper_new_inode(SuperBlock *ssb)
 	inode = new_inode(ssb->s_vsb);
 	return SECONDFS_INODE(inode);
 }
+
+void *secondfs_c_helper_memcpy(void *to, void *from, size_t len)
+{
+	return memcpy(to, from, len);
+}

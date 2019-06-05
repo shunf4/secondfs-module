@@ -123,6 +123,8 @@ void secondfs_c_helper_set_loff_t(void *x, u32 val);
 int secondfs_c_helper_printk(const char *s, ...);
 int secondfs_c_helper_sprintf(char *dest, const char *s, ...);
 
+void *secondfs_c_helper_memcpy(void *to, void *from, size_t len);
+
 // Inode *secondfs_c_helper_new_inode(SuperBlock *ssb);  is moved to secondfs.h
 
 #ifdef __cplusplus
