@@ -185,11 +185,15 @@ When kernel bug caused by the module occurred, Concrete line numbers
 of where the bug occurred can be fetched by gdb.
 
 Install debug symbol package and source code package of current
-running kernel version, modify "gdb.s" according to your current
+running kernel version, modify "gdb.script" according to your current
 installation, then use
+
 	./lookup.sh function_name+0x(addr)
+
 to locate code in kernel, or use
+
 	./modlookup.sh function_name+0x(addr)
+
 to locate code in module. function_name+0x(addr) can be fetched from
 RIP value or backtrace stack in dmesg outputs.
 
@@ -253,7 +257,8 @@ system, as long as:
 
  - it has a UnixV6++ kernel at its first 200
 blocks
-	dd conv=notrunc if=<UnixV6++ image>.img of=<target mkfs.secondfs-generated>.img bs=512 count=200
+
+  dd conv=notrunc if=<UnixV6++ image>.img of=<target mkfs.secondfs-generated>.img bs=512 count=200
 
  - necessary directories and files are created;
 
