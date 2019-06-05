@@ -38,6 +38,7 @@ ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t le
 	struct inode *inode = filp->f_path.dentry->d_inode;
 	Inode *si = SECONDFS_INODE(inode);
 	ssize_t ret;
+	int reti;
 	u32 pos_u32 = *ppos;
 
 	secondfs_dbg(FILE, "file_write(%.32s,%p,%lu)", filp->f_path.dentry->d_name.name, buf, len);
@@ -52,9 +53,10 @@ ssize_t secondfs_file_write(struct file *filp, const char __user *buf, size_t le
 	*ppos = pos_u32;
 	secondfs_inode_conform_s2v(inode, si);
 
-	ret = file_update_time(filp);
-	if (ret) {
+	reti = file_update_time(filp);
+	if (reti) {
 		secondfs_err("file_write(%.32s,%p,%lu): update_time() failed!", filp->f_path.dentry->d_name.name, buf, len);
+		ret = reti;
 		goto out;
 	}
 

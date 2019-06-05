@@ -129,3 +129,49 @@ create a new image file and format it by typing command lines:
 
 <sector size you want> should be at lease 1026 to contain at least one
 file with content. For KB order file storage, 2048 sectors are enough.
+
+
+Mount the image
+---------------
+
+SecondFS is meant to be mounted to a directory in Linux file tree. 
+So first you have to create a directory somewhere to be mounted on:
+
+	mkdir test
+
+Then with root privilege, you can mount the SecondFS image file:
+
+	sudo mount -t secondfs -o loop <filename you want>.img ./test
+
+If everything goes well, you shouldn't see any output.
+
+Then type command line
+
+	mount
+
+At the end of the output, ensure your image file is mounted on the 
+directory you want.
+
+
+Using the filesystem
+--------------------
+
+When the filesystem is mounted, the usage of it has no differences
+with other parts of the Linux filesystem. You can:
+
+ - "cd" (Change current dir) into the directory of SecondFS and any
+   descendant directory under it;
+
+ - use "echo <content> > <filename>" or "vim <filename>" or any other
+   method to write content to existing/newly created files;
+
+ - use "cat <filename" etc. to read content from existing files;
+
+ - "mkdir" (Make directory) or "rmdir" (Remove directory);
+
+ - "cp" (Copy) files or directories from other filesystem volume to
+   SecondFS volume;
+
+ - "mv" (Move) files or directories inside SecondFS volume;
+
+ - Most other operations you can do on a UNIX-like filesystem.
