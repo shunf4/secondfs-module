@@ -9,31 +9,6 @@ experimental and educational C++ UNIX V6 implementation under Intel
 (https://gitee.com/solym/UNIX_V6PP) in Department of Computer Science
 and Technology, Tongji University.
 
-UnixV6++ uses a disk formatted as UnixV6++ filesystem (volume) to do 
-bootstrapping, load kernel image and do file reading and writing. 
-UnixV6++ is much the same as V6FS
-(https://github.com/us8945/Unix_v6_filesystem/blob/master/docs/Unix_v6_disk.pdf)
-of original UNIX V6, except that:
-
- - the super-block struct has all its members in 32-bit (4-byte) sizes, 
-   thus 2 consecutive blocks (each is 512-byte) are needed to store it.
-
- - the first block of super-block resides at the sector(block) #200
-   instead of sector #1.
-
- - also i-nodes and directory entries have members with more bits
-   and take more spaces.
-
- - i-nodes are addressed (i-numbers) from 0 rather than 1 as in 
-   UNIX V6 FS.
-
- - in UnivV6++, no "." and ".." is included in directory files.
-   (Yes, you can't chdir into parent dir by typing  "cd .." in UnixV6++
-   shell!) However, SecondFS is adding back this two directory entries
-   by setting an option in super-block (s_has_dots) to 0xFFFFFFFF.
-
- - and other detailed differences not covered here.
-
 
 
 Usage
@@ -66,21 +41,32 @@ Steps:
    README. (cd <directory>)
 
  - Run command:
+
 	make
+
    If everything goes well, you shouldn't see any prompts indicating
    "error", though many WARNINGs will appear complaining some symbols
    are undefined, which will be linked later in the "make" steps.
 
    If some error is reported, run:
+
 	make clean
+
    and then
+
 	make
+
    again to see if the problem is resolved. If not, you may need expert
    knowledge to solve the problem.
 
  - Run command:
+
 	ls secondfs.ko mkfs.secondfs
-   to list these two files. If you see the two filenames appear again,
+
+   to list these two files. secondfs.ko is the kernel module, and 
+   mkfs.secondfs is the formatter.
+   
+   If you see the two filenames appear again,
    the "make" process succeeded. Otherwise, you should check if your
    system meets the requirements mentioned above, or you may need expert
    knowledge to solve the problem.
@@ -99,17 +85,22 @@ is using "sudo <something to do>" command.
 SecondFS is an experimental module and might break your running system
 at any time. Please make sure you keep this in mind and use a 
 non-productive OS to test it. Also, you may run
+
 	dmesg -wH
+
 to keep an eye on bugs reported on Linux message channel, which may
 help fixing the bugs.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 To install the module:
+
 	sudo insmod secondfs
+
 If everything goes well, you should not see any output.
 
 To uninstall the module:
+
 	sudo rmmod secondfs
 
 
@@ -159,19 +150,115 @@ Using the filesystem
 When the filesystem is mounted, the usage of it has no differences
 with other parts of the Linux filesystem. You can:
 
- - "cd" (Change current dir) into the directory of SecondFS and any
+ - "cd" (change current dir) into the directory of SecondFS and any
    descendant directory under it;
 
  - use "echo <content> > <filename>" or "vim <filename>" or any other
    method to write content to existing/newly created files;
 
- - use "cat <filename" etc. to read content from existing files;
+ - use "cat <filename>" etc. to read content from existing files;
 
- - "mkdir" (Make directory) or "rmdir" (Remove directory);
+ - "mkdir" (make directory) or "rmdir" (remove directory);
 
- - "cp" (Copy) files or directories from other filesystem volume to
+ - "cp" (copy) files or directories from other filesystem volume to
    SecondFS volume;
 
- - "mv" (Move) files or directories inside SecondFS volume;
+ - "mv" (move) files or directories inside SecondFS volume;
 
  - Most other operations you can do on a UNIX-like filesystem.
+
+
+Run
+
+	sudo umount <mounted dir>
+
+to unmount the SecondFS volume.
+
+
+Debug
+-----
+
+Some debug message options are turned on. Check the lines marked with
+"secondfs" in "dmesg" output to get the current status of the module.
+
+When kernel bug caused by the module occurred, Concrete line numbers
+of where the bug occurred can be fetched by gdb.
+
+Install debug symbol package and source code package of current
+running kernel version, modify "gdb.s" according to your current
+installation, then use
+	./lookup.sh function_name+0x(addr)
+to locate code in kernel, or use
+	./modlookup.sh function_name+0x(addr)
+to locate code in module. function_name+0x(addr) can be fetched from
+RIP value or backtrace stack in dmesg outputs.
+
+
+
+Specification
+=============
+
+UnixV6++ uses a disk formatted as UnixV6++ filesystem (volume) to do 
+bootstrapping, load kernel image and do file reading and writing. 
+UnixV6++ is much the same as V6FS
+(https://github.com/us8945/Unix_v6_filesystem/blob/master/docs/Unix_v6_disk.pdf)
+of original UNIX V6, except that:
+
+ - the super-block struct has all its members in 32-bit (4-byte) sizes, 
+   thus 2 consecutive blocks (each is 512-byte) are needed to store it.
+
+ - the first block of super-block resides at the sector(block) #200
+   instead of sector #1.
+
+ - also i-nodes and directory entries have members with more bits
+   and take more spaces.
+
+ - i-nodes are addressed (i-numbers) from 0 rather than 1 as in 
+   UNIX V6 FS.
+
+ - in UnivV6++, no "." and ".." is included in directory files.
+   (Yes, you can't chdir into parent dir by typing  "cd .." in UnixV6++
+   shell!) However, SecondFS is adding back these two directory entries
+   by setting an option in super-block (s_has_dots) to 0xFFFFFFFF.
+   This is associated with option (-d/--dots) in mkfs.secondfs.
+
+ - and other detailed differences not covered here.
+
+For details, please refer to the project report (Chinese) and 
+code.
+
+
+Compatibility with UnixV6++
+---------------------------
+
+SecondFS module can load and modify UnixV6++ images (c.img)
+safely, except there are files with ILARG flag.
+
+When formatting filesystem, -d (--dots) option marks this
+filesystem as "having dots", which means there are "." and
+".." directory entry in every directory file. 
+
+In UnixV6++, the s_flock member of the super-block is used
+as a lock, so it is never set to be 0xFFFFFFFF. To distinguish
+a SecondFS "has-dots" volume, s_flock is set to be 0xFFFFFFFF,
+i.e. if and only if s_flock == 0xFFFFFFFF, this volume is
+treated as it has "dots" in directory files. Images with this
+type of SecondFS cannot be used by UnixV6++.
+
+Theoretically, mkfs.secondfs-generated image file with "no dots" 
+and with at least 20160 blocks can successfully boot a UnixV6++
+system, as long as:
+
+ - the image has "no dots" and at least 20160 blocks
+
+ - it has a UnixV6++ kernel at its first 200
+blocks
+	dd conv=notrunc if=<UnixV6++ image>.img of=<target mkfs.secondfs-generated>.img bs=512 count=200
+
+ - necessary directories and files are created;
+
+ - /dev/tty1 device file is manually created and set mode as
+   0xA1FF (IALLOC | CHAR_DEVICE | PERMISSION777,
+   by editing hex values of its inode in The image file),
+   because SecondFS module does not support creation of special
+   (char device) files.

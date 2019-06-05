@@ -1,3 +1,7 @@
+# Crossover, 092280, Operating System Project 1
+# Tutor: Deng Rong
+# By: Feng Shun, 1652270, Tongji Univ.
+
 # This module used this framework
 # https://github.com/veltzer/kcpp
 

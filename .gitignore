@@ -15,5 +15,5 @@
 /*.log
 /log.txt
 /*.secondfs
-/gdb.tmp.s
+/gdb.tmp.script
 

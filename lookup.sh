@@ -1,5 +1,5 @@
 #!/bin/bash
-cp ./gdb.s ./gdb.tmp.s
-echo "list *$1" >> ./gdb.tmp.s
-gdb --command=./gdb.tmp.s
+cp ./gdb.tmp.script ./gdb.tmp.script
+echo "list *$1" >> ./gdb.tmp.script
+gdb --command=./gdb.tmp.script
 
