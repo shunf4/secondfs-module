@@ -33,10 +33,10 @@ typedef struct _SuperBlock
 
 	Inode*	s_inodep;		// SuperBlock 所在文件系统的根节点
 	Devtab*	s_dev;			// SuperBlock 所在文件系统的设备
-	struct super_block *s_vsb;	// VFS 超块
-	struct mutex s_update_lock;
-	struct mutex s_flock;
-	struct mutex s_ilock;
+	struct super_block *s_vsb;	// 指向 VFS 超块的指针
+	struct mutex s_update_lock;	// Update 锁
+	struct mutex s_flock;		// 空闲盘块索引表的锁
+	struct mutex s_ilock;		// 空闲 Inode 索引表的锁
 } SuperBlock;
 
 //static size_t x = sizeof(Superblock);
